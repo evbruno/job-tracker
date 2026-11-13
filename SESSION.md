@@ -33,7 +33,7 @@ None. If this file and PRODUCT.md conflict, PRODUCT.md wins; list the conflict h
 
 1. Verify Elixir/Erlang versions and pin them (`.tool-versions`).
 2. Verify the Phoenix installation.
-3. Generate the Phoenix app with LiveView and PostgreSQL.
+3. Generate the Phoenix app with LiveView and SQLite3 (`mix phx.new --database sqlite3`).
 4. Initialize Git and make the first commit once task group 1.1 is verified.
 
 ---

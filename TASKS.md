@@ -17,17 +17,19 @@
 - [ ] Verify Elixir and Erlang/OTP versions.
 - [ ] Verify Phoenix installation and version.
 - [ ] Pin Elixir/Erlang versions (`.tool-versions` or equivalent).
-- [ ] Generate Phoenix application with LiveView.
+- [ ] Generate Phoenix application with LiveView and SQLite3 (`--database sqlite3`).
 - [ ] Initialize Git repository.
 - [ ] Create initial README.md.
 
 ### 1.2 Database
 
-- [ ] Configure PostgreSQL connection.
+- [ ] Configure SQLite3 database files and confirm they are gitignored.
 - [ ] Configure development database.
 - [ ] Configure test database.
 - [ ] Verify Ecto connectivity.
 - [ ] Verify migrations execute successfully.
+- [ ] Verify foreign key enforcement and WAL mode are enabled.
+- [ ] Add a throwaway test confirming that `COLLATE NOCASE` partial unique indexes and `LIKE` search behave as expected, then remove it.
 
 ### 1.3 Frontend and Layout
 
@@ -88,7 +90,7 @@
 - [ ] Implement Tag schema.
 - [ ] Implement ApplicationTag association.
 - [ ] Add database constraints and indexes.
-- [ ] Add uniqueness indexes: company names (case-insensitive, per user, non-deleted only) and tag names (case-insensitive, per user).
+- [ ] Add uniqueness indexes: company names (case-insensitive, per user, non-deleted only) and tag names (case-insensitive, per user), using `COLLATE NOCASE` (SQLite has no `citext`).
 - [ ] Implement Phoenix contexts.
 - [ ] Add domain tests.
 
@@ -158,7 +160,7 @@
 
 ## Phase 7 — Search and Usability
 
-- [ ] Implement search.
+- [ ] Implement search (use `LIKE` or `lower()`; SQLite has no `ILIKE`).
 - [ ] Implement status filters.
 - [ ] Implement company filters.
 - [ ] Implement recruiter filters.
@@ -182,11 +184,11 @@
 
 - [ ] Security review.
 - [ ] Tenant isolation review.
-- [ ] Query performance review.
-- [ ] Configure production database.
+- [ ] Query performance and SQLite concurrency review (busy timeout, pool size).
+- [ ] Configure the production SQLite database file on a persistent volume.
 - [ ] Configure HTTPS.
 - [ ] Configure logging and monitoring.
-- [ ] Configure backups.
+- [ ] Configure backups (SQLite online backup or Litestream) and test a restore.
 - [ ] Configure deployment pipeline.
 - [ ] Run end-to-end tests.
 - [ ] Document deployment.
@@ -194,7 +196,7 @@
 **Acceptance criteria:**
 - Application deploys successfully.
 - Production configuration is secure.
-- Backups are configured.
+- Backups are configured and a restore has been tested.
 - Critical workflows work in production.
 - Tenant isolation tests pass.
 

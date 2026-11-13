@@ -134,7 +134,7 @@ Requirements:
 - Users can create companies independently.
 - Users can also create a company inline while creating or editing an application.
 - Existing companies can be reused.
-- Company names are unique per user, case-insensitive, among non-deleted companies. A user may create a new company with the same name as one of their soft-deleted companies. (Use a partial unique index where `deleted_at IS NULL`.)
+- Company names are unique per user, case-insensitive, among non-deleted companies. A user may create a new company with the same name as one of their soft-deleted companies. (Use a partial unique index on the name with `COLLATE NOCASE` where `deleted_at IS NULL`; SQLite supports both.)
 - Companies have standalone pages: list, create, edit, and delete.
 
 #### Company Deletion
@@ -207,7 +207,7 @@ Requirements:
 - Applications can have multiple tags.
 - Tags can be reused across applications.
 - Tags are isolated between users.
-- Tag names are unique per user, case-insensitive. The original casing entered by the user is preserved for display.
+- Tag names are unique per user, case-insensitive. The original casing entered by the user is preserved for display. (Use a unique index on `user_id` and the name with `COLLATE NOCASE`.)
 - Users can filter applications by tag.
 - Tags can be created inline from the application form.
 - Tags have a simple standalone management page: list, rename, and delete. Deleting a tag removes it from all applications (hard delete of the tag and its join rows; applications are unaffected).
@@ -228,7 +228,7 @@ Requirements:
 Behavior:
 - Default sort: most recently created first.
 - Sort direction can be toggled (ascending/descending) for each sort field.
-- Search is case-insensitive and matches partial text in position title or company name.
+- Search is case-insensitive and matches partial text in position title or company name. SQLite has no `ILIKE`: use `LIKE` or `lower()`. Case-insensitivity is only guaranteed for ASCII characters, which is acceptable for the initial version.
 - Multiple filters combine with AND (e.g. status AND company AND tag).
 - Filtering by multiple tags uses AND: only applications having all selected tags are shown.
 - Filter and search state is reflected in the URL query string so it survives refresh and can be bookmarked.
@@ -277,7 +277,10 @@ Requirements:
 Use the latest stable versions of Elixir, Phoenix, and LiveView available at project start, and pin them in the repository (`.tool-versions` or equivalent).
 
 ### Database
-- PostgreSQL
+- SQLite3 via the `ecto_sqlite3` adapter (`mix phx.new --database sqlite3`).
+- The database file is never committed to Git. In production it lives on a persistent volume.
+- Foreign key enforcement and WAL journal mode must be on (verify the adapter defaults in the config).
+- SQLite allows one writer at a time. Keep transactions short.
 
 ### Frontend
 - Phoenix LiveView
@@ -306,6 +309,8 @@ Use the latest stable versions of Elixir, Phoenix, and LiveView available at pro
 - Keep business logic out of LiveView modules.
 - Use Ecto changesets for validation.
 - Use database constraints where appropriate (foreign keys, unique indexes, not-null).
+- Use only SQLite-compatible database features: no `ILIKE`, `citext`, arrays, or `jsonb`.
+- SQLite has limited `ALTER TABLE` support, so get table definitions right before building on them.
 - Enforce user ownership at the context/query level.
 - Use transactions (`Ecto.Multi`) for status changes and history creation.
 - Preserve historical associations through soft deletion.
@@ -321,6 +326,7 @@ Use the latest stable versions of Elixir, Phoenix, and LiveView available at pro
 - Listing tests cover each filter, search, sorting, and pagination.
 - Add LiveView tests for the main flows: login, create application (with inline company/recruiter/tag creation), change status with notes, and filter the list.
 - `mix test` must pass before any task is considered complete.
+- If tests fail with "database is locked/busy" errors, run database tests with `async: false`.
 
 ## 8. Out of Scope — Initial Version
 
@@ -380,6 +386,7 @@ The MVP is successful when a user can:
 | Pagination | Yes, 25 per page |
 | `updated_at` changes on | Field edits, status changes, tag changes |
 | Timestamps | Stored and displayed in UTC |
+| Database | SQLite3 (`ecto_sqlite3`) |
 | User provisioning | Custom Mix task |
 | Public registration | Disabled |
 | Admin panel | Not required |

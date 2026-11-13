@@ -26,6 +26,14 @@ listing 3.7, ownership section 4).
 - Never trust client-provided IDs in `handle_event`; re-fetch through a scoped context function.
 - Every context function that touches user data needs a cross-user test.
 
+## Database (SQLite3)
+
+- The database is SQLite3 via `ecto_sqlite3`. Do not use PostgreSQL-specific features: no `ILIKE`, `citext`, arrays, or `jsonb`.
+- Case-insensitive uniqueness uses `COLLATE NOCASE`. Case-insensitive search uses `LIKE` or `lower()`.
+- SQLite allows one writer at a time. Keep transactions short.
+- SQLite has limited `ALTER TABLE` support. Get table definitions right before building on them.
+- If tests fail with "database is locked/busy" errors, run database tests with `async: false`.
+
 ---
 
 This is a web application written using the Phoenix web framework.
@@ -50,7 +58,7 @@ custom classes must fully style the input
 
 ### JS and CSS guidelines
 
-- **Use Tailwind CSS classes and custom CSS rules** to create polished, responsive, and visually stunning interfaces.
+- **Use Tailwind CSS classes and custom CSS rules** to create clean, consistent, and responsive interfaces.
 - Tailwindcss v4 **no longer needs a tailwind.config.js** and uses a new import syntax in `app.css`:
 
       @import "tailwindcss" source(none);
