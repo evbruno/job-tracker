@@ -1,3 +1,33 @@
+# Job Tracker — Agent Instructions
+
+## Read first
+
+At the start of every session, read `SESSION.md`, then `TASKS.md`, then `PRODUCT.md`.
+
+- `PRODUCT.md`: what to build. It wins if any file conflicts with it.
+- `TASKS.md`: order, acceptance criteria, and development rules.
+- `SESSION.md`: handoff from the previous session.
+
+Before implementing a feature, re-read the relevant section of `PRODUCT.md`
+(applications 3.2, statuses 3.3, companies 3.4, recruiters 3.5, tags 3.6,
+listing 3.7, ownership section 4).
+
+## Workflow
+
+- Work on one task at a time. Follow the Development Rules in `TASKS.md`.
+- Do not add features that are not in `PRODUCT.md`. Ask instead.
+- A task is done only when `mix precommit` passes.
+
+## Multi-tenancy (never skip)
+
+- Use `current_scope` to identify the user. Context functions take it as the first argument.
+- No unscoped queries on user-owned data. Never cast `user_id` from params.
+- Validate that submitted association IDs belong to the current user.
+- Never trust client-provided IDs in `handle_event`; re-fetch through a scoped context function.
+- Every context function that touches user data needs a cross-user test.
+
+---
+
 This is a web application written using the Phoenix web framework.
 
 ## Project guidelines
@@ -30,18 +60,18 @@ custom classes must fully style the input
 
 - **Always use and maintain this import syntax** in the app.css file for projects generated with `phx.new`
 - **Never** use `@apply` when writing raw css
-- **Always** manually write your own tailwind-based components instead of using daisyUI for a unique, world-class design
+- Reuse the components in `core_components.ex`. Only write custom components when none fit
 - Out of the box **only the app.js and app.css bundles are supported**
   - You cannot reference an external vendor'd script `src` or link `href` in the layouts
   - You must import the vendor deps into app.js and app.css to use them
   - **Never write inline <script>custom js</script> tags within templates**
 
-### UI/UX & design guidelines
+### UI/UX guidelines
 
-- **Produce world-class UI designs** with a focus on usability, aesthetics, and modern design principles
-- Implement **subtle micro-interactions** (e.g., button hover effects, and smooth transitions)
-- Ensure **clean typography, spacing, and layout balance** for a refined, premium look
-- Focus on **delightful details** like hover effects, loading states, and smooth page transitions
+- Keep the UI clean, consistent, and easy to use
+- Use clear typography and spacing, and make layouts work on small screens
+- Add simple hover and loading states where they help usability
+- Do not add UI features that are not in `PRODUCT.md`
 
 
 <!-- usage-rules-start -->

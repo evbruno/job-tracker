@@ -292,7 +292,7 @@ Use the latest stable versions of Elixir, Phoenix, and LiveView available at pro
 - Session-based authentication.
 
 ### User Provisioning
-- Custom Mix task for creating users (e.g. `mix job_tracker.create_user EMAIL`), which prompts for or accepts a password and fails clearly on duplicate emails or invalid input.
+- Custom Mix task for creating users (`mix users.create EMAIL`), which prompts for or accepts a password and fails clearly on duplicate emails or invalid input.
 - No public registration endpoint.
 
 ### Display Conventions
@@ -320,7 +320,7 @@ Use the latest stable versions of Elixir, Phoenix, and LiveView available at pro
 - Soft-deletion tests must verify that deleted companies/recruiters are hidden from selection lists but remain attached to existing applications.
 - Listing tests cover each filter, search, sorting, and pagination.
 - Add LiveView tests for the main flows: login, create application (with inline company/recruiter/tag creation), change status with notes, and filter the list.
-- `mix test` must pass before any step is considered complete.
+- `mix test` must pass before any task is considered complete.
 
 ## 8. Out of Scope — Initial Version
 
@@ -384,24 +384,21 @@ The MVP is successful when a user can:
 | Public registration | Disabled |
 | Admin panel | Not required |
 
-## 11. Implementation Order
+## 11. Project Workflow
 
-Build in the following order. Complete each step (including its tests) and stop for review before starting the next.
+PRODUCT.md defines what to build. It does not define the order or the progress.
 
-1. **Project setup and authentication:** generate the Phoenix project, set up auth, disable public registration, remove password reset/confirmation flows, and implement the user-creation Mix task.
-2. **Schema foundation:** migrations for statuses (with seeded data), companies, recruiters, tags, applications, application-tag join table, and status history.
-3. **Companies, recruiters, tags contexts and pages:** CRUD, soft deletion and restore, uniqueness rules, and ownership tests.
-4. **Applications CRUD:** context, forms with inline creation of companies/recruiters/tags, details page, hard deletion.
-5. **Status changes and history:** atomic status change with optional notes, history timeline on the details page.
-6. **Listing:** filters, search, sorting, pagination, URL-synced state.
-7. **Ownership and hardening pass:** review every context function and LiveView event for authorization, fill any test gaps.
+- `TASKS.md`: phases, task checklist, acceptance criteria, and development rules.
+- `SESSION.md`: session handoff and next actions.
+
+At the start of every session, read `SESSION.md`, then `TASKS.md`. Continue from the current task. Do not redo completed work.
 
 ## 12. Guidance for the AI Agent
 
 - Do not add features that are not listed in this document. If something seems missing, ask instead of inventing it.
-- Do not build ahead of the current implementation step.
-- Prefer the simplest solution that satisfies the requirement; avoid extra abstractions, behaviours, or dependencies unless clearly needed.
-- Any new dependency must be justified in a sentence.
+- Do not build ahead of the current phase.
+- Prefer the simplest solution that satisfies the requirement. Any new dependency must be justified in a sentence.
 - Keep LiveView modules thin; business logic lives in contexts.
 - Never use an unscoped query for user-owned data.
-- When a requirement is ambiguous, state the assumption you made before implementing it.
+- When a requirement is ambiguous, state the assumption before implementing it and record it in `SESSION.md`.
+- If this document conflicts with TASKS.md, this document wins. Report the conflict instead of choosing silently.
