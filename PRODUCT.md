@@ -27,6 +27,9 @@ Requirements:
 - Passwords must be securely hashed.
 - Each user can only access their own data.
 - Ownership must be enforced server-side.
+- Email addresses are unique (case-insensitive).
+- Sessions use the standard expiry provided by the Phoenix authentication generator; no custom session policy is required.
+- Login rate limiting is out of scope for the initial version.
 
 There is no administrative panel.
 
@@ -35,9 +38,9 @@ There is no administrative panel.
 A job application represents an opportunity at a particular company.
 
 Fields:
-- Position/title (required).
-- Job description.
-- Job posting URL.
+- Position/title (required, max 255 characters).
+- Job description (max 20,000 characters).
+- Job posting URL (must be a valid `http`/`https` URL when present).
 - Company reference (required).
 - Optional recruiter reference.
 - Current application status.
@@ -54,6 +57,17 @@ Users can:
 - Change application status.
 
 New applications automatically receive the `Interested` status.
+
+#### Application Deletion
+
+Applications are hard-deleted. Deleting an application also deletes its status history and its tag associations (cascade). Companies, recruiters, and tags are never deleted as a side effect. The UI must ask for confirmation before deleting.
+
+#### Last Updated Semantics
+
+`updated_at` changes when:
+- Application fields are edited.
+- The status changes.
+- Tags are added to or removed from the application.
 
 ### 3.3 Application Status
 
@@ -77,7 +91,13 @@ Initial statuses:
 
 Users cannot create or customize statuses.
 
+Implementation: statuses are stored in a `statuses` table, populated by a migration (data seeded in the migration itself so that every environment, including production and test, has them). Each status has a stable `slug` (e.g. `technical_interview`), a display `name`, and a `position` for display ordering. Applications and history records reference statuses by foreign key.
+
 The current status must always be available directly from the application record.
+
+#### Status Transitions
+
+Any status can transition to any other status. There is no state machine. Changing to the same status the application already has is rejected with a validation error.
 
 #### Status History
 
@@ -87,14 +107,14 @@ Each record contains:
 - Previous status (nullable for initial status).
 - New status.
 - Change timestamp.
-- Optional notes.
+- Optional notes (max 2,000 characters).
 
 Requirements:
 - The initial `Interested` status generates a history record.
 - Every subsequent status change generates another record.
-- Historical records must never be overwritten.
+- Historical records are append-only: they are never updated or edited through the application. They are removed only when their parent application is deleted.
 - Status updates and history creation must be atomic.
-- History must be displayed chronologically.
+- History must be displayed chronologically (oldest first).
 - Users can add context to a status change through optional notes.
 
 ### 3.4 Companies
@@ -102,10 +122,10 @@ Requirements:
 Companies represent organizations offering job opportunities.
 
 Fields:
-- Name (required).
-- Website URL.
-- General contact email.
-- Additional notes.
+- Name (required, max 255 characters).
+- Website URL (valid `http`/`https` URL when present).
+- General contact email (valid email format when present).
+- Additional notes (max 5,000 characters).
 - Creation timestamp.
 - Deletion timestamp (nullable).
 
@@ -114,6 +134,8 @@ Requirements:
 - Users can create companies independently.
 - Users can also create a company inline while creating or editing an application.
 - Existing companies can be reused.
+- Company names are unique per user, case-insensitive, among non-deleted companies. A user may create a new company with the same name as one of their soft-deleted companies. (Use a partial unique index where `deleted_at IS NULL`.)
+- Companies have standalone pages: list, create, edit, and delete.
 
 #### Company Deletion
 
@@ -123,16 +145,21 @@ Deleting a company must not physically remove its database record or historical 
 
 Deleted companies must not appear in normal selection lists, but existing applications must retain their company association.
 
+Additional rules:
+- When viewing an application whose company is soft-deleted, the company is still displayed (marked as deleted).
+- When editing such an application, the current (deleted) company remains selected and shown in the form. It is not offered as a choice for other applications. The user may switch to a different active company.
+- Deleted companies can be restored from a "Deleted" view on the companies page. Restoring fails with a validation error if an active company with the same name already exists.
+
 ### 3.5 Recruiters
 
 Recruiters represent people involved in recruitment.
 
 Fields:
-- Name (required).
-- Email.
-- LinkedIn URL.
-- Other relevant URL.
-- Additional notes.
+- Name (required, max 255 characters).
+- Email (valid email format when present).
+- LinkedIn URL (valid `http`/`https` URL when present).
+- Other relevant URL (valid `http`/`https` URL when present).
+- Additional notes (max 5,000 characters).
 - Creation timestamp.
 - Deletion timestamp (nullable).
 
@@ -142,12 +169,16 @@ Requirements:
 - Users can create recruiters independently.
 - Users can create recruiters inline while creating or editing an application.
 - Existing recruiters can be reused.
+- Recruiter names are not required to be unique (different people can share a name).
+- Recruiters have standalone pages: list, create, edit, and delete.
 
 #### Recruiter Deletion
 
 Recruiters use soft deletion.
 
 Deleted recruiters must retain their historical references and must not appear in normal selection lists.
+
+The same rules as company deletion apply: deleted recruiters remain visible on existing applications and in the edit form of those applications, and can be restored from a "Deleted" view.
 
 ### 3.6 Tags
 
@@ -167,12 +198,19 @@ Examples:
 - Senior
 - Staff
 
+Fields:
+- Name (required, max 50 characters, trimmed).
+- Creation timestamp.
+
 Requirements:
 - Users can create tags.
 - Applications can have multiple tags.
 - Tags can be reused across applications.
 - Tags are isolated between users.
+- Tag names are unique per user, case-insensitive. The original casing entered by the user is preserved for display.
 - Users can filter applications by tag.
+- Tags can be created inline from the application form.
+- Tags have a simple standalone management page: list, rename, and delete. Deleting a tag removes it from all applications (hard delete of the tag and its join rows; applications are unaffected).
 
 ### 3.7 Application Listing
 
@@ -186,6 +224,17 @@ Requirements:
 - Filter by tags.
 - Search by position or company.
 - Sort by creation date and last update.
+
+Behavior:
+- Default sort: most recently created first.
+- Sort direction can be toggled (ascending/descending) for each sort field.
+- Search is case-insensitive and matches partial text in position title or company name.
+- Multiple filters combine with AND (e.g. status AND company AND tag).
+- Filtering by multiple tags uses AND: only applications having all selected tags are shown.
+- Filter and search state is reflected in the URL query string so it survives refresh and can be bookmarked.
+- The list is paginated (25 per page).
+- Applications whose company is soft-deleted still appear in the list and in company filtering.
+- The empty state (no applications, or no matches) has a clear message.
 
 ### 3.8 Application Details
 
@@ -211,9 +260,11 @@ Requirements:
 - Users cannot access another user's companies or recruiters.
 - Users cannot access another user's tags.
 - Users cannot modify or delete another user's records.
-- Associations must validate ownership.
+- Associations must validate ownership (e.g. an application cannot be linked to another user's company, recruiter, or tag, even if the ID is submitted).
 - All queries and mutations must enforce ownership server-side.
 - LiveView events must never trust client-provided record identifiers without authorization checks.
+- Context functions take the current user (or scope) as an explicit argument; there are no unscoped "get by id" functions for user-owned records.
+- Accessing another user's record behaves as "not found" (no information leak about existence).
 
 ## 5. Technical Stack
 
@@ -222,6 +273,8 @@ Requirements:
 - Phoenix Framework
 - Phoenix LiveView
 - Ecto
+
+Use the latest stable versions of Elixir, Phoenix, and LiveView available at project start, and pin them in the repository (`.tool-versions` or equivalent).
 
 ### Database
 - PostgreSQL
@@ -239,8 +292,12 @@ Requirements:
 - Session-based authentication.
 
 ### User Provisioning
-- Custom Mix task for creating users.
+- Custom Mix task for creating users (e.g. `mix job_tracker.create_user EMAIL`), which prompts for or accepts a password and fails clearly on duplicate emails or invalid input.
 - No public registration endpoint.
+
+### Display Conventions
+- Timestamps are stored in UTC.
+- Timestamps are displayed in UTC for the initial version (no per-user timezone setting).
 
 ## 6. Architecture Guidelines
 
@@ -248,14 +305,24 @@ Requirements:
 - Use Phoenix contexts to organize business logic.
 - Keep business logic out of LiveView modules.
 - Use Ecto changesets for validation.
-- Use database constraints where appropriate.
+- Use database constraints where appropriate (foreign keys, unique indexes, not-null).
 - Enforce user ownership at the context/query level.
-- Use transactions for status changes and history creation.
+- Use transactions (`Ecto.Multi`) for status changes and history creation.
 - Preserve historical associations through soft deletion.
 - Keep migrations version-controlled.
 - Prefer straightforward solutions over unnecessary abstractions.
 
-## 7. Out of Scope — Initial Version
+## 7. Testing Requirements
+
+- Every context has tests covering its main operations.
+- Ownership isolation tests are mandatory: for each user-owned resource (applications, companies, recruiters, tags), tests must prove that user B cannot read, list, update, delete, or associate user A's records.
+- Status change tests must verify that the application's status and the history record are created atomically (including rollback on failure).
+- Soft-deletion tests must verify that deleted companies/recruiters are hidden from selection lists but remain attached to existing applications.
+- Listing tests cover each filter, search, sorting, and pagination.
+- Add LiveView tests for the main flows: login, create application (with inline company/recruiter/tag creation), change status with notes, and filter the list.
+- `mix test` must pass before any step is considered complete.
+
+## 8. Out of Scope — Initial Version
 
 - Public user registration.
 - Administrative dashboard.
@@ -268,8 +335,12 @@ Requirements:
 - External recruiter/company synchronization.
 - Mobile applications.
 - Custom user-defined statuses.
+- Login rate limiting.
+- Per-user timezone settings.
+- Editing or deleting individual status history entries.
+- Password reset and email confirmation flows (users are provisioned by the Mix task; remove or disable these generator-provided flows).
 
-## 8. Success Criteria
+## 9. Success Criteria
 
 The MVP is successful when a user can:
 
@@ -285,17 +356,52 @@ The MVP is successful when a user can:
 10. Soft-delete companies and recruiters without breaking historical references.
 11. Be confident that other users cannot access their information.
 
-## 9. Confirmed Product Decisions
+## 10. Confirmed Product Decisions
 
 | Decision | Resolution |
 |---|---|
-| Application statuses | Predefined |
+| Application statuses | Predefined, stored in a seeded `statuses` table |
+| Status transitions | Any status to any other; same-status change rejected |
 | Company creation | Inline and standalone |
 | Recruiter creation | Inline and standalone |
-| Status history | Optional notes |
+| Status history | Optional notes, append-only |
 | Initial status | Interested |
-| Company deletion | Soft delete |
-| Recruiter deletion | Soft delete |
+| Company deletion | Soft delete, restorable |
+| Recruiter deletion | Soft delete, restorable |
+| Application deletion | Hard delete, cascades to history and tag links |
+| Deleted company/recruiter on existing application | Still shown and kept selected when editing |
+| Company name uniqueness | Per user, case-insensitive, among non-deleted |
+| Recruiter name uniqueness | Not unique |
+| Tag name uniqueness | Per user, case-insensitive |
+| Tag filtering | AND across selected tags |
+| Filter combination | AND |
+| Search | Case-insensitive partial match on position and company name |
+| Default sort | Created date, newest first |
+| Pagination | Yes, 25 per page |
+| `updated_at` changes on | Field edits, status changes, tag changes |
+| Timestamps | Stored and displayed in UTC |
 | User provisioning | Custom Mix task |
 | Public registration | Disabled |
 | Admin panel | Not required |
+
+## 11. Implementation Order
+
+Build in the following order. Complete each step (including its tests) and stop for review before starting the next.
+
+1. **Project setup and authentication:** generate the Phoenix project, set up auth, disable public registration, remove password reset/confirmation flows, and implement the user-creation Mix task.
+2. **Schema foundation:** migrations for statuses (with seeded data), companies, recruiters, tags, applications, application-tag join table, and status history.
+3. **Companies, recruiters, tags contexts and pages:** CRUD, soft deletion and restore, uniqueness rules, and ownership tests.
+4. **Applications CRUD:** context, forms with inline creation of companies/recruiters/tags, details page, hard deletion.
+5. **Status changes and history:** atomic status change with optional notes, history timeline on the details page.
+6. **Listing:** filters, search, sorting, pagination, URL-synced state.
+7. **Ownership and hardening pass:** review every context function and LiveView event for authorization, fill any test gaps.
+
+## 12. Guidance for the AI Agent
+
+- Do not add features that are not listed in this document. If something seems missing, ask instead of inventing it.
+- Do not build ahead of the current implementation step.
+- Prefer the simplest solution that satisfies the requirement; avoid extra abstractions, behaviours, or dependencies unless clearly needed.
+- Any new dependency must be justified in a sentence.
+- Keep LiveView modules thin; business logic lives in contexts.
+- Never use an unscoped query for user-owned data.
+- When a requirement is ambiguous, state the assumption you made before implementing it.
