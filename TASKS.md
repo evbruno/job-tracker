@@ -82,15 +82,14 @@
 
 ## Phase 3 — Core Domain
 
-- [ ] Implement Company schema.
-- [ ] Implement Recruiter schema.
-- [ ] Implement JobApplication schema.
+- [ ] Implement JobApplication schema (including plain-text `company_name` and optional `recruiter_name` columns).
 - [ ] Implement ApplicationStatusHistory schema.
 - [ ] Implement Status schema and seed the 13 predefined statuses in a migration.
 - [ ] Implement Tag schema.
 - [ ] Implement ApplicationTag association.
 - [ ] Add database constraints and indexes.
-- [ ] Add uniqueness indexes: company names (case-insensitive, per user, non-deleted only) and tag names (case-insensitive, per user), using `COLLATE NOCASE` (SQLite has no `citext`).
+- [ ] Add uniqueness index for tag names (case-insensitive, per user), using `COLLATE NOCASE` (SQLite has no `citext`).
+- [ ] Add an index on `(user_id, company_name)` for filtering.
 - [ ] Implement Phoenix contexts.
 - [ ] Add domain tests.
 
@@ -101,33 +100,15 @@
 - Invalid records are rejected.
 - Database constraints protect data integrity.
 
-## Phase 4 — Company and Recruiter Management
-
-- [ ] Implement company CRUD.
-- [ ] Implement recruiter CRUD.
-- [ ] Implement company soft deletion.
-- [ ] Implement recruiter soft deletion.
-- [ ] Preserve historical associations.
-- [ ] Show soft-deleted company/recruiter on existing applications and keep it selected in the edit form.
-- [ ] Implement restore of soft-deleted companies and recruiters ("Deleted" view).
-- [ ] Add ownership and deletion tests.
-
-**Acceptance criteria:**
-- Users can manage their companies and recruiters.
-- Companies and recruiters can be reused.
-- Deleted records are retained in the database and can be restored.
-- Existing applications preserve their associations.
-- Deleted entities cannot be selected for new applications.
-
-## Phase 5 — Job Application Management
+## Phase 4 — Job Application Management
 
 - [ ] Implement application listing.
 - [ ] Implement application creation.
 - [ ] Implement application editing.
 - [ ] Implement application details.
 - [ ] Implement application deletion.
-- [ ] Implement inline company creation.
-- [ ] Implement inline recruiter creation.
+- [ ] Implement company and recruiter text fields (trimmed; blank recruiter stored as `NULL`).
+- [ ] Suggest previously used company and recruiter values in the form (`datalist`, current user's values only).
 - [ ] Implement inline tag creation from the application form.
 - [ ] Implement standalone tag management page (list, rename, delete).
 - [ ] Implement application-tag associations.
@@ -135,11 +116,11 @@
 **Acceptance criteria:**
 - Users can create and manage applications.
 - New applications default to Interested.
-- Companies and recruiters can be created inline.
+- Company and recruiter are plain text fields with suggestions from the user's earlier entries.
 - Applications support multiple tags.
 - Application details display associated information.
 
-## Phase 6 — Application Status and History
+## Phase 5 — Application Status and History
 
 - [ ] Wire the seeded statuses (Phase 3) to applications and history.
 - [ ] Set Interested as the default status.
@@ -158,12 +139,12 @@
 - Status and history updates are atomic.
 - Users can review the complete recruitment timeline.
 
-## Phase 7 — Search and Usability
+## Phase 6 — Search and Usability
 
 - [ ] Implement search (use `LIKE` or `lower()`; SQLite has no `ILIKE`).
 - [ ] Implement status filters.
-- [ ] Implement company filters.
-- [ ] Implement recruiter filters.
+- [ ] Implement company filter (dropdown of the user's existing values, case-insensitive match).
+- [ ] Implement recruiter filter (same approach).
 - [ ] Implement tag filters.
 - [ ] Implement sorting (created date and last update, ascending/descending).
 - [ ] Combine filters with AND; multiple selected tags use AND.
@@ -177,10 +158,10 @@
 - Multiple filters can be combined.
 - The application remains usable with many records.
 
-> The MVP is functionally complete after Phase 7.
-> Phase 8 must be completed before release to real users.
+> The MVP is functionally complete after Phase 6.
+> Phase 7 must be completed before release to real users.
 
-## Phase 8 — Production Readiness
+## Phase 7 — Production Readiness
 
 - [ ] Security review.
 - [ ] Tenant isolation review.

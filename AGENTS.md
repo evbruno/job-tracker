@@ -9,8 +9,8 @@ At the start of every session, read `SESSION.md`, then `TASKS.md`, then `PRODUCT
 - `SESSION.md`: handoff from the previous session.
 
 Before implementing a feature, re-read the relevant section of `PRODUCT.md`
-(applications 3.2, statuses 3.3, companies 3.4, recruiters 3.5, tags 3.6,
-listing 3.7, ownership section 4).
+(applications 3.2, statuses 3.3, tags 3.4, listing 3.5, details 3.6,
+ownership section 4).
 
 ## Workflow
 
@@ -22,7 +22,7 @@ listing 3.7, ownership section 4).
 
 - Use `current_scope` to identify the user. Context functions take it as the first argument.
 - No unscoped queries on user-owned data. Never cast `user_id` from params.
-- Validate that submitted association IDs belong to the current user.
+- Validate that submitted tag IDs belong to the current user.
 - Never trust client-provided IDs in `handle_event`; re-fetch through a scoped context function.
 - Every context function that touches user data needs a cross-user test.
 

@@ -41,8 +41,8 @@ Fields:
 - Position/title (required, max 255 characters).
 - Job description (max 20,000 characters).
 - Job posting URL (must be a valid `http`/`https` URL when present).
-- Company reference (required).
-- Optional recruiter reference.
+- Company name (required, plain text, max 255 characters).
+- Recruiter name (optional, plain text, max 255 characters).
 - Current application status.
 - Relevant tags.
 - Creation timestamp.
@@ -58,9 +58,17 @@ Users can:
 
 New applications automatically receive the `Interested` status.
 
+#### Company and Recruiter Fields
+
+Company and recruiter are plain text columns on the application. There are no separate company or recruiter records, pages, or deletion rules.
+
+- Values are trimmed. A blank recruiter is stored as `NULL`.
+- The form suggests values the user has previously entered (for example with an HTML `datalist`), so names can be reused without retyping. Suggestions come only from the current user's own applications.
+- Changing the value on one application does not affect any other application.
+
 #### Application Deletion
 
-Applications are hard-deleted. Deleting an application also deletes its status history and its tag associations (cascade). Companies, recruiters, and tags are never deleted as a side effect. The UI must ask for confirmation before deleting.
+Applications are hard-deleted. Deleting an application also deletes its status history and its tag associations (cascade). Tags are never deleted as a side effect. The UI must ask for confirmation before deleting.
 
 #### Last Updated Semantics
 
@@ -117,70 +125,7 @@ Requirements:
 - History must be displayed chronologically (oldest first).
 - Users can add context to a status change through optional notes.
 
-### 3.4 Companies
-
-Companies represent organizations offering job opportunities.
-
-Fields:
-- Name (required, max 255 characters).
-- Website URL (valid `http`/`https` URL when present).
-- General contact email (valid email format when present).
-- Additional notes (max 5,000 characters).
-- Creation timestamp.
-- Deletion timestamp (nullable).
-
-Requirements:
-- A company can be associated with multiple applications belonging to the same user.
-- Users can create companies independently.
-- Users can also create a company inline while creating or editing an application.
-- Existing companies can be reused.
-- Company names are unique per user, case-insensitive, among non-deleted companies. A user may create a new company with the same name as one of their soft-deleted companies. (Use a partial unique index on the name with `COLLATE NOCASE` where `deleted_at IS NULL`; SQLite supports both.)
-- Companies have standalone pages: list, create, edit, and delete.
-
-#### Company Deletion
-
-Companies use soft deletion.
-
-Deleting a company must not physically remove its database record or historical references.
-
-Deleted companies must not appear in normal selection lists, but existing applications must retain their company association.
-
-Additional rules:
-- When viewing an application whose company is soft-deleted, the company is still displayed (marked as deleted).
-- When editing such an application, the current (deleted) company remains selected and shown in the form. It is not offered as a choice for other applications. The user may switch to a different active company.
-- Deleted companies can be restored from a "Deleted" view on the companies page. Restoring fails with a validation error if an active company with the same name already exists.
-
-### 3.5 Recruiters
-
-Recruiters represent people involved in recruitment.
-
-Fields:
-- Name (required, max 255 characters).
-- Email (valid email format when present).
-- LinkedIn URL (valid `http`/`https` URL when present).
-- Other relevant URL (valid `http`/`https` URL when present).
-- Additional notes (max 5,000 characters).
-- Creation timestamp.
-- Deletion timestamp (nullable).
-
-Requirements:
-- Recruiters can be associated with multiple applications belonging to the same user.
-- Recruiter association is optional.
-- Users can create recruiters independently.
-- Users can create recruiters inline while creating or editing an application.
-- Existing recruiters can be reused.
-- Recruiter names are not required to be unique (different people can share a name).
-- Recruiters have standalone pages: list, create, edit, and delete.
-
-#### Recruiter Deletion
-
-Recruiters use soft deletion.
-
-Deleted recruiters must retain their historical references and must not appear in normal selection lists.
-
-The same rules as company deletion apply: deleted recruiters remain visible on existing applications and in the edit form of those applications, and can be restored from a "Deleted" view.
-
-### 3.6 Tags
+### 3.4 Tags
 
 Tags categorize job applications.
 
@@ -212,7 +157,7 @@ Requirements:
 - Tags can be created inline from the application form.
 - Tags have a simple standalone management page: list, rename, and delete. Deleting a tag removes it from all applications (hard delete of the tag and its join rows; applications are unaffected).
 
-### 3.7 Application Listing
+### 3.5 Application Listing
 
 The main application page provides a centralized view.
 
@@ -233,16 +178,16 @@ Behavior:
 - Filtering by multiple tags uses AND: only applications having all selected tags are shown.
 - Filter and search state is reflected in the URL query string so it survives refresh and can be bookmarked.
 - The list is paginated (25 per page).
-- Applications whose company is soft-deleted still appear in the list and in company filtering.
+- The company and recruiter filters are dropdowns populated with the distinct values from the user's own applications. They match case-insensitively.
 - The empty state (no applications, or no matches) has a clear message.
 
-### 3.8 Application Details
+### 3.6 Application Details
 
 The details page displays:
 - Position and job description.
 - Job posting URL.
-- Company information.
-- Recruiter information.
+- Company name.
+- Recruiter name (if any).
 - Current status.
 - Tags.
 - Complete status history.
@@ -257,10 +202,9 @@ Every user operates within an isolated data scope.
 
 Requirements:
 - Users cannot access another user's applications.
-- Users cannot access another user's companies or recruiters.
 - Users cannot access another user's tags.
 - Users cannot modify or delete another user's records.
-- Associations must validate ownership (e.g. an application cannot be linked to another user's company, recruiter, or tag, even if the ID is submitted).
+- Associations must validate ownership (e.g. an application cannot be linked to another user's tag, even if the ID is submitted).
 - All queries and mutations must enforce ownership server-side.
 - LiveView events must never trust client-provided record identifiers without authorization checks.
 - Context functions take the current user (or scope) as an explicit argument; there are no unscoped "get by id" functions for user-owned records.
@@ -313,18 +257,17 @@ Use the latest stable versions of Elixir, Phoenix, and LiveView available at pro
 - SQLite has limited `ALTER TABLE` support, so get table definitions right before building on them.
 - Enforce user ownership at the context/query level.
 - Use transactions (`Ecto.Multi`) for status changes and history creation.
-- Preserve historical associations through soft deletion.
 - Keep migrations version-controlled.
 - Prefer straightforward solutions over unnecessary abstractions.
 
 ## 7. Testing Requirements
 
 - Every context has tests covering its main operations.
-- Ownership isolation tests are mandatory: for each user-owned resource (applications, companies, recruiters, tags), tests must prove that user B cannot read, list, update, delete, or associate user A's records.
+- Ownership isolation tests are mandatory: for each user-owned resource (applications and tags), tests must prove that user B cannot read, list, update, delete, or associate user A's records.
 - Status change tests must verify that the application's status and the history record are created atomically (including rollback on failure).
-- Soft-deletion tests must verify that deleted companies/recruiters are hidden from selection lists but remain attached to existing applications.
+- Company and recruiter tests must verify that values are trimmed, a blank recruiter is stored as `NULL`, suggestions and filters only use the current user's values, and filters match case-insensitively.
 - Listing tests cover each filter, search, sorting, and pagination.
-- Add LiveView tests for the main flows: login, create application (with inline company/recruiter/tag creation), change status with notes, and filter the list.
+- Add LiveView tests for the main flows: login, create application (with company, recruiter, and inline tag creation), change status with notes, and filter the list.
 - `mix test` must pass before any task is considered complete.
 - If tests fail with "database is locked/busy" errors, run database tests with `async: false`.
 
@@ -341,6 +284,7 @@ Use the latest stable versions of Elixir, Phoenix, and LiveView available at pro
 - External recruiter/company synchronization.
 - Mobile applications.
 - Custom user-defined statuses.
+- Separate company and recruiter records, pages, and soft deletion (they are plain fields on the application).
 - Login rate limiting.
 - Per-user timezone settings.
 - Editing or deleting individual status history entries.
@@ -351,16 +295,13 @@ Use the latest stable versions of Elixir, Phoenix, and LiveView available at pro
 The MVP is successful when a user can:
 
 1. Log in securely.
-2. Create companies and recruiters.
-3. Create job applications.
-4. Associate applications with companies and recruiters.
-5. Create and reuse tags.
-6. Change application statuses.
-7. Add optional notes to status changes.
-8. Review the complete status history.
-9. Search, filter and sort applications.
-10. Soft-delete companies and recruiters without breaking historical references.
-11. Be confident that other users cannot access their information.
+2. Create job applications with a company and an optional recruiter.
+3. Create and reuse tags.
+4. Change application statuses.
+5. Add optional notes to status changes.
+6. Review the complete status history.
+7. Search, filter and sort applications.
+8. Be confident that other users cannot access their information.
 
 ## 10. Confirmed Product Decisions
 
@@ -368,16 +309,11 @@ The MVP is successful when a user can:
 |---|---|
 | Application statuses | Predefined, stored in a seeded `statuses` table |
 | Status transitions | Any status to any other; same-status change rejected |
-| Company creation | Inline and standalone |
-| Recruiter creation | Inline and standalone |
 | Status history | Optional notes, append-only |
 | Initial status | Interested |
-| Company deletion | Soft delete, restorable |
-| Recruiter deletion | Soft delete, restorable |
+| Company and recruiter | Plain text columns on the application; no separate tables |
+| Company/recruiter filters | Dropdown of the user's existing values, case-insensitive |
 | Application deletion | Hard delete, cascades to history and tag links |
-| Deleted company/recruiter on existing application | Still shown and kept selected when editing |
-| Company name uniqueness | Per user, case-insensitive, among non-deleted |
-| Recruiter name uniqueness | Not unique |
 | Tag name uniqueness | Per user, case-insensitive |
 | Tag filtering | AND across selected tags |
 | Filter combination | AND |
