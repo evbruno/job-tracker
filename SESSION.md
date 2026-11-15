@@ -12,7 +12,7 @@ Update it before ending every session.
 - **Next task:** Implement the `JobApplication` schema, including plain-text
   `company_name` and optional `recruiter_name` columns.
 - **Overall status:** Phase 2 complete and verified; ready to start Phase 3.
-- **Last commit:** Phase 2.9: Add ownership authorization tests
+- **Last commit:** Phase 2.3: Remove remaining mailer configuration (follow-up)
 
 ## Last Session Summary
 
@@ -104,7 +104,8 @@ Add one entry per session, newest first, in this format:
   - `518996a` Phase 2.6: Implement mix users.create
   - `69cb10c` Phase 2.7: Add authenticated route protection
   - `2f48670` Phase 2.8: Define tenant isolation conventions
-  - Phase 2.9: Add ownership authorization tests (this commit)
+  - `fa0aa7a` Phase 2.9: Add ownership authorization tests
+  - Phase 2.3: Remove remaining mailer configuration (follow-up cleanup; this commit)
 - **Assumptions:** See the Assumptions Made section above.
 - **Blockers:** None.
 - **Next:** Implement the `JobApplication` schema (Phase 3).
