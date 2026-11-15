@@ -4,9 +4,9 @@
 
 **Current phase:** Phase 1 — Project Foundation
 
-**Overall status:** Not started
+**Overall status:** In progress — task group 1.1 complete
 
-**Current milestone:** Generate and configure the Phoenix application.
+**Current milestone:** Configure the database and application shell.
 
 ---
 
@@ -14,12 +14,12 @@
 
 ### 1.1 Project Initialization
 
-- [ ] Verify Elixir and Erlang/OTP versions.
-- [ ] Verify Phoenix installation and version.
-- [ ] Pin Elixir/Erlang versions (`.tool-versions` or equivalent).
-- [ ] Generate Phoenix application with LiveView and SQLite3 (`--database sqlite3`).
-- [ ] Initialize Git repository.
-- [ ] Create initial README.md.
+- [x] Verify Elixir and Erlang/OTP versions.
+- [x] Verify Phoenix installation and version.
+- [x] Pin Elixir/Erlang versions (`.tool-versions` or equivalent).
+- [x] Generate Phoenix application with LiveView and SQLite3 (`--database sqlite3`).
+- [x] Initialize Git repository.
+- [x] Create initial README.md.
 
 ### 1.2 Database
 
