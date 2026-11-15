@@ -95,7 +95,7 @@
 
 ## Phase 3 — Core Domain
 
-- [ ] Implement JobApplication schema (including plain-text `company_name` and optional `recruiter_name` columns).
+- [x] Implement JobApplication schema (including plain-text `company_name` and optional `recruiter_name` columns).
 - [ ] Implement ApplicationStatusHistory schema.
 - [ ] Implement Status schema and seed the 13 predefined statuses in a migration.
 - [ ] Implement Tag schema.
