@@ -12,15 +12,17 @@ defmodule TrackMyJobEx.JobApplications.ApplicationStatusHistory do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias TrackMyJobEx.JobApplications.Status
+
   @max_notes 2_000
 
   schema "application_status_histories" do
-    field :previous_status_id, :id
-    field :new_status_id, :id
     field :changed_at, :utc_datetime
     field :notes, :string
 
     belongs_to :application, TrackMyJobEx.JobApplications.JobApplication
+    belongs_to :previous_status, Status
+    belongs_to :new_status, Status
   end
 
   @doc """

@@ -10,6 +10,8 @@ defmodule TrackMyJobEx.JobApplications.JobApplication do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias TrackMyJobEx.JobApplications.Status
+
   @max_position 255
   @max_company_name 255
   @max_recruiter_name 255
@@ -22,8 +24,7 @@ defmodule TrackMyJobEx.JobApplications.JobApplication do
     field :company_name, :string
     field :recruiter_name, :string
 
-    field :status_id, :id
-
+    belongs_to :status, Status
     belongs_to :user, TrackMyJobEx.Accounts.User
 
     has_many :status_histories, TrackMyJobEx.JobApplications.ApplicationStatusHistory,

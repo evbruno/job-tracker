@@ -97,7 +97,7 @@
 
 - [x] Implement JobApplication schema (including plain-text `company_name` and optional `recruiter_name` columns).
 - [x] Implement ApplicationStatusHistory schema.
-- [ ] Implement Status schema and seed the 13 predefined statuses in a migration.
+- [x] Implement Status schema and seed the 13 predefined statuses in a migration.
 - [ ] Implement Tag schema.
 - [ ] Implement ApplicationTag association.
 - [ ] Add database constraints and indexes.
