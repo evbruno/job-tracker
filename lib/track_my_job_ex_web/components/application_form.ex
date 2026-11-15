@@ -29,15 +29,23 @@ defmodule TrackMyJobExWeb.ApplicationForm do
         field={@form[:company_name]}
         type="text"
         label="Company"
+        placeholder="e.g. Acme Corp"
         maxlength="255"
         required
       />
+      <p class="text-xs text-base-content/60">
+        Plain text. Leading and trailing spaces are trimmed.
+      </p>
       <.input
         field={@form[:recruiter_name]}
         type="text"
         label="Recruiter (optional)"
+        placeholder="e.g. Jane Recruiter"
         maxlength="255"
       />
+      <p class="text-xs text-base-content/60">
+        Optional. Leave blank to store no recruiter.
+      </p>
       <.input
         field={@form[:job_posting_url]}
         type="url"

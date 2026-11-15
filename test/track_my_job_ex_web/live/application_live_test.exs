@@ -427,4 +427,89 @@ defmodule TrackMyJobExWeb.ApplicationLiveTest do
       assert has_element?(view, "#flash-error", "Application not found.")
     end
   end
+
+  describe "company and recruiter fields" do
+    test "trims values submitted through the creation form", %{conn: conn} do
+      user = user_fixture()
+      scope = Scope.for_user(user)
+
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/applications/new")
+
+      view
+      |> form("#application-form", %{
+        "job_application" => %{
+          "position" => "  Senior Engineer  ",
+          "company_name" => "  Acme Corp  ",
+          "recruiter_name" => "  Jane Recruiter  "
+        }
+      })
+      |> render_submit()
+
+      application = JobApplications.list_applications(scope) |> List.first()
+      assert application.position == "Senior Engineer"
+      assert application.company_name == "Acme Corp"
+      assert application.recruiter_name == "Jane Recruiter"
+    end
+
+    test "stores a blank recruiter as NULL through the creation form", %{conn: conn} do
+      user = user_fixture()
+      scope = Scope.for_user(user)
+
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/applications/new")
+
+      view
+      |> form("#application-form", %{
+        "job_application" => %{
+          "position" => "Engineer",
+          "company_name" => "Acme Corp",
+          "recruiter_name" => "   "
+        }
+      })
+      |> render_submit()
+
+      assert JobApplications.list_applications(scope)
+             |> List.first()
+             |> Map.fetch!(:recruiter_name) == nil
+    end
+
+    test "trims values and clears a blank recruiter through the edit form", %{conn: conn} do
+      user = user_fixture()
+      scope = Scope.for_user(user)
+      application = application_fixture(scope, %{recruiter_name: "Original Recruiter"})
+
+      {:ok, view, _html} =
+        conn |> log_in_user(user) |> live(~p"/applications/#{application.id}/edit")
+
+      view
+      |> form("#application-form", %{
+        "job_application" => %{
+          "position" => "  Updated Position  ",
+          "company_name" => "  Updated Co  ",
+          "recruiter_name" => "   "
+        }
+      })
+      |> render_submit()
+
+      updated = JobApplications.get_application(scope, application.id)
+      assert updated.position == "Updated Position"
+      assert updated.company_name == "Updated Co"
+      assert updated.recruiter_name == nil
+    end
+
+    test "renders company and recruiter as plain text inputs with limits", %{conn: conn} do
+      user = user_fixture()
+
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/applications/new")
+
+      assert has_element?(
+               view,
+               "input#job_application_company_name[type='text'][maxlength='255']"
+             )
+
+      assert has_element?(
+               view,
+               "input#job_application_recruiter_name[type='text'][maxlength='255']"
+             )
+    end
+  end
 end
