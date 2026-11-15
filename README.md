@@ -48,11 +48,39 @@ seeds them, and installs/builds the esbuild and Tailwind assets.
 mix phx.server
 ```
 
-Then open <http://localhost:4000>. To run inside IEx:
+Then open <http://localhost:4000>. Anonymous visitors are redirected to the
+login page. To run inside IEx:
 
 ```sh
 iex -S mix phx.server
 ```
+
+## User accounts
+
+Public registration is disabled. Users are provisioned by an administrator with
+the custom Mix task:
+
+```sh
+mix users.create alice@example.com
+```
+
+The task prompts for a password twice using hidden input where supported. For
+non-interactive environments, pass the password explicitly:
+
+```sh
+mix users.create alice@example.com --password "a long password"
+```
+
+Passwords must satisfy the application changeset rules (at least 12 characters,
+at most 72 bytes). Email addresses are unique case-insensitively, so creating
+`ALICE@example.com` after `alice@example.com` fails. The task exits with a
+non-zero status and a clear message for duplicate emails, invalid emails, short
+passwords, or invalid arguments.
+
+Log in at <http://localhost:4000/users/log-in>. Sessions use the standard
+Phoenix session token lifetime. Log out from the navigation bar. Password reset,
+email confirmation, magic-link login, and public registration are intentionally
+unavailable in this version.
 
 Development and test SQLite databases are created in the project root
 (`track_my_job_ex_dev.db` and `track_my_job_ex_test.db`) and are gitignored.
@@ -86,8 +114,8 @@ complete only when this command passes.
 Project-specific Mix tasks live in `lib/mix/tasks/` and are namespaced by
 domain (for example `mix users.create`). Tasks validate their arguments, print
 clear errors on invalid or duplicate input, and are covered by tests where the
-behaviour is non-trivial. User provisioning is introduced in Phase 2 and will be
-documented here when it lands.
+behaviour is non-trivial. `mix users.create` is the only supported way to
+provision users because public registration is disabled.
 
 ## Project layout
 

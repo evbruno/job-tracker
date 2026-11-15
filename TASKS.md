@@ -2,11 +2,11 @@
 
 ## Current Project Status
 
-**Current phase:** Phase 2 — Authentication and User Isolation
+**Current phase:** Phase 3 — Core Domain
 
-**Overall status:** Phase 1 complete — Phase 2 in progress
+**Overall status:** Phase 2 complete — ready for Phase 3
 
-**Current milestone:** Tenant isolation conventions documented; next add ownership authorization tests.
+**Current milestone:** Phase 2 verified; next implement the JobApplication schema.
 
 ---
 
@@ -70,7 +70,7 @@
 - [x] Implement `mix users.create`.
 - [x] Add authenticated route protection.
 - [x] Define tenant isolation conventions.
-- [ ] Add ownership authorization tests.
+- [x] Add ownership authorization tests.
 
 **Acceptance criteria:**
 - Users can authenticate with email and password.
@@ -79,6 +79,19 @@
 - Password reset and email confirmation flows are unavailable.
 - Unauthenticated users cannot access protected pages.
 - Users cannot access or modify another user's records.
+
+**Phase 2 completion notes:**
+- Authentication is password-only via `bcrypt_elixir`. The generated
+  registration, password reset, email confirmation, magic-link, and account
+  settings flows were removed together with their routes, modules, tests, and
+  mailer plumbing.
+- `mix users.create EMAIL [--password PASSWORD]` is the only provisioning path.
+  Email uniqueness is case-insensitive through `COLLATE NOCASE` in SQLite.
+- Session tokens expire after 14 days using the generator's standard policy.
+- Isolation tests cover independent sessions, scope conventions, login/logout,
+  and protected routes. Record-level isolation tests for applications, tags,
+  status history, and tag associations are deferred to Phase 3 because those
+  resources do not exist yet.
 
 ## Phase 3 — Core Domain
 

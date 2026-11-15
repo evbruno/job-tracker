@@ -17,7 +17,7 @@ config :track_my_job_ex, :scopes,
     schema_type: :id,
     schema_table: :users,
     test_data_fixture: TrackMyJobEx.AccountsFixtures,
-    test_setup_helper: :register_and_log_in_user
+    test_setup_helper: :log_in_user_fixture
   ]
 
 config :track_my_job_ex,

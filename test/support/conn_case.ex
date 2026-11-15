@@ -41,15 +41,15 @@ defmodule TrackMyJobExWeb.ConnCase do
   end
 
   @doc """
-  Setup helper that registers and logs in users.
+  Setup helper that provisions and logs in a user.
 
-      setup :register_and_log_in_user
+      setup :log_in_user_fixture
 
-  It stores an updated connection and a registered user in the
-  test context.
+  Pass `:user` in the context to use an existing user. It stores an updated
+  connection and the user in the test context.
   """
-  def register_and_log_in_user(%{conn: conn} = context) do
-    user = AccountsFixtures.user_fixture()
+  def log_in_user_fixture(%{conn: conn} = context) do
+    user = Map.get(context, :user) || AccountsFixtures.user_fixture()
     scope = Scope.for_user(user)
 
     opts =
