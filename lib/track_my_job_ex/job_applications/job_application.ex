@@ -26,6 +26,9 @@ defmodule TrackMyJobEx.JobApplications.JobApplication do
 
     belongs_to :user, TrackMyJobEx.Accounts.User
 
+    has_many :status_histories, TrackMyJobEx.JobApplications.ApplicationStatusHistory,
+      foreign_key: :application_id
+
     timestamps(type: :utc_datetime)
   end
 
