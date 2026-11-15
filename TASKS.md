@@ -2,11 +2,11 @@
 
 ## Current Project Status
 
-**Current phase:** Phase 1 — Project Foundation
+**Current phase:** Phase 2 — Authentication and User Isolation
 
-**Overall status:** In progress — task group 1.4 complete
+**Overall status:** Phase 1 complete — Phase 2 not started
 
-**Current milestone:** Run final Phase 1 verification.
+**Current milestone:** Phase 1 verified; ready to begin authentication.
 
 ---
 
@@ -50,13 +50,13 @@
 
 ### 1.5 Verification
 
-- [ ] Application starts locally.
-- [ ] Database connection works.
-- [ ] Home page renders.
-- [ ] LiveView interactions work.
-- [ ] Tests execute successfully.
-- [ ] Formatting checks pass.
-- [ ] Initial Git commit created.
+- [x] Application starts locally.
+- [x] Database connection works.
+- [x] Home page renders.
+- [x] LiveView interactions work.
+- [x] Tests execute successfully.
+- [x] Formatting checks pass.
+- [x] Initial Git commit created.
 
 ---
 
