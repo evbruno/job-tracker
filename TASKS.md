@@ -2,11 +2,11 @@
 
 ## Current Project Status
 
-**Current phase:** Phase 3 — Core Domain
+**Current phase:** Phase 4 — Job Application Management
 
-**Overall status:** Phase 2 complete — ready for Phase 3
+**Overall status:** Phase 3 complete — ready for Phase 4
 
-**Current milestone:** Phase 2 verified; next implement the JobApplication schema.
+**Current milestone:** Phase 3 verified; next implement application listing.
 
 ---
 
@@ -104,7 +104,7 @@
 - [x] Add uniqueness index for tag names (case-insensitive, per user), using `COLLATE NOCASE` (SQLite has no `citext`).
 - [x] Add an index on `(user_id, company_name)` for filtering.
 - [x] Implement Phoenix contexts.
-- [ ] Add domain tests.
+- [x] Add domain tests.
 
 **Acceptance criteria:**
 - All entities can be created and retrieved.
@@ -112,6 +112,20 @@
 - Ownership is enforced.
 - Invalid records are rejected.
 - Database constraints protect data integrity.
+
+**Phase 3 completion notes:**
+- Schemas: `JobApplications.JobApplication`, `JobApplications.Status`,
+  `JobApplications.ApplicationStatusHistory`, `JobApplications.ApplicationTag`,
+  and `Tags.Tag`.
+- Contexts: `TrackMyJobEx.JobApplications` (applications, global status reads,
+  history reads, tag associations) and `TrackMyJobEx.Tags`.
+- Statuses are seeded by migration and shared globally. Applications default to
+  `Interested`; status transitions and history creation remain for Phase 5.
+- Database cascades: application deletion removes history and tag links; tag
+  deletion removes tag links only.
+- Domain tests cover validation, trimming, defaults, ordering, association
+  linking/unlinking with `updated_at` touches, cascades, case-insensitive tag
+  uniqueness, and cross-user isolation for applications and tags.
 
 ## Phase 4 — Job Application Management
 

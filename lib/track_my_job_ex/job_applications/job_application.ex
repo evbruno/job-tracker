@@ -36,6 +36,7 @@ defmodule TrackMyJobEx.JobApplications.JobApplication do
 
     many_to_many :tags, Tag,
       join_through: TrackMyJobEx.JobApplications.ApplicationTag,
+      join_keys: [application_id: :id, tag_id: :id],
       on_replace: :delete
 
     timestamps(type: :utc_datetime)
