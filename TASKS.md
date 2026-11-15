@@ -129,7 +129,7 @@
 
 ## Phase 4 — Job Application Management
 
-- [ ] Implement application listing.
+- [x] Implement application listing.
 - [ ] Implement application creation.
 - [ ] Implement application editing.
 - [ ] Implement application details.

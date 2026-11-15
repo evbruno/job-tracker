@@ -53,13 +53,13 @@ defmodule TrackMyJobExWeb.Layouts do
                   </.link>
                 </li>
                 <li>
-                  <span
-                    class="btn btn-ghost btn-sm cursor-default opacity-50"
-                    aria-disabled="true"
-                    title="Available in a later phase"
+                  <.link
+                    navigate={~p"/applications"}
+                    id="nav-applications"
+                    class="btn btn-ghost btn-sm"
                   >
                     Applications
-                  </span>
+                  </.link>
                 </li>
                 <li>
                   <span

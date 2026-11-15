@@ -1,0 +1,50 @@
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <.header>
+    Applications
+    <:subtitle>Track the opportunities you are pursuing.</:subtitle>
+  </.header>
+
+  <div id="applications" phx-update="stream" class="flex flex-col gap-3">
+    <.link
+      :for={{dom_id, application} <- @streams.applications}
+      id={dom_id}
+      navigate={~p"/applications/#{application.id}"}
+      class="card border border-base-300 bg-base-100 shadow-sm transition hover:border-primary"
+    >
+      <div class="card-body flex-row items-start justify-between gap-4">
+        <div class="space-y-1">
+          <h2 class="card-title text-base" id={"#{dom_id}-position"}>{application.position}</h2>
+          <p class="text-sm text-base-content/70" id={"#{dom_id}-company"}>
+            {application.company_name}
+          </p>
+        </div>
+        <div class="flex flex-col items-end gap-2 text-right">
+          <span class="badge badge-primary badge-outline" id={"#{dom_id}-status"}>
+            {application.status.name}
+          </span>
+          <time
+            datetime={DateTime.to_iso8601(application.inserted_at)}
+            class="text-xs text-base-content/60"
+            id={"#{dom_id}-created-at"}
+          >
+            {Formatters.format_utc_datetime(application.inserted_at)}
+          </time>
+        </div>
+      </div>
+    </.link>
+  </div>
+
+  <div
+    :if={@applications_empty?}
+    id="applications-empty"
+    class="card border border-dashed border-base-300 bg-base-100"
+  >
+    <div class="card-body items-center text-center">
+      <.icon name="hero-briefcase" class="size-10 text-base-content/40" />
+      <h2 class="card-title">No applications yet</h2>
+      <p class="text-sm text-base-content/70">
+        Applications you create will be listed here, newest first.
+      </p>
+    </div>
+  </div>
+</Layouts.app>

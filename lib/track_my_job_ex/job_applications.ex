@@ -66,7 +66,8 @@ defmodule TrackMyJobEx.JobApplications do
   def list_applications(%Scope{} = scope) do
     from(application in JobApplication,
       where: application.user_id == ^scope.user.id,
-      order_by: [desc: application.inserted_at, desc: application.id]
+      order_by: [desc: application.inserted_at, desc: application.id],
+      preload: [:status]
     )
     |> Repo.all()
   end

@@ -1,0 +1,22 @@
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <.header>
+    {@application.position}
+    <:subtitle>{@application.company_name}</:subtitle>
+    <:actions>
+      <.link navigate={~p"/applications"} class="btn btn-ghost btn-sm">
+        Back to applications
+      </.link>
+    </:actions>
+  </.header>
+
+  <section id="application-details" class="card border border-base-300 bg-base-100 shadow-sm">
+    <div class="card-body">
+      <p class="text-sm text-base-content/70">
+        Status:
+        <span class="badge badge-primary badge-outline" id="application-status">
+          {@application.status.name}
+        </span>
+      </p>
+    </div>
+  </section>
+</Layouts.app>

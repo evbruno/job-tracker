@@ -59,6 +59,8 @@ defmodule TrackMyJobExWeb.Router do
     live_session :require_authenticated_user,
       on_mount: [{TrackMyJobExWeb.UserAuth, :require_authenticated}] do
       live "/", DashboardLive
+      live "/applications", ApplicationLive.Index, :index
+      live "/applications/:id", ApplicationLive.Show, :show
     end
 
     delete "/users/log-out", UserSessionController, :delete
