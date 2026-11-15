@@ -6,7 +6,7 @@
 
 **Overall status:** Phase 1 complete — Phase 2 in progress
 
-**Current milestone:** Authenticated route protection complete; next document isolation conventions.
+**Current milestone:** Tenant isolation conventions documented; next add ownership authorization tests.
 
 ---
 
@@ -69,7 +69,7 @@
 - [x] Implement login and logout.
 - [x] Implement `mix users.create`.
 - [x] Add authenticated route protection.
-- [ ] Define tenant isolation conventions.
+- [x] Define tenant isolation conventions.
 - [ ] Add ownership authorization tests.
 
 **Acceptance criteria:**

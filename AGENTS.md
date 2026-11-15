@@ -20,11 +20,30 @@ ownership section 4).
 
 ## Multi-tenancy (never skip)
 
-- Use `current_scope` to identify the user. Context functions take it as the first argument.
-- No unscoped queries on user-owned data. Never cast `user_id` from params.
-- Validate that submitted tag IDs belong to the current user.
-- Never trust client-provided IDs in `handle_event`; re-fetch through a scoped context function.
-- Every context function that touches user data needs a cross-user test.
+- Use `current_scope` to identify the user. Every context function that reads or
+  writes user-owned data (applications, tags, status history, and their join
+  rows) takes `%TrackMyJobEx.Accounts.Scope{}` as its first argument.
+- Derive the owner from `current_scope.user.id`. Never accept or cast a
+  client-provided `user_id`; never accept a bare user id as the ownership
+  argument.
+- No unscoped queries on user-owned data. Do not add an unscoped
+  `get_<resource>!/1` or `get_<resource>_by_id/1` for a user-owned record.
+  Scope every query by the owner, and return "not found" for another user's IDs.
+- The only global user lookups are authentication lookups in
+  `TrackMyJobEx.Accounts` (`get_user_by_email/1`,
+  `get_user_by_email_and_password/2`, and session-token lookup). They identify
+  the tenant; they must not be reused for domain-data ownership checks.
+- Validate that submitted association IDs (for example tag IDs) belong to the
+  current user before linking them.
+- Never trust client-provided IDs in `handle_event`; re-fetch through a scoped
+  context function.
+- Every context function that touches user data needs a cross-user test, and
+  every user-owned schema needs isolation tests for read, list, update, delete,
+  and association attempts.
+- Reuse the test helpers in `TrackMyJobExWeb.ConnCase` (`log_in_user/3`,
+  `log_in_user_fixture/1`) and `TrackMyJobEx.AccountsFixtures` so isolation
+  tests create two independently authenticated users. Tests that create two
+  users must use separate connections or sessions.
 
 ## Database (SQLite3)
 
