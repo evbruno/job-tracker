@@ -103,7 +103,7 @@
 - [x] Add database constraints and indexes.
 - [x] Add uniqueness index for tag names (case-insensitive, per user), using `COLLATE NOCASE` (SQLite has no `citext`).
 - [x] Add an index on `(user_id, company_name)` for filtering.
-- [ ] Implement Phoenix contexts.
+- [x] Implement Phoenix contexts.
 - [ ] Add domain tests.
 
 **Acceptance criteria:**

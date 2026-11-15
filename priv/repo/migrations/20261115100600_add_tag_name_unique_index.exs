@@ -6,9 +6,7 @@ defmodule TrackMyJobEx.Repo.Migrations.AddTagNameUniqueIndex do
   # `unique_constraint(:name, name: :tags_user_id_name_index)` can match the
   # constraint reported by the SQLite adapter.
   def up do
-    execute(
-      "CREATE UNIQUE INDEX tags_user_id_name_index ON tags (user_id, name COLLATE NOCASE)"
-    )
+    execute("CREATE UNIQUE INDEX tags_user_id_name_index ON tags (user_id, name COLLATE NOCASE)")
   end
 
   def down do
