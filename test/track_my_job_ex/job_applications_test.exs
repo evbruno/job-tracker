@@ -425,4 +425,45 @@ defmodule TrackMyJobEx.JobApplicationsTest do
   defp reload(application) do
     Repo.get!(JobApplication, application.id)
   end
+
+  describe "company and recruiter suggestions" do
+    test "uses only the scope's values, de-duplicates case-insensitively, and sorts", %{
+      scope: scope
+    } do
+      JobApplicationsFixtures.application_fixture(scope, %{
+        company_name: "Acme Corp",
+        recruiter_name: "Zoe Recruiter"
+      })
+
+      JobApplicationsFixtures.application_fixture(scope, %{
+        company_name: "acme corp",
+        recruiter_name: "amy recruiter"
+      })
+
+      JobApplicationsFixtures.application_fixture(scope, %{
+        company_name: "Beta Inc",
+        recruiter_name: "   "
+      })
+
+      other_scope = AccountsFixtures.user_scope_fixture()
+
+      JobApplicationsFixtures.application_fixture(other_scope, %{
+        company_name: "Other Co",
+        recruiter_name: "Other Recruiter"
+      })
+
+      companies = JobApplications.list_company_suggestions(scope)
+      recruiters = JobApplications.list_recruiter_suggestions(scope)
+
+      assert Enum.map(companies, &String.downcase/1) == ["acme corp", "beta inc"]
+      assert Enum.map(recruiters, &String.downcase/1) == ["amy recruiter", "zoe recruiter"]
+      refute "Other Co" in companies
+      refute "Other Recruiter" in recruiters
+    end
+
+    test "returns an empty list when the scope has no applications", %{scope: scope} do
+      assert JobApplications.list_company_suggestions(scope) == []
+      assert JobApplications.list_recruiter_suggestions(scope) == []
+    end
+  end
 end

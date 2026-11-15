@@ -8,6 +8,8 @@ defmodule TrackMyJobExWeb.ApplicationForm do
   attr :form, :any, required: true
   attr :submit_label, :string, default: "Save application"
   attr :cancel_path, :string, required: true
+  attr :company_suggestions, :list, default: []
+  attr :recruiter_suggestions, :list, default: []
 
   def application_form(assigns) do
     ~H"""
@@ -31,6 +33,7 @@ defmodule TrackMyJobExWeb.ApplicationForm do
         label="Company"
         placeholder="e.g. Acme Corp"
         maxlength="255"
+        list="company-suggestions"
         required
       />
       <p class="text-xs text-base-content/60">
@@ -42,6 +45,7 @@ defmodule TrackMyJobExWeb.ApplicationForm do
         label="Recruiter (optional)"
         placeholder="e.g. Jane Recruiter"
         maxlength="255"
+        list="recruiter-suggestions"
       />
       <p class="text-xs text-base-content/60">
         Optional. Leave blank to store no recruiter.
@@ -58,6 +62,13 @@ defmodule TrackMyJobExWeb.ApplicationForm do
         label="Job description (optional)"
         rows="6"
       />
+
+      <datalist id="company-suggestions">
+        <option :for={company <- @company_suggestions} value={company} />
+      </datalist>
+      <datalist id="recruiter-suggestions">
+        <option :for={recruiter <- @recruiter_suggestions} value={recruiter} />
+      </datalist>
 
       <div class="flex flex-wrap gap-2">
         <button type="submit" id="application-form-submit" class="btn btn-primary">

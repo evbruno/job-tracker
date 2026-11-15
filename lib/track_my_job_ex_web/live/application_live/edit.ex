@@ -26,11 +26,15 @@ defmodule TrackMyJobExWeb.ApplicationLive.Edit do
           |> JobApplications.change_application(application)
           |> to_form()
 
+        scope = socket.assigns.current_scope
+
         {:ok,
          socket
          |> assign(:page_title, "Edit application")
          |> assign(:application, application)
-         |> assign(:form, form)}
+         |> assign(:form, form)
+         |> assign(:company_suggestions, JobApplications.list_company_suggestions(scope))
+         |> assign(:recruiter_suggestions, JobApplications.list_recruiter_suggestions(scope))}
     end
   end
 

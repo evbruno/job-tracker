@@ -512,4 +512,65 @@ defmodule TrackMyJobExWeb.ApplicationLiveTest do
              )
     end
   end
+
+  describe "company and recruiter suggestions" do
+    test "populates datalists from the current user's values only", %{conn: conn} do
+      user = user_fixture()
+      scope = Scope.for_user(user)
+
+      application_fixture(scope, %{
+        company_name: "Acme Corp",
+        recruiter_name: "Zoe Recruiter"
+      })
+
+      application_fixture(scope, %{
+        company_name: "acme corp",
+        recruiter_name: "amy recruiter"
+      })
+
+      application_fixture(scope, %{company_name: "Beta Inc", recruiter_name: "   "})
+
+      other_user = user_fixture()
+
+      application_fixture(Scope.for_user(other_user), %{
+        company_name: "Other Co",
+        recruiter_name: "Other Recruiter"
+      })
+
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/applications/new")
+
+      assert has_element?(view, "#job_application_company_name[list='company-suggestions']")
+      assert has_element?(view, "#job_application_recruiter_name[list='recruiter-suggestions']")
+
+      document = LazyHTML.from_fragment(render(view))
+
+      assert document
+             |> LazyHTML.query("#company-suggestions option")
+             |> LazyHTML.attribute("value") == ["Acme Corp", "Beta Inc"]
+
+      assert document
+             |> LazyHTML.query("#recruiter-suggestions option")
+             |> LazyHTML.attribute("value") == ["amy recruiter", "Zoe Recruiter"]
+
+      refute has_element?(view, "#company-suggestions option[value='Other Co']")
+      refute has_element?(view, "#recruiter-suggestions option[value='Other Recruiter']")
+    end
+
+    test "also populates the suggestions on the edit form", %{conn: conn} do
+      user = user_fixture()
+      scope = Scope.for_user(user)
+      application = application_fixture(scope)
+
+      application_fixture(scope, %{
+        company_name: "Suggested Co",
+        recruiter_name: "Suggested Recruiter"
+      })
+
+      {:ok, view, _html} =
+        conn |> log_in_user(user) |> live(~p"/applications/#{application.id}/edit")
+
+      assert has_element?(view, "#company-suggestions option[value='Suggested Co']")
+      assert has_element?(view, "#recruiter-suggestions option[value='Suggested Recruiter']")
+    end
+  end
 end

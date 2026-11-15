@@ -10,12 +10,15 @@ defmodule TrackMyJobExWeb.ApplicationLive.New do
 
   @impl true
   def mount(_params, _session, socket) do
-    form = JobApplications.new_application_changeset(socket.assigns.current_scope)
+    scope = socket.assigns.current_scope
+    form = JobApplications.new_application_changeset(scope)
 
     {:ok,
      socket
      |> assign(:page_title, "New application")
-     |> assign(:form, to_form(form))}
+     |> assign(:form, to_form(form))
+     |> assign(:company_suggestions, JobApplications.list_company_suggestions(scope))
+     |> assign(:recruiter_suggestions, JobApplications.list_recruiter_suggestions(scope))}
   end
 
   @impl true

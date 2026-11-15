@@ -135,7 +135,7 @@
 - [x] Implement application details.
 - [x] Implement application deletion.
 - [x] Implement company and recruiter text fields (trimmed; blank recruiter stored as `NULL`).
-- [ ] Suggest previously used company and recruiter values in the form (`datalist`, current user's values only).
+- [x] Suggest previously used company and recruiter values in the form (`datalist`, current user's values only).
 - [ ] Implement inline tag creation from the application form.
 - [ ] Implement standalone tag management page (list, rename, delete).
 - [ ] Implement application-tag associations.

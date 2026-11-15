@@ -58,6 +58,28 @@ defmodule TrackMyJobEx.JobApplications do
     end
   end
 
+  ## Suggestions
+
+  @doc """
+  Lists the distinct company names from the scope's own applications.
+
+  Comparison is case-insensitive while the first entered casing is preserved.
+  Results are sorted case-insensitively.
+  """
+  def list_company_suggestions(%Scope{} = scope) do
+    list_suggestions(scope, :company_name)
+  end
+
+  @doc """
+  Lists the distinct recruiter names from the scope's own applications.
+
+  Comparison is case-insensitive while the first entered casing is preserved.
+  Results are sorted case-insensitively.
+  """
+  def list_recruiter_suggestions(%Scope{} = scope) do
+    list_suggestions(scope, :recruiter_name)
+  end
+
   ## Applications
 
   @doc """
@@ -270,6 +292,18 @@ defmodule TrackMyJobEx.JobApplications do
     |> Repo.update_all(set: [updated_at: now])
 
     :ok
+  end
+
+  defp list_suggestions(%Scope{} = scope, field) do
+    from(application in JobApplication,
+      where:
+        application.user_id == ^scope.user.id and
+          not is_nil(field(application, ^field)),
+      select: field(application, ^field)
+    )
+    |> Repo.all()
+    |> Enum.uniq_by(&String.downcase/1)
+    |> Enum.sort_by(&{String.downcase(&1), &1})
   end
 
   defp cast_id(id), do: Ecto.Type.cast(:id, id)
