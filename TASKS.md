@@ -6,7 +6,7 @@
 
 **Overall status:** Phase 1 complete — Phase 2 in progress
 
-**Current milestone:** Login/logout UI and navigation complete; next add `mix users.create`.
+**Current milestone:** User provisioning task implemented; next protect authenticated routes.
 
 ---
 
@@ -67,7 +67,7 @@
 - [x] Remove password reset and email confirmation flows.
 - [x] Add a test proving no public registration route exists.
 - [x] Implement login and logout.
-- [ ] Implement `mix users.create`.
+- [x] Implement `mix users.create`.
 - [ ] Add authenticated route protection.
 - [ ] Define tenant isolation conventions.
 - [ ] Add ownership authorization tests.
