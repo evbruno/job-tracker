@@ -17,12 +17,6 @@ defmodule TrackMyJobExWeb.Router do
     plug :accepts, ["json"]
   end
 
-  scope "/", TrackMyJobExWeb do
-    pipe_through :browser
-
-    live "/", DashboardLive
-  end
-
   # Other scopes may use custom stacks.
   # scope "/api", TrackMyJobExWeb do
   #   pipe_through :api
@@ -61,6 +55,11 @@ defmodule TrackMyJobExWeb.Router do
 
   scope "/", TrackMyJobExWeb do
     pipe_through [:browser, :require_authenticated_user]
+
+    live_session :require_authenticated_user,
+      on_mount: [{TrackMyJobExWeb.UserAuth, :require_authenticated}] do
+      live "/", DashboardLive
+    end
 
     delete "/users/log-out", UserSessionController, :delete
   end

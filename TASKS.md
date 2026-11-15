@@ -6,7 +6,7 @@
 
 **Overall status:** Phase 1 complete — Phase 2 in progress
 
-**Current milestone:** User provisioning task implemented; next protect authenticated routes.
+**Current milestone:** Authenticated route protection complete; next document isolation conventions.
 
 ---
 
@@ -68,7 +68,7 @@
 - [x] Add a test proving no public registration route exists.
 - [x] Implement login and logout.
 - [x] Implement `mix users.create`.
-- [ ] Add authenticated route protection.
+- [x] Add authenticated route protection.
 - [ ] Define tenant isolation conventions.
 - [ ] Add ownership authorization tests.
 
