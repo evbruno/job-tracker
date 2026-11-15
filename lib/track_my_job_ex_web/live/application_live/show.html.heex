@@ -3,6 +3,13 @@
     {@application.position}
     <:subtitle>{@application.company_name}</:subtitle>
     <:actions>
+      <.link
+        navigate={~p"/applications/#{@application.id}/edit"}
+        id="edit-application"
+        class="btn btn-primary btn-sm"
+      >
+        Edit application
+      </.link>
       <.link navigate={~p"/applications"} class="btn btn-ghost btn-sm">
         Back to applications
       </.link>

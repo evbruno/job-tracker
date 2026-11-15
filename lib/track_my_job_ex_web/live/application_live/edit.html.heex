@@ -1,0 +1,21 @@
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <.header>
+    Edit application
+    <:subtitle>{@application.position} at {@application.company_name}</:subtitle>
+    <:actions>
+      <.link navigate={~p"/applications/#{@application.id}"} class="btn btn-ghost btn-sm">
+        Back to details
+      </.link>
+    </:actions>
+  </.header>
+
+  <section class="card border border-base-300 bg-base-100 shadow-sm">
+    <div class="card-body">
+      <ApplicationForm.application_form
+        form={@form}
+        submit_label="Save changes"
+        cancel_path={~p"/applications/#{@application.id}"}
+      />
+    </div>
+  </section>
+</Layouts.app>

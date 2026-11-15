@@ -126,6 +126,15 @@ defmodule TrackMyJobEx.JobApplications do
   end
 
   @doc """
+  Builds a changeset for editing an application owned by the scope.
+  """
+  def change_application(%Scope{} = scope, application_or_id, attrs \\ %{}) do
+    scope
+    |> fetch_application!(application_or_id)
+    |> JobApplication.changeset(attrs)
+  end
+
+  @doc """
   Updates an application owned by the scope.
 
   Accepts a `%JobApplication{}` or an id; either way the record is re-fetched

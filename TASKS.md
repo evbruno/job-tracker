@@ -131,7 +131,7 @@
 
 - [x] Implement application listing.
 - [x] Implement application creation.
-- [ ] Implement application editing.
+- [x] Implement application editing.
 - [ ] Implement application details.
 - [ ] Implement application deletion.
 - [ ] Implement company and recruiter text fields (trimmed; blank recruiter stored as `NULL`).
