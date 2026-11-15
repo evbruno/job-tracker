@@ -4,9 +4,9 @@
 
 **Current phase:** Phase 1 — Project Foundation
 
-**Overall status:** In progress — task group 1.3 complete
+**Overall status:** In progress — task group 1.4 complete
 
-**Current milestone:** Configure development standards and run final verification.
+**Current milestone:** Run final Phase 1 verification.
 
 ---
 
@@ -41,12 +41,12 @@
 
 ### 1.4 Development Standards
 
-- [ ] Establish project coding conventions.
-- [ ] Create AGENTS.md (point to PRODUCT.md, TASKS.md, SESSION.md and the development rules).
-- [ ] Configure formatting.
-- [ ] Configure Credo.
-- [ ] Configure automated tests.
-- [ ] Document local development setup.
+- [x] Establish project coding conventions.
+- [x] Create AGENTS.md (point to PRODUCT.md, TASKS.md, SESSION.md and the development rules).
+- [x] Configure formatting.
+- [x] Configure Credo.
+- [x] Configure automated tests.
+- [x] Document local development setup.
 
 ### 1.5 Verification
 

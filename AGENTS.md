@@ -34,6 +34,27 @@ ownership section 4).
 - SQLite has limited `ALTER TABLE` support. Get table definitions right before building on them.
 - If tests fail with "database is locked/busy" errors, run database tests with `async: false`.
 
+## Coding conventions
+
+- Follow Phoenix conventions: contexts own business logic, LiveViews stay thin, and
+  Ecto changesets perform validation. Do not put persistence logic in LiveViews.
+- Context functions that touch user-owned data take `current_scope` as their first
+  argument and scope every query by the user. Never expose an unscoped
+  `get_*_by_id` for user-owned records.
+- Keep SQLite constraints in mind: no `ILIKE`, `citext`, arrays, or `jsonb`; use
+  `COLLATE NOCASE` for case-insensitive uniqueness and `LIKE`/`lower()` for search.
+  Prefer database constraints (not-null, foreign keys, unique indexes) over
+  application-only checks.
+- Use `Ecto.Multi` or `Repo.transaction/1` when one operation must update multiple
+  tables atomically (status changes and history records). Keep transactions short.
+- Add tests for every context operation and a cross-user isolation test for every
+  user-owned resource. Run tests with `async: false` when SQLite write contention
+  causes lock errors.
+- Before committing, run `mix precommit` (compile with warnings as errors, unused
+  dependency check, formatting, `mix credo --strict`, and the test suite). Commit
+  one verified task group at a time using `Phase N.M: <description>`. Never push,
+  amend, or rewrite history; fix problems in a new commit.
+
 ---
 
 This is a web application written using the Phoenix web framework.
