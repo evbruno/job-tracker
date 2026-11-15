@@ -22,12 +22,6 @@ config :track_my_job_ex, TrackMyJobExWeb.Endpoint,
   secret_key_base: "2KPEJEY/7ttmkM+XMGwgCylc+KBSXllek2UGcwuDJW1zpZ2+DwTAnPCxepgMFidi",
   server: false
 
-# In test we don't send emails
-config :track_my_job_ex, TrackMyJobEx.Mailer, adapter: Swoosh.Adapters.Test
-
-# Disable swoosh api client as it is only required for production adapters
-config :swoosh, :api_client, false
-
 # Print only warnings and errors during test
 config :logger, level: :warning
 

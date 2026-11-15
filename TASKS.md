@@ -6,7 +6,7 @@
 
 **Overall status:** Phase 1 complete — Phase 2 in progress
 
-**Current milestone:** Public registration disabled; removing reset/confirmation flows next.
+**Current milestone:** Password-only authentication; next add regression tests for removed routes.
 
 ---
 
@@ -64,7 +64,7 @@
 
 - [x] Implement authentication.
 - [x] Disable public registration.
-- [ ] Remove password reset and email confirmation flows.
+- [x] Remove password reset and email confirmation flows.
 - [ ] Add a test proving no public registration route exists.
 - [ ] Implement login and logout.
 - [ ] Implement `mix users.create`.
