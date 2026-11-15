@@ -11,6 +11,7 @@ defmodule TrackMyJobEx.JobApplications.JobApplication do
   import Ecto.Changeset
 
   alias TrackMyJobEx.JobApplications.Status
+  alias TrackMyJobEx.Tags.Tag
 
   @max_position 255
   @max_company_name 255
@@ -29,6 +30,13 @@ defmodule TrackMyJobEx.JobApplications.JobApplication do
 
     has_many :status_histories, TrackMyJobEx.JobApplications.ApplicationStatusHistory,
       foreign_key: :application_id
+
+    has_many :application_tags, TrackMyJobEx.JobApplications.ApplicationTag,
+      foreign_key: :application_id
+
+    many_to_many :tags, Tag,
+      join_through: TrackMyJobEx.JobApplications.ApplicationTag,
+      on_replace: :delete
 
     timestamps(type: :utc_datetime)
   end

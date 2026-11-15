@@ -99,7 +99,7 @@
 - [x] Implement ApplicationStatusHistory schema.
 - [x] Implement Status schema and seed the 13 predefined statuses in a migration.
 - [x] Implement Tag schema.
-- [ ] Implement ApplicationTag association.
+- [x] Implement ApplicationTag association.
 - [ ] Add database constraints and indexes.
 - [ ] Add uniqueness index for tag names (case-insensitive, per user), using `COLLATE NOCASE` (SQLite has no `citext`).
 - [ ] Add an index on `(user_id, company_name)` for filtering.
