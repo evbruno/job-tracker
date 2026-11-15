@@ -17,13 +17,114 @@
   </.header>
 
   <section id="application-details" class="card border border-base-300 bg-base-100 shadow-sm">
-    <div class="card-body">
-      <p class="text-sm text-base-content/70">
-        Status:
-        <span class="badge badge-primary badge-outline" id="application-status">
-          {@application.status.name}
-        </span>
+    <div class="card-body gap-6">
+      <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <dt class="text-xs uppercase tracking-wide text-base-content/60">Company</dt>
+          <dd id="application-company">{@application.company_name}</dd>
+        </div>
+        <div :if={@application.recruiter_name}>
+          <dt class="text-xs uppercase tracking-wide text-base-content/60">Recruiter</dt>
+          <dd id="application-recruiter">{@application.recruiter_name}</dd>
+        </div>
+        <div>
+          <dt class="text-xs uppercase tracking-wide text-base-content/60">Status</dt>
+          <dd>
+            <span class="badge badge-primary badge-outline" id="application-status">
+              {@application.status.name}
+            </span>
+          </dd>
+        </div>
+        <div>
+          <dt class="text-xs uppercase tracking-wide text-base-content/60">Created</dt>
+          <dd id="application-created-at">
+            {Formatters.format_utc_datetime(@application.inserted_at)}
+          </dd>
+        </div>
+        <div>
+          <dt class="text-xs uppercase tracking-wide text-base-content/60">Last updated</dt>
+          <dd id="application-updated-at">
+            {Formatters.format_utc_datetime(@application.updated_at)}
+          </dd>
+        </div>
+      </dl>
+
+      <div>
+        <h2 class="mb-2 text-sm font-semibold">Job posting</h2>
+        <%= if url = Formatters.safe_http_url(@application.job_posting_url) do %>
+          <a
+            id="application-job-posting-url"
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="link link-primary break-all"
+          >
+            {url}
+          </a>
+        <% else %>
+          <p id="application-job-posting-url-empty" class="text-sm text-base-content/60">
+            No job posting URL provided.
+          </p>
+        <% end %>
+      </div>
+
+      <div>
+        <h2 class="mb-2 text-sm font-semibold">Description</h2>
+        <p
+          :if={@application.description}
+          id="application-description"
+          class="whitespace-pre-line text-sm"
+        >
+          {@application.description}
+        </p>
+        <p
+          :if={is_nil(@application.description)}
+          id="application-description-empty"
+          class="text-sm text-base-content/60"
+        >
+          No description provided.
+        </p>
+      </div>
+
+      <div>
+        <h2 class="mb-2 text-sm font-semibold">Tags</h2>
+        <div id="application-tags" phx-update="stream" class="flex flex-wrap gap-2">
+          <span
+            :for={{dom_id, tag} <- @streams.tags}
+            id={dom_id}
+            class="badge badge-outline"
+          >
+            {tag.name}
+          </span>
+        </div>
+        <p :if={@tags_empty?} id="application-tags-empty" class="text-sm text-base-content/60">
+          No tags.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section id="application-history" class="card mt-6 border border-base-300 bg-base-100 shadow-sm">
+    <div class="card-body gap-3">
+      <h2 class="card-title text-base">Status history</h2>
+      <p :if={@history_empty?} id="application-history-empty" class="text-sm text-base-content/60">
+        No status history yet.
       </p>
+      <ol :if={!@history_empty?} class="space-y-2">
+        <li
+          :for={{dom_id, entry} <- @streams.history}
+          id={dom_id}
+          class="rounded-lg border border-base-300 p-3"
+        >
+          <p class="text-sm font-medium" id={"#{dom_id}-status"}>
+            {entry.new_status.name}
+          </p>
+          <p class="text-xs text-base-content/60" id={"#{dom_id}-changed-at"}>
+            {Formatters.format_utc_datetime(entry.changed_at)}
+          </p>
+          <p :if={entry.notes} class="mt-1 text-sm">{entry.notes}</p>
+        </li>
+      </ol>
     </div>
   </section>
 </Layouts.app>

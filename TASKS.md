@@ -132,7 +132,7 @@
 - [x] Implement application listing.
 - [x] Implement application creation.
 - [x] Implement application editing.
-- [ ] Implement application details.
+- [x] Implement application details.
 - [ ] Implement application deletion.
 - [ ] Implement company and recruiter text fields (trimmed; blank recruiter stored as `NULL`).
 - [ ] Suggest previously used company and recruiter values in the form (`datalist`, current user's values only).

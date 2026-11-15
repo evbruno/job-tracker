@@ -1,12 +1,16 @@
 defmodule TrackMyJobExWeb.ApplicationLiveTest do
   use TrackMyJobExWeb.ConnCase
 
+  import Ecto.Query
   import Phoenix.LiveViewTest
   import TrackMyJobEx.AccountsFixtures
   import TrackMyJobEx.JobApplicationsFixtures
+  import TrackMyJobEx.TagsFixtures
 
   alias TrackMyJobEx.Accounts.Scope
   alias TrackMyJobEx.JobApplications
+  alias TrackMyJobEx.JobApplications.JobApplication
+  alias TrackMyJobEx.Repo
 
   describe "index" do
     test "lists only the current user's applications, newest first", %{conn: conn} do
@@ -268,6 +272,97 @@ defmodule TrackMyJobExWeb.ApplicationLiveTest do
     test "redirects anonymous visitors to the login page", %{conn: conn} do
       assert {:error, {:redirect, %{to: "/users/log-in"}}} =
                live(conn, ~p"/applications/1/edit")
+    end
+  end
+
+  describe "details" do
+    test "displays the application fields, tags, timestamps, and empty history", %{conn: conn} do
+      user = user_fixture()
+      scope = Scope.for_user(user)
+
+      application =
+        application_fixture(scope, %{
+          position: "Senior Engineer",
+          description: "Build and maintain the platform.",
+          job_posting_url: "https://example.com/jobs/1",
+          company_name: "Acme Corp",
+          recruiter_name: "Jane Recruiter"
+        })
+
+      tag = tag_fixture(scope, %{name: "Elixir"})
+      {:ok, _application_tag} = JobApplications.add_tag_to_application(scope, application, tag)
+
+      {:ok, view, _html} =
+        conn |> log_in_user(user) |> live(~p"/applications/#{application.id}")
+
+      assert has_element?(view, "#application-details")
+      assert has_element?(view, "#application-company", "Acme Corp")
+      assert has_element?(view, "#application-recruiter", "Jane Recruiter")
+      assert has_element?(view, "#application-status", "Interested")
+      assert has_element?(view, "#application-description", "Build and maintain the platform.")
+
+      assert has_element?(
+               view,
+               "#application-job-posting-url[href='https://example.com/jobs/1'][target='_blank'][rel='noopener noreferrer']"
+             )
+
+      assert has_element?(view, "#tags-#{tag.id}", "Elixir")
+      assert has_element?(view, "#application-created-at")
+      assert has_element?(view, "#application-updated-at")
+      assert has_element?(view, "#application-history-empty")
+    end
+
+    test "hides optional fields and shows fallbacks when absent", %{conn: conn} do
+      user = user_fixture()
+
+      application =
+        application_fixture(Scope.for_user(user), %{
+          recruiter_name: "",
+          description: "",
+          job_posting_url: ""
+        })
+
+      {:ok, view, _html} =
+        conn |> log_in_user(user) |> live(~p"/applications/#{application.id}")
+
+      refute has_element?(view, "#application-recruiter")
+      assert has_element?(view, "#application-description-empty")
+      assert has_element?(view, "#application-job-posting-url-empty")
+      assert has_element?(view, "#application-tags-empty")
+    end
+
+    test "renders the status history when present", %{conn: conn} do
+      user = user_fixture()
+      scope = Scope.for_user(user)
+      application = application_fixture(scope)
+
+      history =
+        status_history_fixture(application, %{
+          changed_at: ~U[2026-11-14 12:00:00Z],
+          notes: "Recruiter reached out"
+        })
+
+      {:ok, view, _html} =
+        conn |> log_in_user(user) |> live(~p"/applications/#{application.id}")
+
+      refute has_element?(view, "#application-history-empty")
+      assert has_element?(view, "#history-#{history.id}")
+      assert has_element?(view, "#history-#{history.id}-status", "Interested")
+      assert has_element?(view, "#history-#{history.id}-changed-at", "2026-11-14 12:00 UTC")
+    end
+
+    test "renders an unsafe stored URL as plain text instead of a link", %{conn: conn} do
+      user = user_fixture()
+      application = application_fixture(Scope.for_user(user))
+
+      from(a in JobApplication, where: a.id == ^application.id)
+      |> Repo.update_all(set: [job_posting_url: "javascript:alert(1)"])
+
+      {:ok, view, _html} =
+        conn |> log_in_user(user) |> live(~p"/applications/#{application.id}")
+
+      refute has_element?(view, "#application-job-posting-url")
+      assert has_element?(view, "#application-job-posting-url-empty")
     end
   end
 end
