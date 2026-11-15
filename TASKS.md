@@ -4,9 +4,9 @@
 
 **Current phase:** Phase 2 — Authentication and User Isolation
 
-**Overall status:** Phase 1 complete — Phase 2 not started
+**Overall status:** Phase 1 complete — Phase 2 in progress
 
-**Current milestone:** Phase 1 verified; ready to begin authentication.
+**Current milestone:** Phase 2.1 authentication implemented; trimming generated flows next.
 
 ---
 
@@ -62,7 +62,7 @@
 
 ## Phase 2 — Authentication and User Isolation
 
-- [ ] Implement authentication.
+- [x] Implement authentication.
 - [ ] Disable public registration.
 - [ ] Remove password reset and email confirmation flows.
 - [ ] Add a test proving no public registration route exists.
