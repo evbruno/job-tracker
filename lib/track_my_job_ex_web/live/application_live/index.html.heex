@@ -2,6 +2,11 @@
   <.header>
     Applications
     <:subtitle>Track the opportunities you are pursuing.</:subtitle>
+    <:actions>
+      <.link navigate={~p"/applications/new"} id="new-application" class="btn btn-primary btn-sm">
+        New application
+      </.link>
+    </:actions>
   </.header>
 
   <div id="applications" phx-update="stream" class="flex flex-col gap-3">
@@ -45,6 +50,9 @@
       <p class="text-sm text-base-content/70">
         Applications you create will be listed here, newest first.
       </p>
+      <.link navigate={~p"/applications/new"} class="btn btn-primary btn-sm">
+        Create your first application
+      </.link>
     </div>
   </div>
 </Layouts.app>

@@ -1,0 +1,21 @@
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <.header>
+    New application
+    <:subtitle>Record a new opportunity. New applications start as Interested.</:subtitle>
+    <:actions>
+      <.link navigate={~p"/applications"} class="btn btn-ghost btn-sm">
+        Back to applications
+      </.link>
+    </:actions>
+  </.header>
+
+  <section class="card border border-base-300 bg-base-100 shadow-sm">
+    <div class="card-body">
+      <ApplicationForm.application_form
+        form={@form}
+        submit_label="Create application"
+        cancel_path={~p"/applications"}
+      />
+    </div>
+  </section>
+</Layouts.app>

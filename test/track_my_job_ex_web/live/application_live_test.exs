@@ -6,6 +6,7 @@ defmodule TrackMyJobExWeb.ApplicationLiveTest do
   import TrackMyJobEx.JobApplicationsFixtures
 
   alias TrackMyJobEx.Accounts.Scope
+  alias TrackMyJobEx.JobApplications
 
   describe "index" do
     test "lists only the current user's applications, newest first", %{conn: conn} do
@@ -100,6 +101,90 @@ defmodule TrackMyJobExWeb.ApplicationLiveTest do
                conn |> log_in_user(user) |> live(~p"/applications/#{application.id}")
 
       assert flash["error"] == "Application not found."
+    end
+  end
+
+  describe "new" do
+    test "renders the creation form", %{conn: conn} do
+      user = user_fixture()
+
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/applications/new")
+
+      assert has_element?(view, "#application-form")
+      assert has_element?(view, "#job_application_position")
+      assert has_element?(view, "#job_application_company_name")
+      assert has_element?(view, "#job_application_recruiter_name")
+      assert has_element?(view, "#job_application_job_posting_url")
+      assert has_element?(view, "#job_application_description")
+      assert has_element?(view, "#application-form-submit")
+    end
+
+    test "creates an application with the default Interested status", %{conn: conn} do
+      user = user_fixture()
+
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/applications/new")
+
+      params = %{
+        "job_application" => %{
+          "position" => "Senior Engineer",
+          "description" => "Build the platform.",
+          "job_posting_url" => "https://example.com/jobs/1",
+          "company_name" => "Acme Corp",
+          "recruiter_name" => "Jane Recruiter"
+        }
+      }
+
+      view |> form("#application-form", params) |> render_submit()
+
+      {path, flash} = assert_redirect(view)
+      assert flash["info"] == "Application created successfully."
+
+      application = JobApplications.list_applications(Scope.for_user(user)) |> List.first()
+      assert path == ~p"/applications/#{application.id}"
+      assert application.position == "Senior Engineer"
+      assert application.company_name == "Acme Corp"
+      assert application.recruiter_name == "Jane Recruiter"
+      assert application.status.slug == "interested"
+      assert application.user_id == user.id
+    end
+
+    test "renders validation errors inline", %{conn: conn} do
+      user = user_fixture()
+
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/applications/new")
+
+      html =
+        view
+        |> form("#application-form", %{
+          "job_application" => %{"position" => "", "company_name" => ""}
+        })
+        |> render_submit()
+
+      assert html =~ "can&#39;t be blank"
+      assert has_element?(view, "#application-form")
+    end
+
+    test "rejects invalid job posting URLs", %{conn: conn} do
+      user = user_fixture()
+
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/applications/new")
+
+      html =
+        view
+        |> form("#application-form", %{
+          "job_application" => %{
+            "position" => "Engineer",
+            "company_name" => "Acme",
+            "job_posting_url" => "ftp://example.com"
+          }
+        })
+        |> render_submit()
+
+      assert html =~ "must be a valid http or https URL"
+    end
+
+    test "redirects anonymous visitors to the login page", %{conn: conn} do
+      assert {:error, {:redirect, %{to: "/users/log-in"}}} = live(conn, ~p"/applications/new")
     end
   end
 end

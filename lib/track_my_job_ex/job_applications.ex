@@ -103,14 +103,25 @@ defmodule TrackMyJobEx.JobApplications do
   end
 
   @doc """
+  Builds a changeset for a new application owned by the scope.
+
+  `user_id` and the default `Interested` status are assigned here and never
+  accepted from the caller's attributes.
+  """
+  def new_application_changeset(%Scope{} = scope, attrs \\ %{}) when is_map(attrs) do
+    %JobApplication{user_id: scope.user.id, status_id: default_status().id}
+    |> JobApplication.changeset(attrs)
+  end
+
+  @doc """
   Creates an application for the scope with the default `Interested` status.
 
   `user_id` and `status_id` are derived here and never accepted from the
   caller's attributes.
   """
   def create_application(%Scope{} = scope, attrs) when is_map(attrs) do
-    %JobApplication{user_id: scope.user.id, status_id: default_status().id}
-    |> JobApplication.changeset(attrs)
+    scope
+    |> new_application_changeset(attrs)
     |> Repo.insert()
   end
 

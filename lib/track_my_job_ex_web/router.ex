@@ -60,6 +60,7 @@ defmodule TrackMyJobExWeb.Router do
       on_mount: [{TrackMyJobExWeb.UserAuth, :require_authenticated}] do
       live "/", DashboardLive
       live "/applications", ApplicationLive.Index, :index
+      live "/applications/new", ApplicationLive.New, :new
       live "/applications/:id", ApplicationLive.Show, :show
     end
 
