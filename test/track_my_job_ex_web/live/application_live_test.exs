@@ -52,7 +52,7 @@ defmodule TrackMyJobExWeb.ApplicationLiveTest do
       document = LazyHTML.from_fragment(render(view))
 
       assert document
-             |> LazyHTML.query("#applications a")
+             |> LazyHTML.query("#applications > div")
              |> LazyHTML.attribute("id") == [
                "applications-#{newer.id}",
                "applications-#{older.id}"
@@ -67,7 +67,7 @@ defmodule TrackMyJobExWeb.ApplicationLiveTest do
 
       assert has_element?(
                view,
-               "a#applications-#{application.id}[href='/applications/#{application.id}']"
+               "#applications-#{application.id} a[href='/applications/#{application.id}']"
              )
     end
 
@@ -363,6 +363,68 @@ defmodule TrackMyJobExWeb.ApplicationLiveTest do
 
       refute has_element?(view, "#application-job-posting-url")
       assert has_element?(view, "#application-job-posting-url-empty")
+    end
+  end
+
+  describe "delete" do
+    test "deletes from the index after confirmation and refreshes the list", %{conn: conn} do
+      user = user_fixture()
+      scope = Scope.for_user(user)
+      application = application_fixture(scope)
+      kept = application_fixture(scope, %{position: "Kept"})
+
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/applications")
+
+      assert has_element?(view, "#delete-application-#{application.id}[data-confirm]")
+
+      view |> element("#delete-application-#{application.id}") |> render_click()
+
+      assert JobApplications.get_application(scope, application.id) == nil
+      refute has_element?(view, "#applications-#{application.id}")
+      assert has_element?(view, "#applications-#{kept.id}")
+      assert has_element?(view, "#flash-info", "Application deleted.")
+    end
+
+    test "shows the empty state after deleting the last application", %{conn: conn} do
+      user = user_fixture()
+      application = application_fixture(Scope.for_user(user))
+
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/applications")
+
+      view |> element("#delete-application-#{application.id}") |> render_click()
+
+      assert has_element?(view, "#applications-empty")
+    end
+
+    test "deletes from the details page and redirects to the list", %{conn: conn} do
+      user = user_fixture()
+      scope = Scope.for_user(user)
+      application = application_fixture(scope)
+
+      {:ok, view, _html} =
+        conn |> log_in_user(user) |> live(~p"/applications/#{application.id}")
+
+      assert has_element?(view, "#delete-application[data-confirm]")
+
+      view |> element("#delete-application") |> render_click()
+
+      {path, flash} = assert_redirect(view)
+      assert path == "/applications"
+      assert flash["info"] == "Application deleted."
+      assert JobApplications.get_application(scope, application.id) == nil
+    end
+
+    test "does not delete another user's application by id", %{conn: conn} do
+      user = user_fixture()
+      other_user = user_fixture()
+      other_application = application_fixture(Scope.for_user(other_user))
+
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/applications")
+
+      view |> render_click("delete", %{"id" => other_application.id})
+
+      assert JobApplications.get_application(Scope.for_user(other_user), other_application.id)
+      assert has_element?(view, "#flash-error", "Application not found.")
     end
   end
 end

@@ -33,4 +33,25 @@ defmodule TrackMyJobExWeb.ApplicationLive.Show do
          |> stream(:history, history)}
     end
   end
+
+  @impl true
+  def handle_event("delete", _params, socket) do
+    scope = socket.assigns.current_scope
+
+    case JobApplications.get_application(scope, socket.assigns.application.id) do
+      nil ->
+        {:noreply,
+         socket
+         |> put_flash(:error, "Application not found.")
+         |> push_navigate(to: ~p"/applications")}
+
+      application ->
+        {:ok, _deleted} = JobApplications.delete_application(scope, application)
+
+        {:noreply,
+         socket
+         |> put_flash(:info, "Application deleted.")
+         |> push_navigate(to: ~p"/applications")}
+    end
+  end
 end

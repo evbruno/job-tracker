@@ -10,33 +10,55 @@
   </.header>
 
   <div id="applications" phx-update="stream" class="flex flex-col gap-3">
-    <.link
+    <div
       :for={{dom_id, application} <- @streams.applications}
       id={dom_id}
-      navigate={~p"/applications/#{application.id}"}
-      class="card border border-base-300 bg-base-100 shadow-sm transition hover:border-primary"
+      class="card border border-base-300 bg-base-100 shadow-sm"
     >
-      <div class="card-body flex-row items-start justify-between gap-4">
-        <div class="space-y-1">
-          <h2 class="card-title text-base" id={"#{dom_id}-position"}>{application.position}</h2>
-          <p class="text-sm text-base-content/70" id={"#{dom_id}-company"}>
-            {application.company_name}
-          </p>
-        </div>
-        <div class="flex flex-col items-end gap-2 text-right">
-          <span class="badge badge-primary badge-outline" id={"#{dom_id}-status"}>
-            {application.status.name}
-          </span>
-          <time
-            datetime={DateTime.to_iso8601(application.inserted_at)}
-            class="text-xs text-base-content/60"
-            id={"#{dom_id}-created-at"}
+      <div class="flex items-start justify-between gap-4">
+        <.link
+          id={"#{dom_id}-link"}
+          navigate={~p"/applications/#{application.id}"}
+          class="card-body flex-1"
+        >
+          <div class="flex flex-row items-start justify-between gap-4">
+            <div class="space-y-1">
+              <h2 class="card-title text-base" id={"#{dom_id}-position"}>
+                {application.position}
+              </h2>
+              <p class="text-sm text-base-content/70" id={"#{dom_id}-company"}>
+                {application.company_name}
+              </p>
+            </div>
+            <div class="flex flex-col items-end gap-2 text-right">
+              <span class="badge badge-primary badge-outline" id={"#{dom_id}-status"}>
+                {application.status.name}
+              </span>
+              <time
+                datetime={DateTime.to_iso8601(application.inserted_at)}
+                class="text-xs text-base-content/60"
+                id={"#{dom_id}-created-at"}
+              >
+                {Formatters.format_utc_datetime(application.inserted_at)}
+              </time>
+            </div>
+          </div>
+        </.link>
+
+        <div class="p-4">
+          <button
+            type="button"
+            id={"delete-application-#{application.id}"}
+            phx-click="delete"
+            phx-value-id={application.id}
+            data-confirm="Delete this application? Its status history and tag links will also be removed."
+            class="btn btn-error btn-outline btn-sm"
           >
-            {Formatters.format_utc_datetime(application.inserted_at)}
-          </time>
+            Delete
+          </button>
         </div>
       </div>
-    </.link>
+    </div>
   </div>
 
   <div

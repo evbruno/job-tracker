@@ -13,6 +13,15 @@
       <.link navigate={~p"/applications"} class="btn btn-ghost btn-sm">
         Back to applications
       </.link>
+      <button
+        type="button"
+        id="delete-application"
+        phx-click="delete"
+        data-confirm="Delete this application? Its status history and tag links will also be removed."
+        class="btn btn-error btn-outline btn-sm"
+      >
+        Delete
+      </button>
     </:actions>
   </.header>
 
