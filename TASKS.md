@@ -4,9 +4,9 @@
 
 **Current phase:** Phase 1 — Project Foundation
 
-**Overall status:** In progress — task group 1.2 complete
+**Overall status:** In progress — task group 1.3 complete
 
-**Current milestone:** Build the application shell and dashboard.
+**Current milestone:** Configure development standards and run final verification.
 
 ---
 
@@ -33,11 +33,11 @@
 
 ### 1.3 Frontend and Layout
 
-- [ ] Verify LiveView setup.
-- [ ] Configure Tailwind CSS.
-- [ ] Establish application layout.
-- [ ] Create basic navigation.
-- [ ] Create initial dashboard placeholder.
+- [x] Verify LiveView setup.
+- [x] Configure Tailwind CSS.
+- [x] Establish application layout.
+- [x] Create basic navigation.
+- [x] Create initial dashboard placeholder.
 
 ### 1.4 Development Standards
 

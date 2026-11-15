@@ -35,40 +35,60 @@ defmodule TrackMyJobExWeb.Layouts do
 
   def app(assigns) do
     ~H"""
-    <header class="navbar px-4 sm:px-6 lg:px-8">
-      <div class="flex-1">
-        <a href="/" class="flex-1 flex w-fit items-center gap-2">
-          <img src={~p"/images/logo.svg"} width="36" />
-          <span class="text-sm font-semibold">v{Application.spec(:phoenix, :vsn)}</span>
-        </a>
-      </div>
-      <div class="flex-none">
-        <ul class="flex px-1 space-x-4 items-center">
-          <li>
-            <a href="https://phoenixframework.org/" class="btn btn-ghost">Website</a>
-          </li>
-          <li>
-            <a href="https://github.com/phoenixframework/phoenix" class="btn btn-ghost">GitHub</a>
-          </li>
-          <li>
-            <.theme_toggle />
-          </li>
-          <li>
-            <a href="https://phoenix.hexdocs.pm/overview.html" class="btn btn-primary">
-              Get Started <span aria-hidden="true">&rarr;</span>
-            </a>
-          </li>
-        </ul>
-      </div>
-    </header>
+    <div class="flex min-h-screen flex-col bg-base-200">
+      <header class="border-b border-base-300 bg-base-100">
+        <div class="navbar mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div class="flex-1">
+            <.link navigate={~p"/"} class="flex items-center gap-2 text-base font-semibold">
+              <.icon name="hero-briefcase" class="size-6 text-primary" />
+              <span>Job Tracker</span>
+            </.link>
+          </div>
+          <nav class="flex-none" aria-label="Main navigation">
+            <ul class="flex items-center gap-1">
+              <li>
+                <.link navigate={~p"/"} class="btn btn-ghost btn-sm" aria-current="page">
+                  Dashboard
+                </.link>
+              </li>
+              <li>
+                <span
+                  class="btn btn-ghost btn-sm cursor-default opacity-50"
+                  aria-disabled="true"
+                  title="Available in a later phase"
+                >
+                  Applications
+                </span>
+              </li>
+              <li>
+                <span
+                  class="btn btn-ghost btn-sm cursor-default opacity-50"
+                  aria-disabled="true"
+                  title="Available in a later phase"
+                >
+                  Tags
+                </span>
+              </li>
+              <li class="ml-2">
+                <.theme_toggle />
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </header>
 
-    <main class="px-4 py-20 sm:px-6 lg:px-8">
-      <div class="mx-auto max-w-2xl space-y-4">
+      <main class="mx-auto w-full max-w-6xl flex-1 px-4 py-10 sm:px-6 lg:px-8">
         {render_slot(@inner_block)}
-      </div>
-    </main>
+      </main>
 
-    <.flash_group flash={@flash} />
+      <footer class="border-t border-base-300 bg-base-100">
+        <div class="mx-auto w-full max-w-6xl px-4 py-4 text-xs text-base-content/60 sm:px-6 lg:px-8">
+          Job Tracker
+        </div>
+      </footer>
+
+      <.flash_group flash={@flash} />
+    </div>
     """
   end
 
