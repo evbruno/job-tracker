@@ -573,4 +573,90 @@ defmodule TrackMyJobExWeb.ApplicationLiveTest do
       assert has_element?(view, "#recruiter-suggestions option[value='Suggested Recruiter']")
     end
   end
+
+  describe "inline tags" do
+    test "renders existing tag selection and inline tag inputs", %{conn: conn} do
+      user = user_fixture()
+
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/applications/new")
+
+      assert has_element?(view, "#application-tag-ids[multiple]")
+      assert has_element?(view, "#application-new-tags")
+    end
+
+    test "creates an application with selected and inline tags", %{conn: conn} do
+      user = user_fixture()
+      scope = Scope.for_user(user)
+      tag = tag_fixture(scope, %{name: "Elixir"})
+
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/applications/new")
+
+      params = %{
+        "job_application" => %{
+          "position" => "Senior Engineer",
+          "company_name" => "Acme Corp"
+        },
+        "tag_ids" => [to_string(tag.id)],
+        "new_tags" => "Remote, Startup"
+      }
+
+      view |> render_submit("save", params)
+      {path, _flash} = assert_redirect(view)
+
+      application = JobApplications.list_applications(scope) |> List.first()
+      assert path == ~p"/applications/#{application.id}"
+
+      assert JobApplications.list_application_tags(scope, application) |> Enum.map(& &1.name) == [
+               "Elixir",
+               "Remote",
+               "Startup"
+             ]
+
+      {:ok, show, _html} =
+        build_conn() |> log_in_user(user) |> live(~p"/applications/#{application.id}")
+
+      assert has_element?(show, "#tags-#{tag.id}", "Elixir")
+    end
+
+    test "reuses an existing tag for an inline name case-insensitively", %{conn: conn} do
+      user = user_fixture()
+      scope = Scope.for_user(user)
+      existing = tag_fixture(scope, %{name: "Elixir"})
+
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/applications/new")
+
+      view
+      |> render_submit("save", %{
+        "job_application" => %{"position" => "Engineer", "company_name" => "Acme"},
+        "tag_ids" => [],
+        "new_tags" => "elixir"
+      })
+
+      application = JobApplications.list_applications(scope) |> List.first()
+      tags = JobApplications.list_application_tags(scope, application)
+      assert Enum.map(tags, & &1.id) == [existing.id]
+      assert Enum.map(tags, & &1.name) == ["Elixir"]
+    end
+
+    test "rejects another user's tag id and leaves no application behind", %{conn: conn} do
+      user = user_fixture()
+      scope = Scope.for_user(user)
+      other_scope = Scope.for_user(user_fixture())
+      other_tag = tag_fixture(other_scope)
+
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/applications/new")
+
+      html =
+        view
+        |> render_submit("save", %{
+          "job_application" => %{"position" => "Engineer", "company_name" => "Acme"},
+          "tag_ids" => [to_string(other_tag.id)],
+          "new_tags" => ""
+        })
+
+      assert html =~ "invalid or unknown tag"
+      assert JobApplications.list_applications(scope) == []
+      assert has_element?(view, "#application-form")
+    end
+  end
 end

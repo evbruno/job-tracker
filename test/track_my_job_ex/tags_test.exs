@@ -133,4 +133,50 @@ defmodule TrackMyJobEx.TagsTest do
       assert Tags.get_tag(scope, tag.id)
     end
   end
+
+  describe "get_tag_by_name/2" do
+    test "finds a tag case-insensitively within the scope only", %{scope: scope} do
+      tag = TagsFixtures.tag_fixture(scope, %{name: "Elixir"})
+
+      assert Tags.get_tag_by_name(scope, "elixir").id == tag.id
+      assert Tags.get_tag_by_name(scope, "  ELIXIR  ").id == tag.id
+
+      other_scope = AccountsFixtures.user_scope_fixture()
+      assert Tags.get_tag_by_name(other_scope, "Elixir") == nil
+    end
+  end
+
+  describe "get_or_create_tag/2" do
+    test "creates a new tag with a trimmed name", %{scope: scope} do
+      assert {:ok, tag} = Tags.get_or_create_tag(scope, "  Remote  ")
+      assert tag.name == "Remote"
+      assert tag.user_id == scope.user.id
+    end
+
+    test "reuses an existing tag case-insensitively and preserves its casing", %{scope: scope} do
+      existing = TagsFixtures.tag_fixture(scope, %{name: "Elixir"})
+
+      assert {:ok, tag} = Tags.get_or_create_tag(scope, "elixir")
+      assert tag.id == existing.id
+      assert tag.name == "Elixir"
+      assert Tags.list_tags(scope) |> length() == 1
+    end
+
+    test "does not reuse a tag owned by another user", %{scope: scope} do
+      other_scope = AccountsFixtures.user_scope_fixture()
+      TagsFixtures.tag_fixture(other_scope, %{name: "Elixir"})
+
+      assert {:ok, tag} = Tags.get_or_create_tag(scope, "Elixir")
+      assert tag.user_id == scope.user.id
+    end
+
+    test "rejects a blank name", %{scope: scope} do
+      assert Tags.get_or_create_tag(scope, "   ") == {:error, :blank_name}
+    end
+
+    test "rejects a name over 50 characters", %{scope: scope} do
+      assert {:error, %Ecto.Changeset{}} =
+               Tags.get_or_create_tag(scope, String.duplicate("t", 51))
+    end
+  end
 end

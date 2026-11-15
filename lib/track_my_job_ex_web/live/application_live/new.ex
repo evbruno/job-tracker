@@ -6,6 +6,7 @@ defmodule TrackMyJobExWeb.ApplicationLive.New do
   use TrackMyJobExWeb, :live_view
 
   alias TrackMyJobEx.JobApplications
+  alias TrackMyJobEx.Tags
   alias TrackMyJobExWeb.ApplicationForm
 
   @impl true
@@ -18,22 +19,39 @@ defmodule TrackMyJobExWeb.ApplicationLive.New do
      |> assign(:page_title, "New application")
      |> assign(:form, to_form(form))
      |> assign(:company_suggestions, JobApplications.list_company_suggestions(scope))
-     |> assign(:recruiter_suggestions, JobApplications.list_recruiter_suggestions(scope))}
+     |> assign(:recruiter_suggestions, JobApplications.list_recruiter_suggestions(scope))
+     |> assign(:tags, Tags.list_tags(scope))
+     |> assign(:selected_tag_ids, [])
+     |> assign(:new_tags, "")
+     |> assign(:tag_errors, [])}
   end
 
   @impl true
-  def handle_event("validate", %{"job_application" => params}, socket) do
+  def handle_event("validate", %{"job_application" => params} = all_params, socket) do
     form =
       socket.assigns.current_scope
       |> JobApplications.new_application_changeset(params)
       |> Map.put(:action, :validate)
       |> to_form()
 
-    {:noreply, assign(socket, :form, form)}
+    {:noreply,
+     socket
+     |> assign(:form, form)
+     |> assign(:selected_tag_ids, Map.get(all_params, "tag_ids", []))
+     |> assign(:new_tags, Map.get(all_params, "new_tags", ""))
+     |> assign(:tag_errors, [])}
   end
 
-  def handle_event("save", %{"job_application" => params}, socket) do
-    case JobApplications.create_application(socket.assigns.current_scope, params) do
+  def handle_event("save", %{"job_application" => params} = all_params, socket) do
+    tag_ids = Map.get(all_params, "tag_ids", [])
+    new_tags = ApplicationForm.parse_new_tag_names(Map.get(all_params, "new_tags", ""))
+
+    case JobApplications.create_application_with_tags(
+           socket.assigns.current_scope,
+           params,
+           tag_ids,
+           new_tags
+         ) do
       {:ok, application} ->
         {:noreply,
          socket
@@ -41,7 +59,12 @@ defmodule TrackMyJobExWeb.ApplicationLive.New do
          |> push_navigate(to: ~p"/applications/#{application.id}")}
 
       {:error, changeset} ->
-        {:noreply, assign(socket, :form, to_form(changeset))}
+        {:noreply,
+         socket
+         |> assign(:form, to_form(changeset))
+         |> assign(:selected_tag_ids, tag_ids)
+         |> assign(:new_tags, Map.get(all_params, "new_tags", ""))
+         |> assign(:tag_errors, ApplicationForm.tag_errors(changeset))}
     end
   end
 end

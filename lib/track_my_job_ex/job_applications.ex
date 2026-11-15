@@ -148,6 +148,32 @@ defmodule TrackMyJobEx.JobApplications do
   end
 
   @doc """
+  Creates an application and links existing and inline-created tags atomically.
+
+  `tag_ids` must belong to the scope. `new_tag_names` are trimmed and reused
+  case-insensitively when a matching tag already exists. Any invalid tag rolls
+  back the whole operation so no partial application is left behind.
+  """
+  def create_application_with_tags(%Scope{} = scope, attrs, tag_ids \\ [], new_tag_names \\ []) do
+    changeset = new_application_changeset(scope, attrs)
+
+    Repo.transaction(fn ->
+      with {:ok, application} <- Repo.insert(changeset),
+           {:ok, tags} <- resolve_tags(scope, tag_ids, new_tag_names),
+           :ok <- link_tags(application, tags) do
+        Repo.preload(application, :tags, force: true)
+      else
+        {:error, %Ecto.Changeset{} = error} ->
+          Repo.rollback({:application_error, error})
+
+        {:error, reason} ->
+          Repo.rollback({:tag_error, put_tag_error(changeset, reason)})
+      end
+    end)
+    |> normalize_transaction()
+  end
+
+  @doc """
   Builds a changeset for editing an application owned by the scope.
   """
   def change_application(%Scope{} = scope, application_or_id, attrs \\ %{}) do
@@ -293,6 +319,75 @@ defmodule TrackMyJobEx.JobApplications do
 
     :ok
   end
+
+  defp resolve_tags(scope, tag_ids, new_tag_names) do
+    with {:ok, selected} <- fetch_tags_by_ids(scope, tag_ids),
+         {:ok, created} <- get_or_create_tags(scope, new_tag_names) do
+      {:ok, Enum.uniq_by(selected ++ created, & &1.id)}
+    end
+  end
+
+  defp fetch_tags_by_ids(scope, ids) do
+    with {:ok, ids} <- cast_ids(List.wrap(ids)) do
+      tags =
+        from(tag in Tag,
+          where: tag.user_id == ^scope.user.id and tag.id in ^ids
+        )
+        |> Repo.all()
+
+      if length(tags) == length(ids), do: {:ok, tags}, else: {:error, :invalid_tag}
+    end
+  end
+
+  defp cast_ids(ids) do
+    ids
+    |> Enum.reduce_while({:ok, []}, fn id, {:ok, acc} ->
+      case cast_id(id) do
+        {:ok, id} -> {:cont, {:ok, [id | acc]}}
+        :error -> {:halt, :error}
+      end
+    end)
+    |> case do
+      {:ok, ids} -> {:ok, ids |> Enum.reverse() |> Enum.uniq()}
+      :error -> {:error, :invalid_tag}
+    end
+  end
+
+  defp get_or_create_tags(scope, names) when is_list(names) do
+    names =
+      names
+      |> Enum.filter(&is_binary/1)
+      |> Enum.map(&String.trim/1)
+      |> Enum.reject(&(&1 == ""))
+      |> Enum.uniq_by(&String.downcase/1)
+
+    Enum.reduce_while(names, {:ok, []}, fn name, {:ok, acc} ->
+      case Tags.get_or_create_tag(scope, name) do
+        {:ok, tag} -> {:cont, {:ok, [tag | acc]}}
+        {:error, _reason} -> {:halt, {:error, :invalid_tag}}
+      end
+    end)
+    |> case do
+      {:ok, tags} -> {:ok, Enum.reverse(tags)}
+      error -> error
+    end
+  end
+
+  defp get_or_create_tags(_scope, _names), do: {:error, :invalid_tag}
+
+  defp link_tags(application, tags) do
+    rows = Enum.map(tags, &%{application_id: application.id, tag_id: &1.id})
+    Repo.insert_all(ApplicationTag, rows)
+    :ok
+  end
+
+  defp put_tag_error(changeset, _reason) do
+    Ecto.Changeset.add_error(changeset, :tags, "contain an invalid or unknown tag")
+  end
+
+  defp normalize_transaction({:ok, application}), do: {:ok, application}
+  defp normalize_transaction({:error, {:application_error, changeset}}), do: {:error, changeset}
+  defp normalize_transaction({:error, {:tag_error, changeset}}), do: {:error, changeset}
 
   defp list_suggestions(%Scope{} = scope, field) do
     from(application in JobApplication,

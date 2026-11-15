@@ -9,6 +9,7 @@ defmodule TrackMyJobEx.JobApplicationsTest do
   alias TrackMyJobEx.JobApplicationsFixtures
   alias TrackMyJobEx.Repo
   alias TrackMyJobEx.Tags
+  alias TrackMyJobEx.Tags.Tag
   alias TrackMyJobEx.TagsFixtures
 
   setup do
@@ -464,6 +465,108 @@ defmodule TrackMyJobEx.JobApplicationsTest do
     test "returns an empty list when the scope has no applications", %{scope: scope} do
       assert JobApplications.list_company_suggestions(scope) == []
       assert JobApplications.list_recruiter_suggestions(scope) == []
+    end
+  end
+
+  describe "create_application_with_tags/4" do
+    test "creates the application with selected and inline-created tags", %{scope: scope} do
+      tag = TagsFixtures.tag_fixture(scope, %{name: "Elixir"})
+
+      assert {:ok, application} =
+               JobApplications.create_application_with_tags(
+                 scope,
+                 JobApplicationsFixtures.valid_application_attributes(),
+                 [tag.id],
+                 ["  Remote  ", "Startup"]
+               )
+
+      names = JobApplications.list_application_tags(scope, application) |> Enum.map(& &1.name)
+      assert names == ["Elixir", "Remote", "Startup"]
+    end
+
+    test "reuses an existing tag for an inline name case-insensitively", %{scope: scope} do
+      existing = TagsFixtures.tag_fixture(scope, %{name: "Elixir"})
+
+      assert {:ok, application} =
+               JobApplications.create_application_with_tags(
+                 scope,
+                 JobApplicationsFixtures.valid_application_attributes(),
+                 [],
+                 ["elixir"]
+               )
+
+      tags = JobApplications.list_application_tags(scope, application)
+      assert Enum.map(tags, & &1.id) == [existing.id]
+      assert Enum.map(tags, & &1.name) == ["Elixir"]
+      assert Repo.aggregate(Tag, :count) == 1
+    end
+
+    test "ignores blank names and duplicate selected ids", %{scope: scope} do
+      tag = TagsFixtures.tag_fixture(scope, %{name: "Elixir"})
+
+      assert {:ok, application} =
+               JobApplications.create_application_with_tags(
+                 scope,
+                 JobApplicationsFixtures.valid_application_attributes(),
+                 [tag.id, tag.id],
+                 ["   ", ""]
+               )
+
+      assert JobApplications.list_application_tags(scope, application) |> Enum.map(& &1.id) == [
+               tag.id
+             ]
+    end
+
+    test "rolls back the application when a tag belongs to another user", %{scope: scope} do
+      other_scope = AccountsFixtures.user_scope_fixture()
+      other_tag = TagsFixtures.tag_fixture(other_scope)
+
+      assert {:error, changeset} =
+               JobApplications.create_application_with_tags(
+                 scope,
+                 JobApplicationsFixtures.valid_application_attributes(),
+                 [other_tag.id],
+                 []
+               )
+
+      assert errors_on(changeset).tags == ["contain an invalid or unknown tag"]
+      assert JobApplications.list_applications(scope) == []
+      assert Repo.aggregate(ApplicationTag, :count) == 0
+    end
+
+    test "rolls back the application when an unknown tag id is submitted", %{scope: scope} do
+      assert {:error, changeset} =
+               JobApplications.create_application_with_tags(
+                 scope,
+                 JobApplicationsFixtures.valid_application_attributes(),
+                 ["not-an-id"],
+                 []
+               )
+
+      assert errors_on(changeset).tags != []
+      assert JobApplications.list_applications(scope) == []
+    end
+
+    test "rolls back the application when an inline tag name is invalid", %{scope: scope} do
+      assert {:error, changeset} =
+               JobApplications.create_application_with_tags(
+                 scope,
+                 JobApplicationsFixtures.valid_application_attributes(),
+                 [],
+                 [String.duplicate("t", 51)]
+               )
+
+      assert errors_on(changeset).tags != []
+      assert JobApplications.list_applications(scope) == []
+      assert Repo.aggregate(Tag, :count) == 0
+    end
+
+    test "still returns application validation errors without creating anything", %{scope: scope} do
+      assert {:error, changeset} =
+               JobApplications.create_application_with_tags(scope, %{position: ""}, [], [])
+
+      assert errors_on(changeset).position != []
+      assert JobApplications.list_applications(scope) == []
     end
   end
 end
