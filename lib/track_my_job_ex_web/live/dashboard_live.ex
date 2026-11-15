@@ -8,6 +8,8 @@ defmodule TrackMyJobExWeb.DashboardLive do
 
   use TrackMyJobExWeb, :live_view
 
+  on_mount {TrackMyJobExWeb.UserAuth, :mount_current_scope}
+
   @impl true
   def mount(_params, _session, socket) do
     {:ok, assign(socket, page_title: "Dashboard", count: 0)}

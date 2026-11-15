@@ -44,31 +44,52 @@ defmodule TrackMyJobExWeb.Layouts do
               <span>Job Tracker</span>
             </.link>
           </div>
-          <nav class="flex-none" aria-label="Main navigation">
+          <nav id="main-nav" class="flex-none" aria-label="Main navigation">
             <ul class="flex items-center gap-1">
-              <li>
-                <.link navigate={~p"/"} class="btn btn-ghost btn-sm" aria-current="page">
-                  Dashboard
-                </.link>
-              </li>
-              <li>
-                <span
-                  class="btn btn-ghost btn-sm cursor-default opacity-50"
-                  aria-disabled="true"
-                  title="Available in a later phase"
-                >
-                  Applications
-                </span>
-              </li>
-              <li>
-                <span
-                  class="btn btn-ghost btn-sm cursor-default opacity-50"
-                  aria-disabled="true"
-                  title="Available in a later phase"
-                >
-                  Tags
-                </span>
-              </li>
+              <%= if @current_scope && @current_scope.user do %>
+                <li>
+                  <.link navigate={~p"/"} class="btn btn-ghost btn-sm" aria-current="page">
+                    Dashboard
+                  </.link>
+                </li>
+                <li>
+                  <span
+                    class="btn btn-ghost btn-sm cursor-default opacity-50"
+                    aria-disabled="true"
+                    title="Available in a later phase"
+                  >
+                    Applications
+                  </span>
+                </li>
+                <li>
+                  <span
+                    class="btn btn-ghost btn-sm cursor-default opacity-50"
+                    aria-disabled="true"
+                    title="Available in a later phase"
+                  >
+                    Tags
+                  </span>
+                </li>
+                <li class="ml-2 hidden text-sm text-base-content/70 sm:block" id="current-user-email">
+                  {@current_scope.user.email}
+                </li>
+                <li>
+                  <.link
+                    href={~p"/users/log-out"}
+                    method="delete"
+                    id="log-out"
+                    class="btn btn-ghost btn-sm"
+                  >
+                    Log out
+                  </.link>
+                </li>
+              <% else %>
+                <li>
+                  <.link navigate={~p"/users/log-in"} id="log-in" class="btn btn-ghost btn-sm">
+                    Log in
+                  </.link>
+                </li>
+              <% end %>
               <li class="ml-2">
                 <.theme_toggle />
               </li>

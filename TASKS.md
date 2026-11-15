@@ -6,7 +6,7 @@
 
 **Overall status:** Phase 1 complete — Phase 2 in progress
 
-**Current milestone:** Removed-route regression tests in place; next polish login/logout UI and navigation.
+**Current milestone:** Login/logout UI and navigation complete; next add `mix users.create`.
 
 ---
 
@@ -66,7 +66,7 @@
 - [x] Disable public registration.
 - [x] Remove password reset and email confirmation flows.
 - [x] Add a test proving no public registration route exists.
-- [ ] Implement login and logout.
+- [x] Implement login and logout.
 - [ ] Implement `mix users.create`.
 - [ ] Add authenticated route protection.
 - [ ] Define tenant isolation conventions.

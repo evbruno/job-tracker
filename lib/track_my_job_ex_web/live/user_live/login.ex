@@ -49,6 +49,11 @@ defmodule TrackMyJobExWeb.UserLive.Login do
   end
 
   @impl true
+  def mount(_params, _session, %{assigns: %{current_scope: %{user: user}}} = socket)
+      when not is_nil(user) do
+    {:ok, push_navigate(socket, to: ~p"/")}
+  end
+
   def mount(_params, _session, socket) do
     email = Phoenix.Flash.get(socket.assigns.flash, :email) || ""
 

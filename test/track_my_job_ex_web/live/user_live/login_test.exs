@@ -14,6 +14,15 @@ defmodule TrackMyJobExWeb.UserLive.LoginTest do
       refute html =~ "magic"
     end
 
+    test "redirects authenticated users to the dashboard", %{conn: conn} do
+      user = user_fixture()
+
+      assert {:error, {:live_redirect, %{to: "/"}}} =
+               conn
+               |> log_in_user(user)
+               |> live(~p"/users/log-in")
+    end
+
     test "redirects if the user logs in with valid credentials", %{conn: conn} do
       user = user_fixture()
 
