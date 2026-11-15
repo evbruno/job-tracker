@@ -4,6 +4,8 @@ import Config
 config :track_my_job_ex, TrackMyJobEx.Repo,
   database: Path.expand("../track_my_job_ex_dev.db", __DIR__),
   pool_size: 5,
+  journal_mode: :wal,
+  foreign_keys: :on,
   stacktrace: true,
   show_sensitive_data_on_connection_error: true
 

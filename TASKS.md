@@ -4,9 +4,9 @@
 
 **Current phase:** Phase 1 — Project Foundation
 
-**Overall status:** In progress — task group 1.1 complete
+**Overall status:** In progress — task group 1.2 complete
 
-**Current milestone:** Configure the database and application shell.
+**Current milestone:** Build the application shell and dashboard.
 
 ---
 
@@ -23,13 +23,13 @@
 
 ### 1.2 Database
 
-- [ ] Configure SQLite3 database files and confirm they are gitignored.
-- [ ] Configure development database.
-- [ ] Configure test database.
-- [ ] Verify Ecto connectivity.
-- [ ] Verify migrations execute successfully.
-- [ ] Verify foreign key enforcement and WAL mode are enabled.
-- [ ] Add a throwaway test confirming that `COLLATE NOCASE` partial unique indexes and `LIKE` search behave as expected, then remove it.
+- [x] Configure SQLite3 database files and confirm they are gitignored.
+- [x] Configure development database.
+- [x] Configure test database.
+- [x] Verify Ecto connectivity.
+- [x] Verify migrations execute successfully.
+- [x] Verify foreign key enforcement and WAL mode are enabled.
+- [x] Add a throwaway test confirming that `COLLATE NOCASE` partial unique indexes and `LIKE` search behave as expected, then remove it.
 
 ### 1.3 Frontend and Layout
 
