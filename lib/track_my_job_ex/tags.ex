@@ -101,6 +101,15 @@ defmodule TrackMyJobEx.Tags do
   end
 
   @doc """
+  Builds a changeset for renaming a tag owned by the scope.
+  """
+  def change_tag(%Scope{} = scope, tag_or_id, attrs \\ %{}) do
+    scope
+    |> fetch_tag!(tag_or_id)
+    |> Tag.changeset(attrs)
+  end
+
+  @doc """
   Renames or updates a tag owned by the scope.
 
   Accepts a `%Tag{}` or an id; either way the record is re-fetched through the

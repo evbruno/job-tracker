@@ -63,6 +63,7 @@ defmodule TrackMyJobExWeb.Router do
       live "/applications/new", ApplicationLive.New, :new
       live "/applications/:id/edit", ApplicationLive.Edit, :edit
       live "/applications/:id", ApplicationLive.Show, :show
+      live "/tags", TagLive.Index, :index
     end
 
     delete "/users/log-out", UserSessionController, :delete

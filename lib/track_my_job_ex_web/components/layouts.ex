@@ -62,13 +62,9 @@ defmodule TrackMyJobExWeb.Layouts do
                   </.link>
                 </li>
                 <li>
-                  <span
-                    class="btn btn-ghost btn-sm cursor-default opacity-50"
-                    aria-disabled="true"
-                    title="Available in a later phase"
-                  >
+                  <.link navigate={~p"/tags"} id="nav-tags" class="btn btn-ghost btn-sm">
                     Tags
-                  </span>
+                  </.link>
                 </li>
                 <li class="ml-2 hidden text-sm text-base-content/70 sm:block" id="current-user-email">
                   {@current_scope.user.email}
