@@ -24,6 +24,16 @@ defmodule TrackMyJobExWeb.UserSessionControllerTest do
       assert response =~ ~p"/users/log-out"
     end
 
+    test "sets the session cookie flags", %{conn: conn, user: user} do
+      conn =
+        post(conn, ~p"/users/log-in", %{
+          "user" => %{"email" => user.email, "password" => valid_user_password()}
+        })
+
+      assert %{http_only: true, same_site: "Lax"} =
+               conn.resp_cookies["_track_my_job_ex_key"]
+    end
+
     test "logs the user in with remember me", %{conn: conn, user: user} do
       conn =
         post(conn, ~p"/users/log-in", %{

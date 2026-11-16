@@ -36,6 +36,23 @@ npm-debug.log
 /assets/node_modules/
 
 # Database files
+# SQLite stores the database plus its write-ahead log and shared-memory
+# sidecar files. None of these belong in version control.
 *.db
 *.db-*
+*.db-wal
+*.db-shm
+*.db-journal
+
+# Local secrets and environment files
+.env
+.env.*
+!.env.example
+
+# Local backup output (see docs/DEPLOYMENT.md)
+/backups/
+
+# Release artifacts
+/_build/
+/rel/overlays/*.tar.gz
 

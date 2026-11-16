@@ -14,13 +14,21 @@ config :track_my_job_ex, TrackMyJobExWeb.Endpoint,
 config :track_my_job_ex, TrackMyJobExWeb.Endpoint,
   force_ssl: [
     rewrite_on: [:x_forwarded_proto],
+    hsts: true,
+    expires: 31_536_000,
     exclude: [
-      # paths: ["/health"],
+      # Load balancers and platform health checks may probe over plain HTTP
+      # inside the private network. The application itself never serves
+      # authenticated pages over HTTP.
+      paths: ["/health"],
       hosts: ["localhost", "127.0.0.1"]
     ]
   ]
 
-# Do not print debug messages in production
+# Do not print debug messages in production. The shared formatter in
+# config/config.exs emits one line per event with only :request_id metadata.
+# Ecto query logging is debug-level, so SQL text and bound parameters are not
+# emitted at :info; do not lower this level in production.
 config :logger, level: :info
 
 # Runtime production configuration, including reading
