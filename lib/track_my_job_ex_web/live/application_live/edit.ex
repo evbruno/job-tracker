@@ -2,8 +2,8 @@ defmodule TrackMyJobExWeb.ApplicationLive.Edit do
   @moduledoc """
   Edits the details of a job application owned by the current user.
 
-  Status changes are handled separately in Phase 5 and are not part of this
-  form.
+  Status changes are handled on the application details page and are not part of
+  this form.
   """
 
   use TrackMyJobExWeb, :live_view

@@ -113,13 +113,61 @@
     </div>
   </section>
 
+  <section
+    id="application-status-change"
+    class="card mt-6 border border-base-300 bg-base-100 shadow-sm"
+  >
+    <div class="card-body gap-3">
+      <h2 class="card-title text-base">Change status</h2>
+      <p class="text-sm text-base-content/60">
+        Current status: <span id="current-status-name">{@application.status.name}</span>. Any status can
+        follow any other status. A status change always creates a timeline entry.
+      </p>
+      <.form
+        for={@status_form}
+        id="status-change-form"
+        phx-change="validate_status"
+        phx-submit="change_status"
+        class="space-y-3"
+      >
+        <.input
+          field={@status_form[:status_id]}
+          type="select"
+          label="New status"
+          options={Enum.map(@statuses, &{&1.name, &1.id})}
+          prompt="Select a status"
+          required
+        />
+        <.input
+          field={@status_form[:notes]}
+          type="textarea"
+          label="Notes (optional)"
+          rows="3"
+          maxlength="2000"
+          placeholder="e.g. Recruiter called to schedule a technical interview"
+        />
+        <p class="text-xs text-base-content/60">
+          Optional context for this change, up to 2,000 characters. Leading and trailing spaces are trimmed.
+        </p>
+        <button type="submit" id="status-change-submit" class="btn btn-primary btn-sm">
+          Update status
+        </button>
+      </.form>
+    </div>
+  </section>
+
   <section id="application-history" class="card mt-6 border border-base-300 bg-base-100 shadow-sm">
     <div class="card-body gap-3">
       <h2 class="card-title text-base">Status history</h2>
       <p :if={@history_empty?} id="application-history-empty" class="text-sm text-base-content/60">
         No status history yet.
       </p>
-      <ol :if={!@history_empty?} class="space-y-2">
+      <ol
+        :if={!@history_empty?}
+        id="application-history-entries"
+        phx-update="stream"
+        class="space-y-2"
+      >
         <li
           :for={{dom_id, entry} <- @streams.history}
           id={dom_id}
@@ -128,10 +176,19 @@
           <p class="text-sm font-medium" id={"#{dom_id}-status"}>
             {entry.new_status.name}
           </p>
+          <p
+            :if={entry.previous_status}
+            class="text-xs text-base-content/60"
+            id={"#{dom_id}-previous"}
+          >
+            From {entry.previous_status.name}
+          </p>
           <p class="text-xs text-base-content/60" id={"#{dom_id}-changed-at"}>
             {Formatters.format_utc_datetime(entry.changed_at)}
           </p>
-          <p :if={entry.notes} class="mt-1 text-sm">{entry.notes}</p>
+          <p :if={entry.notes} class="mt-1 text-sm" id={"#{dom_id}-notes"}>
+            {entry.notes}
+          </p>
         </li>
       </ol>
     </div>
