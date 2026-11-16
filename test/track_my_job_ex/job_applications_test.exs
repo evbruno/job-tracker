@@ -607,6 +607,24 @@ defmodule TrackMyJobEx.JobApplicationsTest do
       assert Repo.aggregate(ApplicationTag, :count) == 0
     end
 
+    test "does not let another user replace the application's tags", %{scope: scope} do
+      application = JobApplicationsFixtures.application_fixture(scope)
+      own_tag = TagsFixtures.tag_fixture(scope, %{name: "Own"})
+
+      {:ok, _application_tag} =
+        JobApplications.add_tag_to_application(scope, application, own_tag)
+
+      other_scope = AccountsFixtures.user_scope_fixture()
+
+      assert_raise Ecto.NoResultsError, fn ->
+        JobApplications.set_application_tags(other_scope, application, [own_tag.id])
+      end
+
+      assert JobApplications.list_application_tags(scope, application) |> Enum.map(& &1.id) == [
+               own_tag.id
+             ]
+    end
+
     test "deleting a tag removes links only, leaving applications intact", %{scope: scope} do
       application = JobApplicationsFixtures.application_fixture(scope)
       tag = TagsFixtures.tag_fixture(scope)
@@ -1195,6 +1213,23 @@ defmodule TrackMyJobEx.JobApplicationsTest do
       assert application_ids(scope, %{"company" => "secret co"}) == []
       assert application_ids(scope, %{"recruiter" => "secret recruiter"}) == []
       assert application_ids(scope, %{"status" => "applied"}) == []
+    end
+
+    test "filter_options only exposes the scope's own values", %{scope: scope} do
+      application_for(scope, "Engineer", "Acme Corp", "Jane Recruiter")
+      own_tag = TagsFixtures.tag_fixture(scope, %{name: "Own"})
+
+      other_scope = AccountsFixtures.user_scope_fixture()
+      application_for(other_scope, "Manager", "Secret Co", "Secret Recruiter")
+      other_tag = TagsFixtures.tag_fixture(other_scope, %{name: "Secret"})
+
+      options = JobApplications.filter_options(scope)
+
+      assert options.companies == ["Acme Corp"]
+      assert options.recruiters == ["Jane Recruiter"]
+      assert Enum.map(options.tags, & &1.id) == [own_tag.id]
+      refute other_tag.id in Enum.map(options.tags, & &1.id)
+      assert Enum.map(options.statuses, & &1.slug) |> Enum.member?("interested")
     end
   end
 

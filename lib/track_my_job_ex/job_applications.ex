@@ -754,9 +754,11 @@ defmodule TrackMyJobEx.JobApplications do
   defp filter_by_text(query, _field, nil), do: query
 
   defp filter_by_text(query, field, value) do
-    value = String.downcase(value)
-
-    where(query, [application], fragment("lower(?) = ?", field(application, ^field), ^value))
+    where(
+      query,
+      [application],
+      fragment("? = ? COLLATE NOCASE", field(application, ^field), ^value)
+    )
   end
 
   defp filter_by_status(query, nil), do: query
