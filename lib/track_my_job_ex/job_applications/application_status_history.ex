@@ -5,8 +5,8 @@ defmodule TrackMyJobEx.JobApplications.ApplicationStatusHistory do
   History rows are never updated or deleted individually. They are removed only
   when the parent application is deleted (database cascade).
 
-  Creating the initial Interested record and subsequent status transitions is
-  implemented in Phase 5.
+  The context creates the initial `Interested` row with the application and one
+  row per later status change. Both writes happen in the same transaction.
   """
 
   use Ecto.Schema

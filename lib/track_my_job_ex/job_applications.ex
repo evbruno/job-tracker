@@ -7,8 +7,10 @@ defmodule TrackMyJobEx.JobApplications do
   `scope.user.id`. Another user's identifiers behave as "not found".
 
   Statuses are predefined global data seeded by a migration and are read-only.
-  Status transitions and status history creation are implemented in Phase 5;
-  this context currently exposes history reads only.
+  Applications are created with the default `Interested` status and an initial
+  history record. Every later status change updates the application and appends
+  a history record in one transaction. History is append-only: there are no
+  update or delete functions for individual history rows.
   """
 
   import Ecto.Query, warn: false
@@ -18,6 +20,7 @@ defmodule TrackMyJobEx.JobApplications do
   alias TrackMyJobEx.JobApplications.ApplicationTag
   alias TrackMyJobEx.JobApplications.JobApplication
   alias TrackMyJobEx.JobApplications.Status
+  alias TrackMyJobEx.JobApplications.StatusChange
   alias TrackMyJobEx.Repo
   alias TrackMyJobEx.Tags
   alias TrackMyJobEx.Tags.Tag
@@ -139,38 +142,50 @@ defmodule TrackMyJobEx.JobApplications do
   Creates an application for the scope with the default `Interested` status.
 
   `user_id` and `status_id` are derived here and never accepted from the
-  caller's attributes.
+  caller's attributes. The initial `Interested` history record is inserted in
+  the same transaction, so an application is never persisted without its first
+  history entry.
   """
   def create_application(%Scope{} = scope, attrs) when is_map(attrs) do
     scope
     |> new_application_changeset(attrs)
-    |> Repo.insert()
+    |> insert_application_with_initial_history()
   end
 
   @doc """
   Creates an application and links existing and inline-created tags atomically.
 
   `tag_ids` must belong to the scope. `new_tag_names` are trimmed and reused
-  case-insensitively when a matching tag already exists. Any invalid tag rolls
-  back the whole operation so no partial application is left behind.
+  case-insensitively when a matching tag already exists. The initial
+  `Interested` history record is created in the same transaction. Any invalid
+  tag rolls back the whole operation so no partial application or history is
+  left behind.
   """
   def create_application_with_tags(%Scope{} = scope, attrs, tag_ids \\ [], new_tag_names \\ []) do
     changeset = new_application_changeset(scope, attrs)
 
-    Repo.transaction(fn ->
-      with {:ok, application} <- Repo.insert(changeset),
-           {:ok, tags} <- resolve_tags(scope, tag_ids, new_tag_names),
+    Ecto.Multi.new()
+    |> put_application_and_initial_history(changeset)
+    |> Ecto.Multi.run(:tags, fn _repo, %{application: application} ->
+      with {:ok, tags} <- resolve_tags(scope, tag_ids, new_tag_names),
            :ok <- link_tags(application, tags) do
-        Repo.preload(application, :tags, force: true)
-      else
-        {:error, %Ecto.Changeset{} = error} ->
-          Repo.rollback({:application_error, error})
-
-        {:error, reason} ->
-          Repo.rollback({:tag_error, put_tag_error(changeset, reason)})
+        {:ok, tags}
       end
     end)
-    |> normalize_transaction()
+    |> Repo.transaction()
+    |> case do
+      {:ok, %{application: application}} ->
+        {:ok, Repo.preload(application, :tags, force: true)}
+
+      {:error, :application, error, _changes} ->
+        {:error, error}
+
+      {:error, :tags, reason, _changes} ->
+        {:error, put_tag_error(changeset, reason)}
+
+      {:error, _step, error, _changes} ->
+        {:error, error}
+    end
   end
 
   @doc """
@@ -248,6 +263,43 @@ defmodule TrackMyJobEx.JobApplications do
     scope
     |> fetch_application!(application_or_id)
     |> Repo.delete()
+  end
+
+  ## Status changes
+
+  @doc """
+  Builds a form changeset for changing an application's status.
+
+  The same status as the application's current one and unknown status ids are
+  rejected with validation errors. `notes` is trimmed, blank notes become
+  `nil`, and notes are limited to 2,000 characters.
+  """
+  def change_status_changeset(%Scope{} = scope, application_or_id, attrs \\ %{}) do
+    application = fetch_application!(scope, application_or_id)
+    build_status_change_changeset(application, attrs)
+  end
+
+  @doc """
+  Changes an application's status and appends a status history record atomically.
+
+  Any status can transition to any other status. The current status and the
+  target status must differ. The application's `updated_at` changes and the
+  history row records the previous status, the new status, the change time, and
+  optional trimmed notes.
+
+  The application is re-fetched through the scope, so another user's
+  application behaves as not found.
+  """
+  def change_status(%Scope{} = scope, application_or_id, attrs) when is_map(attrs) do
+    application = fetch_application!(scope, application_or_id)
+    changeset = build_status_change_changeset(application, attrs)
+
+    if changeset.valid? do
+      status = get_status(Ecto.Changeset.get_field(changeset, :status_id))
+      commit_status_change(application, status, changeset)
+    else
+      {:error, changeset}
+    end
   end
 
   ## Status history (append-only reads)
@@ -342,6 +394,95 @@ defmodule TrackMyJobEx.JobApplications do
   end
 
   ## Helpers
+
+  defp insert_application_with_initial_history(changeset) do
+    Ecto.Multi.new()
+    |> put_application_and_initial_history(changeset)
+    |> Repo.transaction()
+    |> case do
+      {:ok, %{application: application}} -> {:ok, application}
+      {:error, _step, error, _changes} -> {:error, error}
+    end
+  end
+
+  defp put_application_and_initial_history(multi, changeset) do
+    multi
+    |> Ecto.Multi.insert(:application, changeset)
+    |> Ecto.Multi.insert(:initial_history, fn %{application: application} ->
+      initial_history_changeset(application)
+    end)
+  end
+
+  defp initial_history_changeset(application) do
+    build_history_changeset(
+      application,
+      nil,
+      application.status_id,
+      nil,
+      application.inserted_at
+    )
+  end
+
+  defp build_history_changeset(application, previous_status_id, new_status_id, notes, changed_at) do
+    %ApplicationStatusHistory{application_id: application.id}
+    |> ApplicationStatusHistory.changeset(%{
+      previous_status_id: previous_status_id,
+      new_status_id: new_status_id,
+      changed_at: changed_at,
+      notes: notes
+    })
+  end
+
+  defp build_status_change_changeset(application, attrs) do
+    %StatusChange{}
+    |> StatusChange.changeset(attrs)
+    |> validate_new_status(application)
+  end
+
+  defp validate_new_status(changeset, application) do
+    case Ecto.Changeset.get_field(changeset, :status_id) do
+      nil ->
+        changeset
+
+      status_id ->
+        cond do
+          status_id == application.status_id ->
+            Ecto.Changeset.add_error(
+              changeset,
+              :status_id,
+              "is already the current status"
+            )
+
+          is_nil(get_status(status_id)) ->
+            Ecto.Changeset.add_error(changeset, :status_id, "is not a valid status")
+
+          true ->
+            changeset
+        end
+    end
+  end
+
+  defp commit_status_change(application, status, changeset) do
+    now = DateTime.utc_now(:second)
+    notes = Ecto.Changeset.get_field(changeset, :notes)
+
+    Ecto.Multi.new()
+    |> Ecto.Multi.update(
+      :application,
+      Ecto.Changeset.change(application, status_id: status.id)
+    )
+    |> Ecto.Multi.insert(:history, fn _changes ->
+      build_history_changeset(application, application.status_id, status.id, notes, now)
+    end)
+    |> Repo.transaction()
+    |> case do
+      {:ok, %{application: updated}} ->
+        {:ok, Repo.preload(updated, :status, force: true)}
+
+      {:error, _step, error, _changes} ->
+        {:error, error}
+    end
+  end
 
   defp fetch_application!(%Scope{} = scope, %JobApplication{id: id}) do
     get_application!(scope, id)
