@@ -886,4 +886,338 @@ defmodule TrackMyJobExWeb.ApplicationLiveTest do
              ]
     end
   end
+
+  describe "index search and filters" do
+    test "searches position and company case-insensitively and keeps state in the URL", %{
+      conn: conn
+    } do
+      user = user_fixture()
+      scope = Scope.for_user(user)
+
+      engineer =
+        application_fixture(scope, %{position: "Senior Engineer", company_name: "Acme Corp"})
+
+      manager =
+        application_fixture(scope, %{position: "Product Manager", company_name: "Beta Inc"})
+
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/applications")
+
+      assert has_element?(view, "#applications-#{engineer.id}")
+      assert has_element?(view, "#applications-#{manager.id}")
+
+      view |> form("#application-filters", %{"q" => "SENIOR"}) |> render_change()
+      assert_patch(view, ~p"/applications?q=SENIOR")
+
+      assert has_element?(view, "#applications-#{engineer.id}")
+      refute has_element?(view, "#applications-#{manager.id}")
+
+      view |> form("#application-filters", %{"q" => "beta"}) |> render_change()
+      assert_patch(view, ~p"/applications?q=beta")
+
+      assert has_element?(view, "#applications-#{manager.id}")
+      refute has_element?(view, "#applications-#{engineer.id}")
+    end
+
+    test "restores search, filter, and sort state from the URL", %{conn: conn} do
+      user = user_fixture()
+      scope = Scope.for_user(user)
+
+      match =
+        application_fixture(scope, %{position: "Senior Engineer", company_name: "Acme Corp"})
+
+      _other = application_fixture(scope, %{position: "Manager", company_name: "Beta Inc"})
+
+      applied = JobApplications.get_status_by_slug("applied")
+      {:ok, _application} = JobApplications.change_status(scope, match, %{status_id: applied.id})
+
+      {:ok, view, _html} =
+        conn
+        |> log_in_user(user)
+        |> live(~p"/applications?q=acme&status=applied&sort=updated&direction=asc")
+
+      assert has_element?(view, "#filter-q[value='acme']")
+      assert has_element?(view, "#filter-status option[value='applied'][selected]")
+      assert has_element?(view, "#filter-sort option[value='updated'][selected]")
+      assert has_element?(view, "#applications-#{match.id}")
+      assert has_element?(view, "#toggle-sort-direction", "Least recently updated")
+    end
+
+    test "filters by status", %{conn: conn} do
+      user = user_fixture()
+      scope = Scope.for_user(user)
+
+      interested = application_fixture(scope, %{position: "Interested role"})
+      applied = application_fixture(scope, %{position: "Applied role"})
+      change_status!(scope, applied, "applied")
+
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/applications")
+
+      view |> form("#application-filters", %{"status" => "applied"}) |> render_change()
+      assert_patch(view, ~p"/applications?status=applied")
+
+      assert has_element?(view, "#applications-#{applied.id}")
+      refute has_element?(view, "#applications-#{interested.id}")
+    end
+
+    test "filters by company and recruiter using the user's own dropdown values", %{conn: conn} do
+      user = user_fixture()
+      scope = Scope.for_user(user)
+
+      acme = application_fixture(scope, %{company_name: "Acme Corp", recruiter_name: "Jane"})
+      beta = application_fixture(scope, %{company_name: "Beta Inc", recruiter_name: "Bob"})
+
+      other_user = user_fixture()
+
+      application_fixture(Scope.for_user(other_user), %{
+        company_name: "Other Co",
+        recruiter_name: "Other Recruiter"
+      })
+
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/applications")
+
+      document = LazyHTML.from_fragment(render(view))
+
+      assert document
+             |> LazyHTML.query("#filter-company option")
+             |> LazyHTML.attribute("value") == ["", "Acme Corp", "Beta Inc"]
+
+      assert document
+             |> LazyHTML.query("#filter-recruiter option")
+             |> LazyHTML.attribute("value") == ["", "Bob", "Jane"]
+
+      view |> form("#application-filters", %{"company" => "Beta Inc"}) |> render_change()
+      assert_patch(view, ~p"/applications?#{%{"company" => "Beta Inc"}}")
+      assert has_element?(view, "#applications-#{beta.id}")
+      refute has_element?(view, "#applications-#{acme.id}")
+
+      view
+      |> form("#application-filters", %{"company" => "", "recruiter" => "Jane"})
+      |> render_change()
+
+      assert has_element?(view, "#applications-#{acme.id}")
+      refute has_element?(view, "#applications-#{beta.id}")
+    end
+
+    test "filters by multiple tags with AND semantics", %{conn: conn} do
+      user = user_fixture()
+      scope = Scope.for_user(user)
+
+      elixir = tag_fixture(scope, %{name: "Elixir"})
+      remote = tag_fixture(scope, %{name: "Remote"})
+
+      both = application_fixture(scope, %{position: "Both tags"})
+      only_elixir = application_fixture(scope, %{position: "Only Elixir"})
+
+      {:ok, _} = JobApplications.add_tag_to_application(scope, both, elixir)
+      {:ok, _} = JobApplications.add_tag_to_application(scope, both, remote)
+      {:ok, _} = JobApplications.add_tag_to_application(scope, only_elixir, elixir)
+
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/applications")
+
+      params = %{"tags" => [to_string(elixir.id), to_string(remote.id)]}
+      view |> form("#application-filters", params) |> render_change()
+
+      assert_patch(
+        view,
+        ~p"/applications?#{%{"tags" => [to_string(elixir.id), to_string(remote.id)]}}"
+      )
+
+      assert has_element?(view, "#applications-#{both.id}")
+      refute has_element?(view, "#applications-#{only_elixir.id}")
+      assert has_element?(view, "#filter-tags option[value='#{elixir.id}'][selected]")
+      assert has_element?(view, "#filter-tags option[value='#{remote.id}'][selected]")
+    end
+
+    test "shows a no-matches empty state with a clear-filters action", %{conn: conn} do
+      user = user_fixture()
+      application = application_fixture(Scope.for_user(user))
+
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/applications")
+
+      view |> form("#application-filters", %{"q" => "nothing-matches"}) |> render_change()
+
+      assert has_element?(view, "#applications-no-matches", "No matching applications")
+      refute has_element?(view, "#applications-empty")
+      refute has_element?(view, "#applications-#{application.id}")
+      assert has_element?(view, "#clear-filters-empty[href='/applications']")
+
+      render_patch(view, ~p"/applications")
+
+      assert has_element?(view, "#applications-#{application.id}")
+      refute has_element?(view, "#applications-no-matches")
+    end
+
+    test "keeps the current filters after deleting a matching application", %{conn: conn} do
+      user = user_fixture()
+      scope = Scope.for_user(user)
+
+      matching = application_fixture(scope, %{position: "Acme Engineer", company_name: "Acme"})
+      other = application_fixture(scope, %{position: "Beta Manager", company_name: "Beta"})
+
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/applications?q=acme")
+
+      refute has_element?(view, "#applications-#{other.id}")
+      view |> element("#delete-application-#{matching.id}") |> render_click()
+
+      assert has_element?(view, "#applications-no-matches")
+      refute has_element?(view, "#applications-#{other.id}")
+      assert has_element?(view, "#filter-q[value='acme']")
+    end
+  end
+
+  describe "index sorting" do
+    test "sorts by created date and toggles direction", %{conn: conn} do
+      user = user_fixture()
+      scope = Scope.for_user(user)
+
+      oldest = application_fixture(scope, %{position: "Oldest"})
+      middle = application_fixture(scope, %{position: "Middle"})
+      newest = application_fixture(scope, %{position: "Newest"})
+
+      set_application_timestamps(oldest, ~U[2026-01-01 00:00:00Z], ~U[2026-01-01 00:00:00Z])
+      set_application_timestamps(middle, ~U[2026-01-02 00:00:00Z], ~U[2026-01-02 00:00:00Z])
+      set_application_timestamps(newest, ~U[2026-01-03 00:00:00Z], ~U[2026-01-03 00:00:00Z])
+
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/applications")
+
+      assert index_ids(view) == [
+               "applications-#{newest.id}",
+               "applications-#{middle.id}",
+               "applications-#{oldest.id}"
+             ]
+
+      view |> element("#toggle-sort-direction") |> render_click()
+      assert_patch(view, ~p"/applications?direction=asc")
+
+      assert index_ids(view) == [
+               "applications-#{oldest.id}",
+               "applications-#{middle.id}",
+               "applications-#{newest.id}"
+             ]
+    end
+
+    test "sorts by last update", %{conn: conn} do
+      user = user_fixture()
+      scope = Scope.for_user(user)
+
+      first = application_fixture(scope, %{position: "First"})
+      second = application_fixture(scope, %{position: "Second"})
+
+      set_application_timestamps(first, ~U[2026-01-01 00:00:00Z], ~U[2026-01-02 00:00:00Z])
+      set_application_timestamps(second, ~U[2026-01-02 00:00:00Z], ~U[2026-01-01 00:00:00Z])
+
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/applications")
+
+      view |> form("#application-filters", %{"sort" => "updated"}) |> render_change()
+      assert_patch(view, ~p"/applications?sort=updated")
+
+      assert index_ids(view) == ["applications-#{first.id}", "applications-#{second.id}"]
+
+      view |> element("#toggle-sort-direction") |> render_click()
+
+      assert_patch(
+        view,
+        ~p"/applications?#{%{"sort" => "updated", "direction" => "asc"}}"
+      )
+
+      assert index_ids(view) == ["applications-#{second.id}", "applications-#{first.id}"]
+    end
+  end
+
+  describe "index pagination" do
+    test "shows 25 applications per page and navigates between pages", %{conn: conn} do
+      user = user_fixture()
+      scope = Scope.for_user(user)
+
+      applications =
+        for index <- 1..27 do
+          application_fixture(scope, %{position: "Position #{index}"})
+        end
+
+      oldest = List.first(applications)
+      newest = List.last(applications)
+
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/applications")
+
+      assert length(index_ids(view)) == 25
+      assert has_element?(view, "#applications-page", "Page 1 of 2")
+      assert has_element?(view, "#applications-range", "Showing 1–25 of 27 applications")
+      assert has_element?(view, "#applications-#{newest.id}")
+      refute has_element?(view, "#applications-#{oldest.id}")
+      assert has_element?(view, "#pagination-prev-disabled")
+      assert has_element?(view, "#pagination-next[href='/applications?page=2']")
+
+      render_patch(view, ~p"/applications?page=2")
+
+      assert length(index_ids(view)) == 2
+      assert has_element?(view, "#applications-page", "Page 2 of 2")
+      assert has_element?(view, "#applications-#{oldest.id}")
+      refute has_element?(view, "#applications-#{newest.id}")
+      assert has_element?(view, "#pagination-prev[href='/applications']")
+      assert has_element?(view, "#pagination-next-disabled")
+    end
+
+    test "keeps filters when navigating pages", %{conn: conn} do
+      user = user_fixture()
+      scope = Scope.for_user(user)
+
+      for index <- 1..26 do
+        application_fixture(scope, %{position: "Acme #{index}", company_name: "Acme Corp"})
+      end
+
+      _other = application_fixture(scope, %{position: "Beta", company_name: "Beta Inc"})
+
+      {:ok, view, _html} =
+        conn |> log_in_user(user) |> live(~p"/applications?company=Acme+Corp")
+
+      assert has_element?(view, "#applications-page", "Page 1 of 2")
+
+      assert has_element?(
+               view,
+               "#pagination-next[href='/applications?company=Acme+Corp&page=2']"
+             )
+
+      render_patch(view, ~p"/applications?company=Acme+Corp&page=2")
+
+      assert has_element?(view, "#applications-page", "Page 2 of 2")
+      assert length(index_ids(view)) == 1
+    end
+  end
+
+  describe "index empty states" do
+    test "shows the no-applications state and hides the filter bar", %{conn: conn} do
+      user = user_fixture()
+
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/applications")
+
+      assert has_element?(view, "#applications-empty", "No applications yet")
+      refute has_element?(view, "#applications-no-matches")
+      refute has_element?(view, "#application-filters")
+      refute has_element?(view, "#applications-pagination")
+    end
+  end
+
+  defp change_status!(scope, application, slug) do
+    status = JobApplications.get_status_by_slug(slug)
+
+    {:ok, _application} =
+      JobApplications.change_status(scope, application, %{status_id: status.id})
+
+    :ok
+  end
+
+  defp set_application_timestamps(application, inserted_at, updated_at) do
+    from(a in JobApplication, where: a.id == ^application.id)
+    |> Repo.update_all(set: [inserted_at: inserted_at, updated_at: updated_at])
+
+    :ok
+  end
+
+  defp index_ids(view) do
+    view
+    |> render()
+    |> LazyHTML.from_fragment()
+    |> LazyHTML.query("#applications > div")
+    |> LazyHTML.attribute("id")
+  end
 end

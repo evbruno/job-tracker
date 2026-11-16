@@ -9,19 +9,125 @@
     </:actions>
   </.header>
 
+  <.form
+    :if={@empty_state != :no_applications}
+    for={%{}}
+    id="application-filters"
+    phx-change="filter"
+    phx-submit="filter"
+    phx-debounce="300"
+    class="mb-4 rounded-box border border-base-300 bg-base-100 p-3"
+  >
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <.input
+        type="search"
+        name="q"
+        id="filter-q"
+        label="Search"
+        value={@filters.q}
+        placeholder="Position or company"
+        autocomplete="off"
+        class="w-full input input-sm"
+      />
+      <.input
+        type="select"
+        name="status"
+        id="filter-status"
+        label="Status"
+        prompt="All statuses"
+        options={status_options(@filter_options)}
+        value={@filters.status}
+        class="w-full select select-sm"
+      />
+      <.input
+        type="select"
+        name="company"
+        id="filter-company"
+        label="Company"
+        prompt="All companies"
+        options={company_options(@filter_options)}
+        value={@filters.company}
+        class="w-full select select-sm"
+      />
+      <.input
+        type="select"
+        name="recruiter"
+        id="filter-recruiter"
+        label="Recruiter"
+        prompt="All recruiters"
+        options={recruiter_options(@filter_options)}
+        value={@filters.recruiter}
+        class="w-full select select-sm"
+      />
+      <.input
+        type="select"
+        name="tags[]"
+        id="filter-tags"
+        label="Tags (must have all)"
+        multiple
+        options={tag_options(@filter_options)}
+        value={@filters.tags}
+        class="w-full select select-sm"
+      />
+      <.input
+        type="select"
+        name="sort"
+        id="filter-sort"
+        label="Sort by"
+        options={[{"Created date", "created"}, {"Last updated", "updated"}]}
+        value={@filters.sort}
+        class="w-full select select-sm"
+      />
+      <div class="flex flex-col">
+        <span class="label mb-1 text-sm">Direction</span>
+        <button
+          type="button"
+          id="toggle-sort-direction"
+          phx-click="toggle_direction"
+          class="btn btn-outline btn-sm w-full justify-start"
+        >
+          <.icon name={direction_icon(@filters)} class="size-4" />
+          {direction_label(@filters)}
+        </button>
+      </div>
+      <div class="flex items-end gap-2">
+        <button type="submit" id="apply-filters" class="btn btn-primary btn-sm">Search</button>
+        <.link
+          :if={@filters_active?}
+          patch={~p"/applications"}
+          id="clear-filters"
+          class="btn btn-ghost btn-sm"
+        >
+          Clear filters
+        </.link>
+      </div>
+    </div>
+  </.form>
+
+  <div
+    :if={@total_count > 0}
+    id="applications-summary"
+    class="mb-3 flex flex-col gap-1 text-sm text-base-content/70 sm:flex-row sm:items-center sm:justify-between"
+  >
+    <p id="applications-range">
+      Showing {@range_start}–{@range_end} of {@total_count} applications
+    </p>
+    <p id="applications-page">Page {@page} of {@total_pages}</p>
+  </div>
+
   <div id="applications" phx-update="stream" class="flex flex-col gap-3">
     <div
       :for={{dom_id, application} <- @streams.applications}
       id={dom_id}
       class="card border border-base-300 bg-base-100 shadow-sm"
     >
-      <div class="flex items-start justify-between gap-4">
+      <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <.link
           id={"#{dom_id}-link"}
           navigate={~p"/applications/#{application.id}"}
           class="card-body flex-1"
         >
-          <div class="flex flex-row items-start justify-between gap-4">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div class="space-y-1">
               <h2 class="card-title text-base" id={"#{dom_id}-position"}>
                 {application.position}
@@ -39,7 +145,7 @@
                 </span>
               </div>
             </div>
-            <div class="flex flex-col items-end gap-2 text-right">
+            <div class="flex flex-row items-center gap-2 text-left sm:flex-col sm:items-end sm:text-right">
               <span class="badge badge-primary badge-outline" id={"#{dom_id}-status"}>
                 {application.status.name}
               </span>
@@ -54,14 +160,14 @@
           </div>
         </.link>
 
-        <div class="p-4">
+        <div class="px-4 pb-4 sm:py-4 sm:pr-4 sm:pl-0">
           <button
             type="button"
             id={"delete-application-#{application.id}"}
             phx-click="delete"
             phx-value-id={application.id}
             data-confirm="Delete this application? Its status history and tag links will also be removed."
-            class="btn btn-error btn-outline btn-sm"
+            class="btn btn-error btn-outline btn-sm w-full sm:w-auto"
           >
             Delete
           </button>
@@ -71,7 +177,7 @@
   </div>
 
   <div
-    :if={@applications_empty?}
+    :if={@empty_state == :no_applications}
     id="applications-empty"
     class="card border border-dashed border-base-300 bg-base-100"
   >
@@ -84,6 +190,60 @@
       <.link navigate={~p"/applications/new"} class="btn btn-primary btn-sm">
         Create your first application
       </.link>
+    </div>
+  </div>
+
+  <div
+    :if={@empty_state == :no_matches}
+    id="applications-no-matches"
+    class="card border border-dashed border-base-300 bg-base-100"
+  >
+    <div class="card-body items-center text-center">
+      <.icon name="hero-magnifying-glass" class="size-10 text-base-content/40" />
+      <h2 class="card-title">No matching applications</h2>
+      <p class="text-sm text-base-content/70">
+        No applications match the current search and filters.
+      </p>
+      <.link patch={~p"/applications"} id="clear-filters-empty" class="btn btn-primary btn-sm">
+        Clear filters
+      </.link>
+    </div>
+  </div>
+
+  <div
+    :if={@total_count > 0}
+    id="applications-pagination"
+    class="mt-4 flex flex-col items-center justify-between gap-2 sm:flex-row"
+  >
+    <p class="text-xs text-base-content/60">{@page_size} per page</p>
+    <div class="flex items-center gap-2">
+      <.link
+        :if={@page > 1}
+        patch={applications_path(@filters, @page - 1)}
+        id="pagination-prev"
+        class="btn btn-sm"
+      >
+        Previous
+      </.link>
+      <span :if={@page == 1} id="pagination-prev-disabled" class="btn btn-sm btn-disabled">
+        Previous
+      </span>
+      <span id="pagination-page" class="text-sm">Page {@page} of {@total_pages}</span>
+      <.link
+        :if={@page < @total_pages}
+        patch={applications_path(@filters, @page + 1)}
+        id="pagination-next"
+        class="btn btn-sm"
+      >
+        Next
+      </.link>
+      <span
+        :if={@page == @total_pages}
+        id="pagination-next-disabled"
+        class="btn btn-sm btn-disabled"
+      >
+        Next
+      </span>
     </div>
   </div>
 </Layouts.app>

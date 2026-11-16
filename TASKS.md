@@ -2,11 +2,11 @@
 
 ## Current Project Status
 
-**Current phase:** Phase 5 — Application Status and History (complete; awaiting review)
+**Current phase:** Phase 6 — Search and Usability (complete; MVP functionally complete, awaiting review)
 
-**Overall status:** Phase 5 complete — ready for Phase 6 after review
+**Overall status:** Phases 1–6 complete — the MVP is functionally complete; Phase 7 (Production Readiness) is next after review.
 
-**Current milestone:** Phase 5 verified; next implement search and usability (Phase 6).
+**Current milestone:** Phase 6 verified; next implement production readiness (Phase 7).
 
 ---
 
@@ -231,10 +231,10 @@
 - [x] Implement tag filters.
 - [x] Implement sorting (created date and last update, ascending/descending).
 - [x] Combine filters with AND; multiple selected tags use AND.
-- [ ] Keep search, filter, and sort state in the URL query string.
-- [ ] Improve empty states.
-- [ ] Improve responsive UI.
-- [ ] Paginate the application list (25 per page).
+- [x] Keep search, filter, and sort state in the URL query string.
+- [x] Improve empty states.
+- [x] Improve responsive UI.
+- [x] Paginate the application list (25 per page).
 
 **Acceptance criteria:**
 - Users can quickly locate applications.
@@ -243,6 +243,50 @@
 
 > The MVP is functionally complete after Phase 6.
 > Phase 7 must be completed before release to real users.
+
+**Phase 6 completion notes:**
+- `TrackMyJobEx.JobApplications` owns the listing query through
+  `list_applications_filtered/2`, which returns `:entries`, `:total_count`,
+  `:page`, `:total_pages`, `:page_size`, `:filters`, and `:filtered?`.
+  `normalize_filters/2` and `filter_options/1` support the LiveView without
+  duplicating filtering rules, and `page_size/0` exposes the 25-per-page
+  constant.
+- URL parameter contract: `q` (search), `status` (status slug), `company`,
+  `recruiter`, `tags[]` (tag ids), `sort` (`created` or `updated`),
+  `direction` (`asc` or `desc`), and `page`. Defaults (`created`, `desc`, page 1)
+  and blank values are omitted from generated URLs. Unknown values fall back to
+  the defaults, and malformed pages clamp to the valid range.
+- Search uses `lower(...) LIKE ? ESCAPE '\'` against position and company name.
+  `%`, `_`, and `\` in the search term are escaped so they match literally.
+  Status filtering uses the status slug; company and recruiter filters match
+  the dropdown value case-insensitively and exactly.
+- Multiple filters combine with `AND`. Multiple tags also use `AND`: the query
+  groups tag links by application and requires the link count to equal the
+  number of selected tags. Tag ids are filtered through the current user's tags
+  first, so another user's ids are ignored rather than widening results.
+- Sorting is whitelisted (created date or last update, ascending or descending)
+  with an `id` tiebreaker for deterministic pagination. Pagination uses
+  `limit`/`offset` with 25 per page, and a page beyond the last page resolves to
+  the last page.
+- `ApplicationLive.Index` stays thin: `handle_params/3` loads the current query
+  state, filter changes and sort-direction toggles `push_patch` to canonical
+  URLs, and the template uses `<.link patch={...}>` for pagination and clearing
+  filters. Company/recruiter/status/tag options come from the context and are
+  limited to the current user.
+- Empty states are distinct: `#applications-empty` (no applications yet, with a
+  create call to action) and `#applications-no-matches` (filters are active but
+  nothing matches, with a clear-filters action). The filter bar is hidden when
+  the user has no applications at all.
+- The filter bar, list rows, summary, and pagination use responsive Tailwind
+  classes (single column on small screens, multi-column on larger ones). No new
+  dependencies or Tailwind configuration were added.
+- Phase 6 added 28 tests (231 total): context tests for search, wildcard
+  escaping, each filter, combined filters, tag AND semantics, dropdown values,
+  sorting in both directions and both fields, pagination boundaries and
+  clamping, invalid parameter handling, and cross-user isolation; LiveView tests
+  for searching, each filter, tag AND filtering, sorting toggles, pagination
+  navigation, URL-restored state, deletion under active filters, and both empty
+  states. `mix precommit` passes.
 
 ## Phase 7 — Production Readiness
 

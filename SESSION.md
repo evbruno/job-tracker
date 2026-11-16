@@ -7,35 +7,50 @@ Update it before ending every session.
 
 ## Current State
 
-- **Current phase:** Phase 5 — Application Status and History (complete; awaiting review)
-- **Current task group:** 5.9 — complete.
-- **Next task:** Phase 6.1 after review — implement application search and usability.
-- **Overall status:** Phase 5 complete and verified; Phase 6 not started.
-- **Last commit:** Phase 5.9: Add status history tests (final Phase 5 commit;
-  see `git log`).
+- **Current phase:** Phase 6 — Search and Usability (complete; MVP functionally
+  complete, awaiting review)
+- **Current task group:** 6.1–6.11 — complete.
+- **Next task:** Phase 7.1 security review after review.
+- **Overall status:** Phases 1–6 complete and verified. The MVP is functionally
+  complete; Phase 7 (Production Readiness) must be completed before release.
+- **Last commit:** final Phase 6 documentation commit (see `git log`).
 
 ## Last Session Summary
 
-Phase 5 (Application Status and History) is complete. Applications are created
-atomically with their initial `Interested` history row, every later status change
-updates the application and appends a history row in one `Ecto.Multi`
-transaction, and the application details page now provides a status-change form
-with an optional note plus a chronological timeline.
+Phase 6 (Search and Usability) is complete. The application list now supports
+case-insensitive partial search on position and company, status/company/
+recruiter/tag filters (all combined with AND, multiple tags with AND), sorting
+by creation date or last update in both directions, and 25-per-page pagination.
+All listing state lives in the URL query string, so refresh and bookmarks
+restore the same view. The LiveView uses `handle_params/3` plus `push_patch`, and
+all query building stays in `TrackMyJobEx.JobApplications`.
 
-Tasks 5.1 and 5.2 were verified as already implemented in Phase 3: the status
-foreign key, the default `Interested` status, and ignoring client-supplied
-`status_id` values. No changes were needed for them.
+Company and recruiter filters are dropdowns populated from the current user's
+own applications, and tag options come from the user's tags. Search LIKE
+wildcards are escaped, invalid filter/sort/page values fall back to defaults,
+and another user's tag ids are ignored. Empty states distinguish "no
+applications yet" (create call to action) from "no matching applications"
+(clear filters). The filter bar, list rows, and pagination are responsive.
 
-Status changes reject the current status and unknown or missing status ids with
-changeset errors. Any status may transition to any other. Notes are trimmed,
-blank notes become `NULL`, and notes are limited to 2,000 characters. History is
-append-only with no update or delete API. `updated_at` changes on every status
-change. Cross-user access behaves as not found for status reads, writes, and
-history reads.
-
-Phase 5 added 14 tests; the suite is 203 tests and `mix precommit` passes.
+Phase 6 added 28 tests; the suite is 231 tests and `mix precommit` passes.
 
 ## Assumptions Made
+
+- 2026-11-16 — Task 6.1–6.7: The URL contract uses status slugs (`status=applied`)
+  rather than status ids, and tag ids for tags (`tags[]=1&tags[]=2`). Invalid or
+  unknown values fall back to the defaults instead of producing an error page.
+- 2026-11-16 — Task 6.5: Tag ids that do not belong to the current user are
+  dropped before filtering, so another user's ids never filter and never widen
+  the result set.
+- 2026-11-16 — Task 6.6: Sort fields are `created` (`inserted_at`) and `updated`
+  (`updated_at`); the `id` tiebreaker follows the primary direction so
+  pagination stays deterministic.
+- 2026-11-16 — Task 6.8: Any filter or sort change resets pagination to page 1.
+- 2026-11-16 — Task 6.9: The empty-state distinction is based on whether filters
+  are active. With zero applications and active filters, the no-matches state is
+  shown; clearing the filters reveals the "no applications yet" state.
+- 2026-11-16 — Task 6.11: A page number beyond the last page is clamped to the
+  last page. The requested page may remain in the URL until the next navigation.
 
 - 2026-11-14 — Task 2.1: Used the Phoenix authentication generator with LiveView
   and the default `bcrypt` hashing library on this platform.
@@ -136,14 +151,12 @@ None. If this file and PRODUCT.md conflict, PRODUCT.md wins; list the conflict h
 
 ## Next Actions
 
-1. Await Phase 5 review.
-2. After review, start Phase 6.1: implement application search using `LIKE` or
-   `lower()` (SQLite has no `ILIKE`).
-3. Continue Phase 6 with status, company, recruiter, and tag filters, then
-   sorting, URL-persisted state, empty states, responsive UI, and 25-per-page
-   pagination.
-4. Keep all list queries scoped to `current_scope` and do not expose unscoped
-   lookups.
+1. Await Phase 6 review.
+2. After review, start Phase 7.1: security review.
+3. Continue Phase 7 with tenant isolation review, query/SQLite concurrency review,
+   production SQLite storage, HTTPS, logging/monitoring, backups with a tested
+   restore, deployment pipeline, end-to-end tests, and deployment documentation.
+4. Do not release to real users until Phase 7 is complete.
 
 ---
 
@@ -153,25 +166,24 @@ Add one entry per session, newest first, in this format:
 
 ### 2026-11-16
 
-- **Done:** Phase 5, task groups 5.1–5.9. Verified the Phase 3 status wiring
-  and default `Interested` status (5.1–5.2, no code changes). Application
-  creation now writes the application and its initial history row atomically.
-  Added `StatusChange` form validation and scoped
-  `change_status_changeset/3`/`change_status/4` context functions using
-  `Ecto.Multi` for status + history updates, same-status and unknown-status
-  rejection, trimmed optional notes with a 2,000-character limit, and
-  append-only history reads. The details page now has a status-change form and
-  a chronological timeline with previous status, new status, timestamp, and
-  notes. Added 14 tests (203 total), including transactional rollback and
-  cross-user isolation; `mix precommit` passes.
+- **Done:** Phase 6, task groups 6.1–6.11. Added
+  `JobApplications.list_applications_filtered/2` plus `normalize_filters/2`,
+  `filter_options/1`, and `page_size/0` for case-insensitive partial search,
+  status/company/recruiter/tag filters with AND semantics, whitelisted sorting
+  by creation or update date in both directions, and 25-per-page pagination.
+  Rewrote `ApplicationLive.Index` to keep search, filter, sort, and page state
+  in the URL query string using `handle_params/3` and `push_patch`, with
+  dropdowns from the user's own values, separate no-applications and no-matches
+  empty states, and responsive Tailwind layout. Added 28 tests (231 total),
+  including wildcard escaping, tag AND semantics, sorting, pagination, invalid
+  parameters, URL restoration, and cross-user isolation; `mix precommit` passes.
 - **Commits:**
-  - `628577c` Phase 5.3: Create initial history and status change context
-  - `999b6b9` Phase 5.8: Display application timeline and status change form
-  - Phase 5.9: Add status history tests and document phase (final Phase 5
+  - `f0d4eea` Phase 6.1: Implement search, filters, and sorting queries
+  - Phase 6.11: Add listing UI, LiveView tests, and document phase (final Phase 6
     commit; see `git log`)
 - **Assumptions:** See the Assumptions Made section above.
 - **Blockers:** None.
-- **Next:** Await Phase 5 review, then Phase 6.1 search.
+- **Next:** Await Phase 6 review, then start Phase 7.1 security review.
 
 ### 2026-11-16
 
