@@ -9,6 +9,7 @@ defmodule TrackMyJobExWeb.ApplicationLive.Edit do
   use TrackMyJobExWeb, :live_view
 
   alias TrackMyJobEx.JobApplications
+  alias TrackMyJobEx.Tags
   alias TrackMyJobExWeb.ApplicationForm
 
   @impl true
@@ -28,32 +29,49 @@ defmodule TrackMyJobExWeb.ApplicationLive.Edit do
 
         scope = socket.assigns.current_scope
 
+        selected_tag_ids =
+          JobApplications.list_application_tags(scope, application) |> Enum.map(& &1.id)
+
         {:ok,
          socket
          |> assign(:page_title, "Edit application")
          |> assign(:application, application)
          |> assign(:form, form)
          |> assign(:company_suggestions, JobApplications.list_company_suggestions(scope))
-         |> assign(:recruiter_suggestions, JobApplications.list_recruiter_suggestions(scope))}
+         |> assign(:recruiter_suggestions, JobApplications.list_recruiter_suggestions(scope))
+         |> assign(:tags, Tags.list_tags(scope))
+         |> assign(:selected_tag_ids, selected_tag_ids)
+         |> assign(:new_tags, "")
+         |> assign(:tag_errors, [])}
     end
   end
 
   @impl true
-  def handle_event("validate", %{"job_application" => params}, socket) do
+  def handle_event("validate", %{"job_application" => params} = all_params, socket) do
     form =
       socket.assigns.current_scope
       |> JobApplications.change_application(socket.assigns.application, params)
       |> Map.put(:action, :validate)
       |> to_form()
 
-    {:noreply, assign(socket, :form, form)}
+    {:noreply,
+     socket
+     |> assign(:form, form)
+     |> assign(:selected_tag_ids, Map.get(all_params, "tag_ids", []))
+     |> assign(:new_tags, Map.get(all_params, "new_tags", ""))
+     |> assign(:tag_errors, [])}
   end
 
-  def handle_event("save", %{"job_application" => params}, socket) do
-    case JobApplications.update_application(
+  def handle_event("save", %{"job_application" => params} = all_params, socket) do
+    tag_ids = Map.get(all_params, "tag_ids", [])
+    new_tags = ApplicationForm.parse_new_tag_names(Map.get(all_params, "new_tags", ""))
+
+    case JobApplications.update_application_with_tags(
            socket.assigns.current_scope,
            socket.assigns.application,
-           params
+           params,
+           tag_ids,
+           new_tags
          ) do
       {:ok, application} ->
         {:noreply,
@@ -62,7 +80,12 @@ defmodule TrackMyJobExWeb.ApplicationLive.Edit do
          |> push_navigate(to: ~p"/applications/#{application.id}")}
 
       {:error, changeset} ->
-        {:noreply, assign(socket, :form, to_form(changeset))}
+        {:noreply,
+         socket
+         |> assign(:form, to_form(changeset))
+         |> assign(:selected_tag_ids, tag_ids)
+         |> assign(:new_tags, Map.get(all_params, "new_tags", ""))
+         |> assign(:tag_errors, ApplicationForm.tag_errors(changeset))}
     end
   end
 end

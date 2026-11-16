@@ -2,11 +2,11 @@
 
 ## Current Project Status
 
-**Current phase:** Phase 4 — Job Application Management
+**Current phase:** Phase 4 — Job Application Management (complete; awaiting review)
 
-**Overall status:** Phase 3 complete — ready for Phase 4
+**Overall status:** Phase 4 complete — ready for Phase 5 after review
 
-**Current milestone:** Phase 3 verified; next implement application listing.
+**Current milestone:** Phase 4 verified; next implement status history (Phase 5).
 
 ---
 
@@ -138,7 +138,7 @@
 - [x] Suggest previously used company and recruiter values in the form (`datalist`, current user's values only).
 - [x] Implement inline tag creation from the application form.
 - [x] Implement standalone tag management page (list, rename, delete).
-- [ ] Implement application-tag associations.
+- [x] Implement application-tag associations.
 
 **Acceptance criteria:**
 - Users can create and manage applications.
@@ -146,6 +146,33 @@
 - Company and recruiter are plain text fields with suggestions from the user's earlier entries.
 - Applications support multiple tags.
 - Application details display associated information.
+
+**Phase 4 completion notes:**
+- LiveViews: `ApplicationLive.Index`, `ApplicationLive.New`,
+  `ApplicationLive.Edit`, `ApplicationLive.Show`, and `TagLive.Index`, all under
+  the existing protected `live_session`. Navigation links for Applications and
+  Tags are enabled.
+- The list shows position, company, current status, creation date, and tags,
+  newest first. Phase 6 filters, search, sorting, and pagination are not
+  implemented yet.
+- The shared `ApplicationForm` handles create/edit, company and recruiter
+  `datalist` suggestions, existing-tag multi-select, and comma-separated inline
+  tag creation. Suggestions and tag IDs are scoped to the current user.
+- Context additions: `list_company_suggestions/1`,
+  `list_recruiter_suggestions/1`, `new_application_changeset/2`,
+  `create_application_with_tags/4`, `update_application_with_tags/5`,
+  `set_application_tags/3`, and `Tags.get_tag_by_name/2`,
+  `Tags.get_or_create_tag/2`, `Tags.change_tag/3`.
+- Application creation/editing with tags is transactional. Unknown or
+  other-user tag IDs roll back field and tag changes. Inline names reuse an
+  existing tag case-insensitively and preserve its original casing.
+- Details display all application fields, a safe external job-posting link,
+  tags, timestamps, and read-only status history. Status changes remain Phase 5.
+- Deletion requires confirmation, is a hard delete, and relies on database
+  cascades for history and tag links. Tag deletion removes links only.
+- Cross-user records behave as not found: contexts return/raise as before and
+  LiveViews redirect to the list with an error flash.
+- Phase 4 added 67 tests; the suite is 189 tests. `mix precommit` passes.
 
 ## Phase 5 — Application Status and History
 

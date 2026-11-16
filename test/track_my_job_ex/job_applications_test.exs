@@ -569,4 +569,111 @@ defmodule TrackMyJobEx.JobApplicationsTest do
       assert JobApplications.list_applications(scope) == []
     end
   end
+
+  describe "update_application_with_tags/5 and set_application_tags/3" do
+    test "updates fields, replaces tag links, and touches the timestamp", %{scope: scope} do
+      first = TagsFixtures.tag_fixture(scope, %{name: "First"})
+      second = TagsFixtures.tag_fixture(scope, %{name: "Second"})
+      application = JobApplicationsFixtures.application_fixture(scope)
+      {:ok, _application_tag} = JobApplications.add_tag_to_application(scope, application, first)
+      old = DateTime.add(DateTime.utc_now(:second), -86_400, :second)
+      set_updated_at(application, old)
+
+      assert {:ok, updated} =
+               JobApplications.update_application_with_tags(
+                 scope,
+                 application,
+                 %{position: "Updated"},
+                 [second.id],
+                 ["Remote"]
+               )
+
+      assert updated.position == "Updated"
+
+      assert JobApplications.list_application_tags(scope, application) |> Enum.map(& &1.name) == [
+               "Remote",
+               "Second"
+             ]
+
+      assert DateTime.compare(reload(application).updated_at, old) == :gt
+    end
+
+    test "set_application_tags/3 replaces the full tag set", %{scope: scope} do
+      first = TagsFixtures.tag_fixture(scope, %{name: "First"})
+      second = TagsFixtures.tag_fixture(scope, %{name: "Second"})
+      application = JobApplicationsFixtures.application_fixture(scope)
+      {:ok, _application_tag} = JobApplications.add_tag_to_application(scope, application, first)
+
+      assert {:ok, _updated} =
+               JobApplications.set_application_tags(scope, application, [second.id])
+
+      assert JobApplications.list_application_tags(scope, application) |> Enum.map(& &1.id) == [
+               second.id
+             ]
+
+      assert {:ok, _updated} = JobApplications.set_application_tags(scope, application, [])
+      assert JobApplications.list_application_tags(scope, application) == []
+    end
+
+    test "rolls back field and tag changes when a tag belongs to another user", %{scope: scope} do
+      first = TagsFixtures.tag_fixture(scope, %{name: "First"})
+      application = JobApplicationsFixtures.application_fixture(scope, %{position: "Original"})
+      {:ok, _application_tag} = JobApplications.add_tag_to_application(scope, application, first)
+      other_scope = AccountsFixtures.user_scope_fixture()
+      other_tag = TagsFixtures.tag_fixture(other_scope)
+
+      assert {:error, changeset} =
+               JobApplications.update_application_with_tags(
+                 scope,
+                 application,
+                 %{position: "Hijacked"},
+                 [other_tag.id],
+                 []
+               )
+
+      assert errors_on(changeset).tags != []
+
+      unchanged = JobApplications.get_application!(scope, application.id)
+      assert unchanged.position == "Original"
+
+      assert JobApplications.list_application_tags(scope, application) |> Enum.map(& &1.id) == [
+               first.id
+             ]
+    end
+
+    test "reuses an existing tag for an inline name on update", %{scope: scope} do
+      existing = TagsFixtures.tag_fixture(scope, %{name: "Elixir"})
+      application = JobApplicationsFixtures.application_fixture(scope)
+
+      assert {:ok, _updated} =
+               JobApplications.update_application_with_tags(
+                 scope,
+                 application,
+                 %{},
+                 [],
+                 ["elixir"]
+               )
+
+      assert JobApplications.list_application_tags(scope, application) |> Enum.map(& &1.id) == [
+               existing.id
+             ]
+    end
+
+    test "does not let another user update or re-tag the application", %{scope: scope} do
+      application = JobApplicationsFixtures.application_fixture(scope)
+      other_scope = AccountsFixtures.user_scope_fixture()
+
+      assert_raise Ecto.NoResultsError, fn ->
+        JobApplications.update_application_with_tags(
+          other_scope,
+          application,
+          %{position: "Hijacked"},
+          [],
+          []
+        )
+      end
+
+      assert JobApplications.get_application(scope, application.id).position != "Hijacked"
+    end
+  end
 end

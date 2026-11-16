@@ -89,7 +89,7 @@ defmodule TrackMyJobEx.JobApplications do
     from(application in JobApplication,
       where: application.user_id == ^scope.user.id,
       order_by: [desc: application.inserted_at, desc: application.id],
-      preload: [:status]
+      preload: [:status, :tags]
     )
     |> Repo.all()
   end
@@ -180,6 +180,49 @@ defmodule TrackMyJobEx.JobApplications do
     scope
     |> fetch_application!(application_or_id)
     |> JobApplication.changeset(attrs)
+  end
+
+  @doc """
+  Updates an application and replaces its tag links atomically.
+
+  Selected `tag_ids` must belong to the scope and inline `new_tag_names` are
+  reused case-insensitively. Any invalid tag rolls back both the field updates
+  and the tag links. Tag changes touch the application's `updated_at`.
+  """
+  def update_application_with_tags(
+        %Scope{} = scope,
+        application_or_id,
+        attrs,
+        tag_ids \\ [],
+        new_tag_names \\ []
+      ) do
+    application = fetch_application!(scope, application_or_id)
+    changeset = JobApplication.changeset(application, attrs)
+
+    Repo.transaction(fn ->
+      with {:ok, application} <- Repo.update(changeset),
+           {:ok, tags} <- resolve_tags(scope, tag_ids, new_tag_names),
+           :ok <- sync_tag_links(application, tags) do
+        Repo.preload(application, :tags, force: true)
+      else
+        {:error, %Ecto.Changeset{} = error} ->
+          Repo.rollback({:application_error, error})
+
+        {:error, reason} ->
+          Repo.rollback({:tag_error, put_tag_error(changeset, reason)})
+      end
+    end)
+    |> normalize_transaction()
+  end
+
+  @doc """
+  Replaces the tags linked to an application owned by the scope.
+
+  Returns `{:ok, application}` with the tags preloaded, or an error changeset
+  when any tag is unknown or belongs to another user.
+  """
+  def set_application_tags(%Scope{} = scope, application_or_id, tag_ids) do
+    update_application_with_tags(scope, application_or_id, %{}, tag_ids, [])
   end
 
   @doc """
@@ -374,6 +417,50 @@ defmodule TrackMyJobEx.JobApplications do
   end
 
   defp get_or_create_tags(_scope, _names), do: {:error, :invalid_tag}
+
+  defp sync_tag_links(application, tags) do
+    current_ids = linked_tag_ids(application)
+    desired_ids = tags |> Enum.map(& &1.id) |> Enum.uniq()
+    to_add = desired_ids -- current_ids
+    to_remove = current_ids -- desired_ids
+
+    if to_add != [] or to_remove != [] do
+      delete_tag_links(application, to_remove)
+      insert_tag_links(application, to_add)
+      touch_application(application)
+    end
+
+    :ok
+  end
+
+  defp linked_tag_ids(application) do
+    from(application_tag in ApplicationTag,
+      where: application_tag.application_id == ^application.id,
+      select: application_tag.tag_id
+    )
+    |> Repo.all()
+  end
+
+  defp delete_tag_links(_application, []), do: :ok
+
+  defp delete_tag_links(application, tag_ids) do
+    from(application_tag in ApplicationTag,
+      where:
+        application_tag.application_id == ^application.id and
+          application_tag.tag_id in ^tag_ids
+    )
+    |> Repo.delete_all()
+
+    :ok
+  end
+
+  defp insert_tag_links(_application, []), do: :ok
+
+  defp insert_tag_links(application, tag_ids) do
+    rows = Enum.map(tag_ids, &%{application_id: application.id, tag_id: &1})
+    Repo.insert_all(ApplicationTag, rows)
+    :ok
+  end
 
   defp link_tags(application, tags) do
     rows = Enum.map(tags, &%{application_id: application.id, tag_id: &1.id})

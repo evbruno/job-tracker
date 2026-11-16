@@ -7,45 +7,40 @@ Update it before ending every session.
 
 ## Current State
 
-- **Current phase:** Phase 4 — Job Application Management
-- **Current task group:** 4.1 — not started
-- **Next task:** Implement application listing (Phase 4.1), reading applications
-  through `TrackMyJobEx.JobApplications.list_applications/1` with
-  `current_scope`.
-- **Overall status:** Phase 3 complete and verified; ready to start Phase 4.
-- **Last commit:** Phase 3.10: Add domain tests (final Phase 3 commit)
+- **Current phase:** Phase 4 — Job Application Management (complete; awaiting review)
+- **Current task group:** 4.10 — complete.
+- **Next task:** Phase 5.1 after review — verify the already-wired statuses and
+  default `Interested`, then implement the initial history record and status
+  transitions.
+- **Overall status:** Phase 4 complete and verified; Phase 5 not started.
+- **Last commit:** Phase 4.10: Implement application-tag associations (final
+  Phase 4 commit; see `git log`).
 
 ## Last Session Summary
 
-Phase 3 (Core Domain) is complete. The domain now has five schemas:
-`TrackMyJobEx.JobApplications.JobApplication`, `.Status`,
-`.ApplicationStatusHistory`, `.ApplicationTag`, and `TrackMyJobEx.Tags.Tag`.
+Phase 4 (Job Application Management) is complete. The app now has protected
+LiveViews for application listing, creation, editing, details, and deletion, plus
+a standalone tag management page. Navigation exposes Applications and Tags.
 
-The `statuses` table is populated by a data migration with the 13 predefined
-statuses in display order. Statuses are global read-only data; applications
-reference a status by foreign key and default to `Interested` when created.
-Status transitions and status history creation remain deliberately unimplemented
-for Phase 5; this phase only exposes status reads and history reads.
+The list shows position, company, current status, creation date, and tags,
+newest first. Phase 6 filters, search, sorting, and pagination are intentionally
+not implemented yet. The shared `ApplicationForm` provides company/recruiter
+`datalist` suggestions from the current user's values, existing-tag multi-select,
+and comma-separated inline tag creation. Creation and editing with tags are
+transactional: unknown or other-user tag IDs roll back all changes, and an inline
+name reuses an existing tag case-insensitively while preserving its casing.
 
-Applications are user-owned. `TrackMyJobEx.JobApplications` exposes scoped
-create/get/list/update/delete functions plus tag association helpers. Tags are
-user-owned through `TrackMyJobEx.Tags`. Every user-owned function takes a
-`%TrackMyJobEx.Accounts.Scope{}` first and re-fetches records through the scope;
-another user's id is treated as not found. Client-supplied `user_id`, `status_id`,
-and ownership fields are never cast.
+Application details render all fields, a validated external job-posting link,
+tags, timestamps, and read-only status history. Status changes and history
+creation remain Phase 5. Deletion requires confirmation and is a hard delete;
+database cascades remove history and tag links. Tag deletion removes links only.
+Cross-user records behave as not found: contexts return/raise as before, and
+LiveViews redirect to the list with an error flash.
 
-Database integrity is enforced by not-null columns, foreign keys, a unique
-`(application_id, tag_id)` join index, a `(user_id, name COLLATE NOCASE)` unique
-tag index (raw SQL; case preserved), and a `(user_id, company_name)` index.
-Application deletion cascades to status history and tag links; tag deletion
-cascades to tag links only. Tagging and untagging an application update its
-`updated_at` in the same short transaction.
-
-Domain tests cover validation limits, URL rules, trimming, blank-to-NULL
-normalization, the default status, status ordering, case-insensitive per-user tag
-uniqueness, association linking/unlinking and timestamp touches, database
-cascades, and cross-user isolation for applications and tags (read, list, update,
-delete, and association attempts).
+Phase 3 remains as previously recorded: five domain schemas, 13 seeded statuses,
+scoped contexts, database constraints/indexes, cascades, and cross-user domain
+isolation tests. Phase 4 added 67 tests; the suite is 189 tests and
+`mix precommit` passes.
 
 ## Assumptions Made
 
@@ -96,10 +91,32 @@ delete, and association attempts).
 - 2026-11-14 — Task 3.10: Cross-user access through `get_*` returns `nil`;
   through `get_*!`, `update_*`, `delete_*`, and association helpers it raises
   `Ecto.NoResultsError`, which callers must translate into "not found".
+- 2026-11-16 — Task 4.2/4.8: Inline tag input is comma-separated. Existing tags
+  are matched case-insensitively and reused with their original casing. Tag
+  names containing commas cannot be created through this input.
+- 2026-11-16 — Task 4.4: Application details show read-only status history.
+  Status changes, notes, and the interactive timeline are deliberately deferred
+  to Phase 5.
+- 2026-11-16 — Task 4.7: Company/recruiter suggestions are de-duplicated
+  case-insensitively, sorted case-insensitively, and preserve the first
+  encountered casing. They are computed in the context from the current scope's
+  applications only.
+- 2026-11-16 — Task 4.9: The standalone tag page lists, renames, and deletes
+  tags. It does not create tags standalone because PRODUCT.md only requires
+  inline creation plus list/rename/delete.
+- 2026-11-16 — Task 4.10: LiveViews redirect to the application list with an
+  error flash when another user's application is requested, rather than exposing
+  a 404 page. Context functions still return `nil`/raise as documented.
+- 2026-11-16 — Task 4.10: `create_application_with_tags/4`,
+  `update_application_with_tags/5`, and `set_application_tags/3` use
+  `Repo.transaction/1` (not `Ecto.Multi`) to keep creation/update and tag links
+  atomic.
 
 ## Blockers and Open Questions
 
-None.
+- Phase 5 tasks 5.1 (wire seeded statuses) and 5.2 (default `Interested`) are
+  already implemented in Phase 3. Phase 5 should verify and mark them rather than
+  duplicate the work, then start with the initial history record (5.3).
 
 ## Deviations from PRODUCT.md
 
@@ -107,19 +124,46 @@ None. If this file and PRODUCT.md conflict, PRODUCT.md wins; list the conflict h
 
 ## Next Actions
 
-1. Start Phase 4.1: implement application listing using the scoped
-   `TrackMyJobEx.JobApplications` context and the existing layout.
-2. Build application create/edit/details/delete LiveViews on top of the existing
-   context functions.
-3. Add company/recruiter `datalist` suggestions from the current user's values
-   only, inline tag creation, and standalone tag management.
-4. Keep LiveViews thin; all persistence goes through the contexts.
+1. Await Phase 4 review.
+2. After review, verify Phase 5.1/5.2 (already wired in Phase 3: status foreign
+   key and default `Interested`) and mark them complete.
+3. Implement the initial `Interested` history record and transactional status
+   transitions with optional notes (5.3–5.7), rejecting same-status changes.
+4. Add the status-change UI and chronological timeline (5.8), then status
+   history tests (5.9). Keep all reads/writes scoped and history append-only.
 
 ---
 
 ## Session Log
 
 Add one entry per session, newest first, in this format:
+
+### 2026-11-16
+
+- **Done:** Phase 4, task groups 4.1–4.10. Added protected LiveViews for
+  application list/create/edit/details/delete and tag list/rename/delete;
+  enabled Applications/Tags navigation; added company/recruiter suggestions,
+  existing-tag multi-select, comma-separated inline tag creation, safe job URL
+  rendering, read-only history display, and confirmation-gated hard deletes.
+  Added scoped context functions for suggestions, create/update with tags, tag
+  sync, and tag get/reuse/change. Tag/application writes are transactional and
+  validate ownership. Added 67 tests (189 total). `mix precommit` passes.
+- **Commits:**
+  - `cd44643` Phase 4.1: Implement application listing
+  - `8871e4e` Phase 4.2: Implement application creation
+  - `ddad5de` Phase 4.3: Implement application editing
+  - `3719a00` Phase 4.4: Implement application details
+  - `5a9d631` Phase 4.5: Implement application deletion
+  - `99a264e` Phase 4.6: Implement company and recruiter fields
+  - `d4e7a33` Phase 4.7: Suggest company and recruiter values
+  - `5c97eba` Phase 4.8: Implement inline tag creation
+  - `888a781` Phase 4.9: Implement standalone tag management
+  - Phase 4.10: Implement application-tag associations (final Phase 4 commit;
+    see `git log`)
+- **Assumptions:** See the Assumptions Made section above.
+- **Blockers:** None. Phase 5.1/5.2 overlap already-completed Phase 3 work; Phase
+  5 should verify and mark them instead of reimplementing.
+- **Next:** Await Phase 4 review, then Phase 5.1–5.9.
 
 ### 2026-11-14
 

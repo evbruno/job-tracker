@@ -16,6 +16,10 @@
         submit_label="Save changes"
         company_suggestions={@company_suggestions}
         recruiter_suggestions={@recruiter_suggestions}
+        tags={@tags}
+        selected_tag_ids={@selected_tag_ids}
+        new_tags={@new_tags}
+        tag_errors={@tag_errors}
         cancel_path={~p"/applications/#{@application.id}"}
       />
     </div>

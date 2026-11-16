@@ -85,6 +85,21 @@ defmodule TrackMyJobExWeb.ApplicationLiveTest do
     end
   end
 
+  describe "index tags" do
+    test "shows tags linked to each application", %{conn: conn} do
+      user = user_fixture()
+      scope = Scope.for_user(user)
+      application = application_fixture(scope)
+      tag = tag_fixture(scope, %{name: "Elixir"})
+      {:ok, _application_tag} = JobApplications.add_tag_to_application(scope, application, tag)
+
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/applications")
+
+      assert has_element?(view, "#applications-#{application.id}-tags")
+      assert has_element?(view, "#applications-#{application.id}-tag-#{tag.id}", "Elixir")
+    end
+  end
+
   describe "show" do
     test "renders an application owned by the current user", %{conn: conn} do
       user = user_fixture()
@@ -657,6 +672,94 @@ defmodule TrackMyJobExWeb.ApplicationLiveTest do
       assert html =~ "invalid or unknown tag"
       assert JobApplications.list_applications(scope) == []
       assert has_element?(view, "#application-form")
+    end
+  end
+
+  describe "edit tag associations" do
+    test "preloads the application's tags as selected options", %{conn: conn} do
+      user = user_fixture()
+      scope = Scope.for_user(user)
+      application = application_fixture(scope)
+      tag = tag_fixture(scope, %{name: "Elixir"})
+      {:ok, _application_tag} = JobApplications.add_tag_to_application(scope, application, tag)
+
+      {:ok, view, _html} =
+        conn |> log_in_user(user) |> live(~p"/applications/#{application.id}/edit")
+
+      assert has_element?(view, "#application-tag-ids option[value='#{tag.id}'][selected]")
+    end
+
+    test "replaces and creates tags on save and shows them on details", %{conn: conn} do
+      user = user_fixture()
+      scope = Scope.for_user(user)
+      application = application_fixture(scope)
+      old_tag = tag_fixture(scope, %{name: "Old"})
+      new_tag = tag_fixture(scope, %{name: "New"})
+
+      {:ok, _application_tag} =
+        JobApplications.add_tag_to_application(scope, application, old_tag)
+
+      {:ok, view, _html} =
+        conn |> log_in_user(user) |> live(~p"/applications/#{application.id}/edit")
+
+      view
+      |> render_submit("save", %{
+        "job_application" => %{
+          "position" => application.position,
+          "company_name" => application.company_name
+        },
+        "tag_ids" => [to_string(new_tag.id)],
+        "new_tags" => "Inline"
+      })
+
+      {path, _flash} = assert_redirect(view)
+      assert path == ~p"/applications/#{application.id}"
+
+      assert JobApplications.list_application_tags(scope, application) |> Enum.map(& &1.name) == [
+               "Inline",
+               "New"
+             ]
+
+      {:ok, show, _html} =
+        build_conn() |> log_in_user(user) |> live(~p"/applications/#{application.id}")
+
+      assert has_element?(show, "#tags-#{new_tag.id}", "New")
+      refute has_element?(show, "#tags-#{old_tag.id}")
+    end
+
+    test "rejects another user's tag on edit without partial changes", %{conn: conn} do
+      user = user_fixture()
+      scope = Scope.for_user(user)
+      application = application_fixture(scope, %{position: "Original"})
+      own_tag = tag_fixture(scope, %{name: "Own"})
+
+      {:ok, _application_tag} =
+        JobApplications.add_tag_to_application(scope, application, own_tag)
+
+      other_tag = tag_fixture(Scope.for_user(user_fixture()))
+
+      {:ok, view, _html} =
+        conn |> log_in_user(user) |> live(~p"/applications/#{application.id}/edit")
+
+      html =
+        view
+        |> render_submit("save", %{
+          "job_application" => %{
+            "position" => "Hijacked",
+            "company_name" => application.company_name
+          },
+          "tag_ids" => [to_string(other_tag.id)],
+          "new_tags" => ""
+        })
+
+      assert html =~ "invalid or unknown tag"
+
+      unchanged = JobApplications.get_application!(scope, application.id)
+      assert unchanged.position == "Original"
+
+      assert JobApplications.list_application_tags(scope, application) |> Enum.map(& &1.id) == [
+               own_tag.id
+             ]
     end
   end
 end
