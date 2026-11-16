@@ -25,6 +25,10 @@ defmodule TrackMyJobEx.JobApplications do
   alias TrackMyJobEx.Tags
   alias TrackMyJobEx.Tags.Tag
 
+  @page_size 25
+  @sort_fields ~w(created updated)
+  @sort_directions ~w(asc desc)
+
   ## Statuses (shared, read-only)
 
   @doc """
@@ -95,6 +99,96 @@ defmodule TrackMyJobEx.JobApplications do
       preload: [:status, :tags]
     )
     |> Repo.all()
+  end
+
+  @doc """
+  Returns the number of applications shown per listing page.
+  """
+  def page_size, do: @page_size
+
+  @doc """
+  Lists applications for the scope with search, filters, sorting, and pagination.
+
+  `params` is a string- or atom-keyed map, usually the URL query string:
+
+    * `"q"` - case-insensitive partial match on position title or company name
+    * `"status"` - a status slug
+    * `"company"` - exact company name, matched case-insensitively
+    * `"recruiter"` - exact recruiter name, matched case-insensitively
+    * `"tags"` - tag ids as a list or comma-separated string; all must be linked
+    * `"sort"` - `"created"` (default) or `"updated"`
+    * `"direction"` - `"desc"` (default) or `"asc"`
+    * `"page"` - 1-based page number
+
+  Filters combine with `AND` and multiple tags use `AND` semantics. Unknown or
+  invalid values are ignored. Another user's tag ids are ignored and never widen
+  the result set. Only the scope's own applications are returned.
+
+  Returns a map with `:entries`, `:total_count`, `:page`, `:total_pages`,
+  `:page_size`, `:filters`, and `:filtered?`.
+  """
+  def list_applications_filtered(%Scope{} = scope, params \\ %{}) when is_map(params) do
+    params = normalize_param_keys(params)
+    filters = normalize_filters(scope, params)
+    base_query = filtered_query(scope, filters)
+    total_count = Repo.aggregate(base_query, :count, :id)
+    total_pages = max(div(total_count + @page_size - 1, @page_size), 1)
+    page = min(normalize_page(Map.get(params, "page")), total_pages)
+    offset = (page - 1) * @page_size
+
+    entries =
+      base_query
+      |> order_by_sort(filters.sort, filters.direction)
+      |> limit(@page_size)
+      |> offset(^offset)
+      |> preload([:status, :tags])
+      |> Repo.all()
+
+    %{
+      entries: entries,
+      total_count: total_count,
+      page: page,
+      total_pages: total_pages,
+      page_size: @page_size,
+      filters: filters,
+      filtered?: filters_active?(filters)
+    }
+  end
+
+  @doc """
+  Normalizes listing parameters into the filter map used by
+  `list_applications_filtered/2`.
+
+  Unknown values fall back to the defaults (no filter, created date, descending).
+  Tag ids that do not belong to the scope are dropped.
+  """
+  def normalize_filters(%Scope{} = scope, params) when is_map(params) do
+    params = normalize_param_keys(params)
+
+    %{
+      q: normalize_text(Map.get(params, "q")),
+      status: normalize_status(Map.get(params, "status")),
+      company: normalize_text(Map.get(params, "company")),
+      recruiter: normalize_text(Map.get(params, "recruiter")),
+      tags: normalize_tag_ids(scope, Map.get(params, "tags")),
+      sort: normalize_sort(Map.get(params, "sort")),
+      direction: normalize_direction(Map.get(params, "direction"))
+    }
+  end
+
+  @doc """
+  Returns the values available in the application list filter controls.
+
+  Statuses are global; companies, recruiters, and tags come only from the
+  scope's own applications.
+  """
+  def filter_options(%Scope{} = scope) do
+    %{
+      statuses: list_statuses(),
+      companies: list_company_suggestions(scope),
+      recruiters: list_recruiter_suggestions(scope),
+      tags: Tags.list_tags(scope)
+    }
   end
 
   @doc """
@@ -627,6 +721,166 @@ defmodule TrackMyJobEx.JobApplications do
     |> Repo.all()
     |> Enum.uniq_by(&String.downcase/1)
     |> Enum.sort_by(&{String.downcase(&1), &1})
+  end
+
+  ## Listing helpers
+
+  defp normalize_param_keys(params) do
+    Map.new(params, fn {key, value} -> {to_string(key), value} end)
+  end
+
+  defp filtered_query(%Scope{} = scope, filters) do
+    from(application in JobApplication, where: application.user_id == ^scope.user.id)
+    |> filter_by_search(filters.q)
+    |> filter_by_text(:company_name, filters.company)
+    |> filter_by_text(:recruiter_name, filters.recruiter)
+    |> filter_by_status(filters.status)
+    |> filter_by_tags(filters.tags)
+  end
+
+  defp filter_by_search(query, nil), do: query
+
+  defp filter_by_search(query, term) do
+    pattern = "%" <> escape_like(String.downcase(term)) <> "%"
+
+    where(
+      query,
+      [application],
+      fragment("lower(?) LIKE ? ESCAPE '\\'", application.position, ^pattern) or
+        fragment("lower(?) LIKE ? ESCAPE '\\'", application.company_name, ^pattern)
+    )
+  end
+
+  defp filter_by_text(query, _field, nil), do: query
+
+  defp filter_by_text(query, field, value) do
+    value = String.downcase(value)
+
+    where(query, [application], fragment("lower(?) = ?", field(application, ^field), ^value))
+  end
+
+  defp filter_by_status(query, nil), do: query
+
+  defp filter_by_status(query, slug) do
+    status_ids =
+      from status in Status,
+        where: status.slug == ^slug,
+        select: status.id
+
+    where(query, [application], application.status_id in subquery(status_ids))
+  end
+
+  defp filter_by_tags(query, []), do: query
+
+  defp filter_by_tags(query, tag_ids) do
+    matching_ids =
+      from application_tag in ApplicationTag,
+        where: application_tag.tag_id in ^tag_ids,
+        group_by: application_tag.application_id,
+        having: count(application_tag.tag_id) == ^length(tag_ids),
+        select: application_tag.application_id
+
+    where(query, [application], application.id in subquery(matching_ids))
+  end
+
+  defp order_by_sort(query, "created", "asc") do
+    order_by(query, [application], asc: application.inserted_at, asc: application.id)
+  end
+
+  defp order_by_sort(query, "created", _direction) do
+    order_by(query, [application], desc: application.inserted_at, desc: application.id)
+  end
+
+  defp order_by_sort(query, "updated", "asc") do
+    order_by(query, [application], asc: application.updated_at, asc: application.id)
+  end
+
+  defp order_by_sort(query, "updated", _direction) do
+    order_by(query, [application], desc: application.updated_at, desc: application.id)
+  end
+
+  defp filters_active?(filters) do
+    filters.tags != [] or
+      Enum.any?([filters.q, filters.status, filters.company, filters.recruiter], &is_binary/1)
+  end
+
+  defp normalize_text(value) when is_binary(value) do
+    case String.trim(value) do
+      "" -> nil
+      text -> text
+    end
+  end
+
+  defp normalize_text(_value), do: nil
+
+  defp normalize_status(value) when is_binary(value) do
+    slug = value |> String.trim() |> String.downcase()
+
+    if slug in Enum.map(list_statuses(), & &1.slug), do: slug
+  end
+
+  defp normalize_status(_value), do: nil
+
+  defp normalize_tag_ids(%Scope{} = scope, value) do
+    ids =
+      value
+      |> List.wrap()
+      |> Enum.flat_map(fn
+        value when is_binary(value) -> String.split(value, ",")
+        value -> [value]
+      end)
+      |> Enum.flat_map(fn value ->
+        case cast_id(value) do
+          {:ok, id} -> [id]
+          :error -> []
+        end
+      end)
+      |> Enum.uniq()
+
+    case ids do
+      [] ->
+        []
+
+      ids ->
+        from(tag in Tag,
+          where: tag.user_id == ^scope.user.id and tag.id in ^ids,
+          select: tag.id
+        )
+        |> Repo.all()
+        |> Enum.sort()
+    end
+  end
+
+  defp normalize_sort(value) when is_binary(value) do
+    value = value |> String.trim() |> String.downcase()
+    if value in @sort_fields, do: value, else: "created"
+  end
+
+  defp normalize_sort(_value), do: "created"
+
+  defp normalize_direction(value) when is_binary(value) do
+    value = value |> String.trim() |> String.downcase()
+    if value in @sort_directions, do: value, else: "desc"
+  end
+
+  defp normalize_direction(_value), do: "desc"
+
+  defp normalize_page(value) when is_integer(value), do: max(value, 1)
+
+  defp normalize_page(value) when is_binary(value) do
+    case Integer.parse(String.trim(value)) do
+      {page, ""} -> max(page, 1)
+      _ -> 1
+    end
+  end
+
+  defp normalize_page(_value), do: 1
+
+  defp escape_like(value) do
+    value
+    |> String.replace("\\", "\\\\")
+    |> String.replace("%", "\\%")
+    |> String.replace("_", "\\_")
   end
 
   defp cast_id(id), do: Ecto.Type.cast(:id, id)

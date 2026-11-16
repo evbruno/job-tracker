@@ -224,13 +224,13 @@
 
 ## Phase 6 — Search and Usability
 
-- [ ] Implement search (use `LIKE` or `lower()`; SQLite has no `ILIKE`).
-- [ ] Implement status filters.
-- [ ] Implement company filter (dropdown of the user's existing values, case-insensitive match).
-- [ ] Implement recruiter filter (same approach).
-- [ ] Implement tag filters.
-- [ ] Implement sorting (created date and last update, ascending/descending).
-- [ ] Combine filters with AND; multiple selected tags use AND.
+- [x] Implement search (use `LIKE` or `lower()`; SQLite has no `ILIKE`).
+- [x] Implement status filters.
+- [x] Implement company filter (dropdown of the user's existing values, case-insensitive match).
+- [x] Implement recruiter filter (same approach).
+- [x] Implement tag filters.
+- [x] Implement sorting (created date and last update, ascending/descending).
+- [x] Combine filters with AND; multiple selected tags use AND.
 - [ ] Keep search, filter, and sort state in the URL query string.
 - [ ] Improve empty states.
 - [ ] Improve responsive UI.

@@ -885,4 +885,338 @@ defmodule TrackMyJobEx.JobApplicationsTest do
       assert JobApplications.get_application(scope, application.id).position != "Hijacked"
     end
   end
+
+  describe "list_applications_filtered/2 search" do
+    test "matches position and company partially and case-insensitively", %{scope: scope} do
+      engineer = application_for(scope, "Senior Elixir Engineer", "Acme Corp")
+      manager = application_for(scope, "Product Manager", "Beta Inc")
+
+      assert application_ids(scope, %{"q" => "senior"}) == [engineer.id]
+      assert application_ids(scope, %{"q" => "ENGINEER"}) == [engineer.id]
+      assert application_ids(scope, %{"q" => "acme"}) == [engineer.id]
+      assert application_ids(scope, %{"q" => "beta"}) == [manager.id]
+      assert application_ids(scope, %{"q" => "manager"}) == [manager.id]
+      assert application_ids(scope, %{"q" => "nobody"}) == []
+    end
+
+    test "treats LIKE wildcards in the search term literally", %{scope: scope} do
+      percent = application_for(scope, "100% Remote", "Acme Corp")
+      _engineer = application_for(scope, "Senior Engineer", "Beta Inc")
+
+      assert application_ids(scope, %{"q" => "100%"}) == [percent.id]
+      assert application_ids(scope, %{"q" => "%"}) == [percent.id]
+      assert application_ids(scope, %{"q" => "_"}) == []
+    end
+
+    test "reports whether filters are active", %{scope: scope} do
+      application_for(scope, "Engineer", "Acme Corp")
+
+      refute JobApplications.list_applications_filtered(scope, %{}).filtered?
+      refute JobApplications.list_applications_filtered(scope, %{"q" => "   "}).filtered?
+      assert JobApplications.list_applications_filtered(scope, %{"q" => "acme"}).filtered?
+    end
+  end
+
+  describe "list_applications_filtered/2 filters" do
+    test "filters by status slug", %{scope: scope} do
+      interested = application_for(scope, "Engineer", "Acme Corp")
+      applied = application_for(scope, "Manager", "Beta Inc")
+      applied_status = JobApplications.get_status_by_slug("applied")
+
+      {:ok, _application} =
+        JobApplications.change_status(scope, applied, %{status_id: applied_status.id})
+
+      assert application_ids(scope, %{"status" => "applied"}) == [applied.id]
+      assert application_ids(scope, %{"status" => "interested"}) == [interested.id]
+      assert application_ids(scope, %{"status" => "not-a-status"}) == [applied.id, interested.id]
+      assert application_ids(scope, %{"status" => ""}) == [applied.id, interested.id]
+    end
+
+    test "filters by company and recruiter case-insensitively", %{scope: scope} do
+      acme = application_for(scope, "Engineer", "Acme Corp", "Jane Recruiter")
+      beta = application_for(scope, "Manager", "Beta Inc", "Bob Recruiter")
+      no_recruiter = application_for(scope, "Designer", "Gamma LLC", nil)
+
+      assert application_ids(scope, %{"company" => "acme corp"}) == [acme.id]
+      assert application_ids(scope, %{"company" => "ACME CORP"}) == [acme.id]
+      assert application_ids(scope, %{"company" => "acme"}) == []
+      assert application_ids(scope, %{"recruiter" => "jane recruiter"}) == [acme.id]
+      assert application_ids(scope, %{"recruiter" => "bob recruiter"}) == [beta.id]
+
+      assert application_ids(scope, %{"recruiter" => ""}) == [
+               no_recruiter.id,
+               beta.id,
+               acme.id
+             ]
+    end
+
+    test "filters by one tag", %{scope: scope} do
+      elixir = TagsFixtures.tag_fixture(scope, %{name: "Elixir"})
+      with_tag = application_for(scope, "Engineer", "Acme Corp")
+      without_tag = application_for(scope, "Manager", "Beta Inc")
+      {:ok, _application_tag} = JobApplications.add_tag_to_application(scope, with_tag, elixir)
+
+      assert application_ids(scope, %{"tags" => [to_string(elixir.id)]}) == [with_tag.id]
+      assert application_ids(scope, %{"tags" => "999999"}) == [without_tag.id, with_tag.id]
+    end
+
+    test "combines multiple tags with AND semantics", %{scope: scope} do
+      elixir = TagsFixtures.tag_fixture(scope, %{name: "Elixir"})
+      remote = TagsFixtures.tag_fixture(scope, %{name: "Remote"})
+      both = application_for(scope, "Engineer", "Acme Corp")
+      only_elixir = application_for(scope, "Manager", "Beta Inc")
+      only_remote = application_for(scope, "Designer", "Gamma LLC")
+
+      {:ok, _} = JobApplications.add_tag_to_application(scope, both, elixir)
+      {:ok, _} = JobApplications.add_tag_to_application(scope, both, remote)
+      {:ok, _} = JobApplications.add_tag_to_application(scope, only_elixir, elixir)
+      {:ok, _} = JobApplications.add_tag_to_application(scope, only_remote, remote)
+
+      params = %{"tags" => [to_string(elixir.id), to_string(remote.id)]}
+      assert application_ids(scope, params) == [both.id]
+
+      params = %{"tags" => "#{elixir.id},#{remote.id}"}
+      assert application_ids(scope, params) == [both.id]
+    end
+
+    test "combines search and filters with AND", %{scope: scope} do
+      elixir = TagsFixtures.tag_fixture(scope, %{name: "Elixir"})
+      applied = JobApplications.get_status_by_slug("applied")
+
+      match =
+        application_for(scope, "Senior Engineer", "Acme Corp", "Jane Recruiter")
+
+      {:ok, _} = JobApplications.add_tag_to_application(scope, match, elixir)
+      {:ok, _} = JobApplications.change_status(scope, match, %{status_id: applied.id})
+
+      _wrong_company = application_for(scope, "Senior Engineer", "Beta Inc", "Jane Recruiter")
+      _wrong_status = application_for(scope, "Senior Engineer", "Acme Corp", "Jane Recruiter")
+
+      params = %{
+        "q" => "senior",
+        "status" => "applied",
+        "company" => "acme corp",
+        "recruiter" => "jane recruiter",
+        "tags" => [to_string(elixir.id)]
+      }
+
+      assert application_ids(scope, params) == [match.id]
+
+      assert application_ids(scope, Map.put(params, "company", "beta inc")) == []
+    end
+
+    test "returns filter option values from the scope's own data only", %{scope: scope} do
+      own_tag = TagsFixtures.tag_fixture(scope, %{name: "Elixir"})
+      application_for(scope, "Engineer", "Acme Corp", "Jane Recruiter")
+
+      other_scope = AccountsFixtures.user_scope_fixture()
+      other_tag = TagsFixtures.tag_fixture(other_scope, %{name: "Scala"})
+
+      application_for(other_scope, "Manager", "Other Co", "Other Recruiter")
+
+      options = JobApplications.filter_options(scope)
+
+      assert length(options.statuses) == 13
+      assert options.companies == ["Acme Corp"]
+      assert options.recruiters == ["Jane Recruiter"]
+      assert Enum.map(options.tags, & &1.id) == [own_tag.id]
+      refute other_tag.id in Enum.map(options.tags, & &1.id)
+    end
+
+    test "ignores invalid, unknown, and other-user tag parameters", %{scope: scope} do
+      own = application_for(scope, "Engineer", "Acme Corp")
+      other_scope = AccountsFixtures.user_scope_fixture()
+      other_tag = TagsFixtures.tag_fixture(other_scope, %{name: "Scala"})
+      other = application_for(other_scope, "Manager", "Other Co")
+
+      result =
+        JobApplications.list_applications_filtered(scope, %{
+          "q" => nil,
+          "status" => "bogus",
+          "company" => "",
+          "recruiter" => "  ",
+          "tags" => ["not-an-id", to_string(other_tag.id)],
+          "sort" => "bogus",
+          "direction" => "sideways",
+          "page" => "not-a-page"
+        })
+
+      assert Enum.map(result.entries, & &1.id) == [own.id]
+      refute other.id in Enum.map(result.entries, & &1.id)
+
+      assert result.filters == %{
+               q: nil,
+               status: nil,
+               company: nil,
+               recruiter: nil,
+               tags: [],
+               sort: "created",
+               direction: "desc"
+             }
+
+      refute result.filtered?
+      assert result.page == 1
+    end
+  end
+
+  describe "list_applications_filtered/2 sorting" do
+    test "defaults to created date, newest first", %{scope: scope} do
+      oldest = application_for(scope, "Oldest", "Acme Corp")
+      middle = application_for(scope, "Middle", "Acme Corp")
+      newest = application_for(scope, "Newest", "Acme Corp")
+
+      set_timestamps(oldest, ~U[2026-01-01 00:00:00Z], ~U[2026-01-05 00:00:00Z])
+      set_timestamps(middle, ~U[2026-01-02 00:00:00Z], ~U[2026-01-04 00:00:00Z])
+      set_timestamps(newest, ~U[2026-01-03 00:00:00Z], ~U[2026-01-06 00:00:00Z])
+
+      assert application_ids(scope, %{}) == [newest.id, middle.id, oldest.id]
+
+      assert application_ids(scope, %{"sort" => "created", "direction" => "asc"}) == [
+               oldest.id,
+               middle.id,
+               newest.id
+             ]
+
+      assert application_ids(scope, %{"sort" => "created", "direction" => "desc"}) == [
+               newest.id,
+               middle.id,
+               oldest.id
+             ]
+    end
+
+    test "sorts by last update in both directions", %{scope: scope} do
+      first = application_for(scope, "First", "Acme Corp")
+      second = application_for(scope, "Second", "Acme Corp")
+      third = application_for(scope, "Third", "Acme Corp")
+
+      set_timestamps(first, ~U[2026-01-01 00:00:00Z], ~U[2026-01-07 00:00:00Z])
+      set_timestamps(second, ~U[2026-01-03 00:00:00Z], ~U[2026-01-05 00:00:00Z])
+      set_timestamps(third, ~U[2026-01-02 00:00:00Z], ~U[2026-01-06 00:00:00Z])
+
+      assert application_ids(scope, %{"sort" => "updated", "direction" => "desc"}) == [
+               first.id,
+               third.id,
+               second.id
+             ]
+
+      assert application_ids(scope, %{"sort" => "updated", "direction" => "asc"}) == [
+               second.id,
+               third.id,
+               first.id
+             ]
+    end
+  end
+
+  describe "list_applications_filtered/2 pagination" do
+    test "returns 25 applications per page with totals and clamping", %{scope: scope} do
+      applications =
+        for index <- 1..27 do
+          application_for(scope, "Position #{index}", "Acme Corp")
+        end
+
+      first_page = JobApplications.list_applications_filtered(scope, %{})
+      assert first_page.page_size == 25
+      assert first_page.total_count == 27
+      assert first_page.total_pages == 2
+      assert first_page.page == 1
+      assert length(first_page.entries) == 25
+
+      second_page = JobApplications.list_applications_filtered(scope, %{"page" => "2"})
+      assert second_page.page == 2
+      assert length(second_page.entries) == 2
+
+      assert Enum.sort(Enum.map(first_page.entries ++ second_page.entries, & &1.id)) ==
+               Enum.sort(Enum.map(applications, & &1.id))
+
+      clamped = JobApplications.list_applications_filtered(scope, %{"page" => "99"})
+      assert clamped.page == 2
+      assert length(clamped.entries) == 2
+
+      assert JobApplications.list_applications_filtered(scope, %{"page" => "0"}).page == 1
+      assert JobApplications.list_applications_filtered(scope, %{"page" => "-3"}).page == 1
+    end
+
+    test "keeps filters across pages", %{scope: scope} do
+      for index <- 1..26 do
+        application_for(scope, "Position #{index}", "Acme Corp")
+      end
+
+      application_for(scope, "Other", "Beta Inc")
+
+      first_page =
+        JobApplications.list_applications_filtered(scope, %{"company" => "acme corp"})
+
+      second_page =
+        JobApplications.list_applications_filtered(scope, %{
+          "company" => "acme corp",
+          "page" => "2"
+        })
+
+      assert first_page.total_count == 26
+      assert first_page.total_pages == 2
+      assert length(first_page.entries) == 25
+      assert length(second_page.entries) == 1
+      assert second_page.entries |> hd() |> Map.fetch!(:company_name) == "Acme Corp"
+    end
+  end
+
+  describe "list_applications_filtered/2 isolation" do
+    test "never returns another user's applications for any filter", %{scope: scope} do
+      own = application_for(scope, "Senior Engineer", "Acme Corp", "Jane Recruiter")
+      own_tag = TagsFixtures.tag_fixture(scope, %{name: "Elixir"})
+      {:ok, _} = JobApplications.add_tag_to_application(scope, own, own_tag)
+
+      other_scope = AccountsFixtures.user_scope_fixture()
+      other = application_for(other_scope, "Senior Engineer", "Acme Corp", "Jane Recruiter")
+      other_tag = TagsFixtures.tag_fixture(other_scope, %{name: "Elixir"})
+      {:ok, _} = JobApplications.add_tag_to_application(other_scope, other, other_tag)
+
+      params = %{
+        "q" => "senior",
+        "company" => "acme corp",
+        "recruiter" => "jane recruiter",
+        "tags" => [to_string(own_tag.id), to_string(other_tag.id)]
+      }
+
+      result = JobApplications.list_applications_filtered(scope, params)
+
+      assert Enum.map(result.entries, & &1.id) == [own.id]
+      assert result.total_count == 1
+      refute other.id in Enum.map(result.entries, & &1.id)
+    end
+
+    test "another user's company, recruiter, and status values do not leak", %{scope: scope} do
+      application_for(scope, "Engineer", "Acme Corp", "Jane Recruiter")
+      other_scope = AccountsFixtures.user_scope_fixture()
+      other = application_for(other_scope, "Manager", "Secret Co", "Secret Recruiter")
+      applied = JobApplications.get_status_by_slug("applied")
+      {:ok, _} = JobApplications.change_status(other_scope, other, %{status_id: applied.id})
+
+      assert application_ids(scope, %{"company" => "secret co"}) == []
+      assert application_ids(scope, %{"recruiter" => "secret recruiter"}) == []
+      assert application_ids(scope, %{"status" => "applied"}) == []
+    end
+  end
+
+  defp application_for(scope, position, company, recruiter \\ nil) do
+    JobApplicationsFixtures.application_fixture(scope, %{
+      position: position,
+      company_name: company,
+      recruiter_name: recruiter
+    })
+  end
+
+  defp application_ids(scope, params) do
+    scope
+    |> JobApplications.list_applications_filtered(params)
+    |> Map.fetch!(:entries)
+    |> Enum.map(& &1.id)
+  end
+
+  defp set_timestamps(application, inserted_at, updated_at) do
+    from(a in JobApplication, where: a.id == ^application.id)
+    |> Repo.update_all(set: [inserted_at: inserted_at, updated_at: updated_at])
+
+    :ok
+  end
 end
