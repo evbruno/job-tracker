@@ -51,7 +51,6 @@ Phase 6 added 28 tests; the suite is 231 tests and `mix precommit` passes.
   shown; clearing the filters reveals the "no applications yet" state.
 - 2026-11-16 — Task 6.11: A page number beyond the last page is clamped to the
   last page. The requested page may remain in the URL until the next navigation.
-
 - 2026-11-14 — Task 2.1: Used the Phoenix authentication generator with LiveView
   and the default `bcrypt` hashing library on this platform.
 - 2026-11-14 — Task 2.3: Because email is out of scope for the initial version,
@@ -184,6 +183,28 @@ Add one entry per session, newest first, in this format:
 - **Assumptions:** See the Assumptions Made section above.
 - **Blockers:** None.
 - **Next:** Await Phase 6 review, then start Phase 7.1 security review.
+
+### 2026-11-16
+
+- **Done:** Phase 5, task groups 5.1–5.9. Verified the Phase 3 status wiring
+  and default `Interested` status (5.1–5.2, no code changes). Application
+  creation now writes the application and its initial history row atomically.
+  Added `StatusChange` form validation and scoped
+  `change_status_changeset/3`/`change_status/4` context functions using
+  `Ecto.Multi` for status + history updates, same-status and unknown-status
+  rejection, trimmed optional notes with a 2,000-character limit, and
+  append-only history reads. The details page now has a status-change form and
+  a chronological timeline with previous status, new status, timestamp, and
+  notes. Added 14 tests (203 total), including transactional rollback and
+  cross-user isolation; `mix precommit` passes.
+- **Commits:**
+  - `628577c` Phase 5.3: Create initial history and status change context
+  - `999b6b9` Phase 5.8: Display application timeline and status change form
+  - Phase 5.9: Add status history tests and document phase (final Phase 5
+    commit; see `git log`)
+- **Assumptions:** See the Assumptions Made section above.
+- **Blockers:** None.
+- **Next:** Await Phase 5 review, then Phase 6.1 search.
 
 ### 2026-11-16
 
