@@ -41,18 +41,29 @@ if config_env() == :dev do
 end
 
 if config_env() == :prod do
+  # The SQLite file must live on a persistent volume. The parent directory is
+  # created on boot so a fresh volume can be mounted without a manual mkdir.
+  # SQLite creates the database file itself, but not its parent directory.
   database_path =
     System.get_env("DATABASE_PATH") ||
-      raise """
-      environment variable DATABASE_PATH is missing.
-      For example: /etc/track_my_job_ex/track_my_job_ex.db
-      """
+      Path.join([System.get_env("DATA_DIR") || "/data", "track_my_job_ex", "track_my_job_ex.db"])
 
+  unless database_path == ":memory:" do
+    File.mkdir_p!(Path.dirname(database_path))
+  end
+
+  # SQLite has a single-writer model. WAL allows concurrent readers, so a small
+  # pool (1-5) is appropriate; the writer is serialized by SQLite's busy
+  # handler. The busy timeout and queue settings make short write contention
+  # wait and retry instead of failing immediately.
   config :track_my_job_ex, TrackMyJobEx.Repo,
     database: database_path,
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "5"),
     journal_mode: :wal,
-    foreign_keys: :on
+    foreign_keys: :on,
+    busy_timeout: String.to_integer(System.get_env("SQLITE_BUSY_TIMEOUT") || "5000"),
+    queue_target: 50,
+    queue_interval: 1_000
 
   # The secret key base is used to sign/encrypt cookies and other secrets.
   # A default value is used in config/dev.exs and config/test.exs but you

@@ -40,6 +40,12 @@ defmodule TrackMyJobExWeb.Router do
 
   ## Authentication routes
 
+  # Health checks are deliberately unauthenticated and outside the browser
+  # pipeline so they do not create sessions or require CSRF tokens.
+  scope "/", TrackMyJobExWeb do
+    get "/health", HealthController, :index
+  end
+
   # Login is public; logout is a controller route that only makes sense for
   # authenticated users.
   scope "/", TrackMyJobExWeb do
