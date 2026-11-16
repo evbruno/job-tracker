@@ -7,35 +7,80 @@ Update it before ending every session.
 
 ## Current State
 
-- **Current phase:** Phase 6 — Search and Usability (complete; MVP functionally
-  complete, awaiting review)
-- **Current task group:** 6.1–6.11 — complete.
-- **Next task:** Phase 7.1 security review after review.
-- **Overall status:** Phases 1–6 complete and verified. The MVP is functionally
-  complete; Phase 7 (Production Readiness) must be completed before release.
-- **Last commit:** final Phase 6 documentation commit (see `git log`).
+- **Current phase:** Phase 7 — Production Readiness (complete in the repository;
+  operator provisioning remains).
+- **Current task group:** 7.1–7.7 — complete.
+- **Next task:** Operator provisioning and Phase 7 review. No Phase 8 is defined.
+- **Overall status:** Phases 1–7 complete and verified locally. The application
+  is production-ready on the code side; real deployment requires operator-only
+  DNS/TLS, volume, secrets, monitoring, and off-site backups.
+- **Last commit:** Phase 7.6 end-to-end test; Phase 7.7 documentation commit
+  follows (see `git log`).
 
 ## Last Session Summary
 
-Phase 6 (Search and Usability) is complete. The application list now supports
-case-insensitive partial search on position and company, status/company/
-recruiter/tag filters (all combined with AND, multiple tags with AND), sorting
-by creation date or last update in both directions, and 25-per-page pagination.
-All listing state lives in the URL query string, so refresh and bookmarks
-restore the same view. The LiveView uses `handle_params/3` plus `push_patch`, and
-all query building stays in `TrackMyJobEx.JobApplications`.
+Phase 7 (Production Readiness) is complete in the repository. Security hardening
+sets `HttpOnly`, `Secure`, and `SameSite=Lax` on session and remember-me cookies
+in production, enforces HTTPS with `force_ssl` and one-year HSTS, excludes
+`/health` from redirects, and restricts job URL rendering to absolute
+`http`/`https` URLs. Database files, sidecars, `.env*`, backups, and release
+artifacts are gitignored, and the Docker image runs as `nobody` under `tini`.
 
-Company and recruiter filters are dropdowns populated from the current user's
-own applications, and tag options come from the user's tags. Search LIKE
-wildcards are escaped, invalid filter/sort/page values fall back to defaults,
-and another user's tag ids are ignored. Empty states distinguish "no
-applications yet" (create call to action) from "no matching applications"
-(clear filters). The filter bar, list rows, and pagination are responsive.
+Tenant isolation was reviewed end to end. Every user-owned query takes a
+`%Scope{}` and filters by `current_scope.user.id`; there are no unscoped
+application/tag getters. Tag association ids are re-fetched through the scope and
+roll back atomically on failure. A resource × operation matrix with test
+locations is in `docs/SECURITY.md`.
 
-Phase 6 added 28 tests; the suite is 231 tests and `mix precommit` passes.
+SQLite production settings are WAL, foreign keys, a 5-second busy timeout, pool
+size 5, and tuned queue settings. A new migration adds composite and NOCASE
+indexes, and `EXPLAIN QUERY PLAN` confirms index-backed listing, status/company/
+recruiter filters, history, tag links, suggestions, and the tag AND filter.
+Company/recruiter filters now use `COLLATE NOCASE` instead of `lower()`.
+
+The production database path defaults to `/data/track_my_job_ex/
+track_my_job_ex.db` (or `$DATA_DIR`), and its parent directory is created on
+boot. A production release was built and booted; `/health` returned `200 ok`,
+the root redirected to HTTPS, cookies included `Secure; HttpOnly; SameSite=Lax`,
+and HSTS was present. Online backup/restore scripts use `sqlite3 .backup`; a
+seeded backup was restored with matching counts, matching schema, and
+`integrity_check: ok`. CI runs formatting, warnings-as-errors compilation, Credo
+strict, and the full suite. A new end-to-end test covers login, create with tags,
+status/history, filters, pagination, sorting, cross-user isolation, and delete
+cascades through the real router and LiveViews.
+
+The suite is 241 tests (up from 231) and `mix precommit` passes. The remaining
+items are operator-only and are listed under Blockers and in
+`docs/DEPLOYMENT.md`.
 
 ## Assumptions Made
 
+- 2026-11-16 — Task 7.1: Cookies use `Secure` only when `Mix.env() == :prod` so
+  local development and tests can keep using HTTP.
+- 2026-11-16 — Task 7.1: HSTS is one year. `/health` and localhost are excluded
+  from HTTPS redirects for private health checks; the proxy must forward
+  `X-Forwarded-Proto: https`.
+- 2026-11-16 — Task 7.2: SQLite keeps WAL and foreign keys and adds a 5-second
+  busy timeout, pool size 5, and `queue_target: 50`/`queue_interval: 1000`.
+  Production runs one writer instance per database file.
+- 2026-11-16 — Task 7.2: Company/recruiter filters changed from
+  `lower(column) = ?` to `column = ? COLLATE NOCASE`; behavior remains an exact,
+  case-insensitive match while becoming index-backed.
+- 2026-11-16 — Task 7.3: `DATABASE_PATH` defaults to
+  `${DATA_DIR:-/data}/track_my_job_ex/track_my_job_ex.db`. The parent directory
+  is created on boot, but migrations are an explicit `bin/migrate` deploy step,
+  not an automatic boot action.
+- 2026-11-16 — Task 7.3: `/health` is an unauthenticated database-only check
+  (`SELECT 1`). No APM dependency was added; external monitoring is documented
+  as an operator integration.
+- 2026-11-16 — Task 7.4: Backups use `sqlite3 .backup` scripts rather than
+  Litestream, avoiding a new dependency and a sidecar process. Scheduling,
+  encryption, and off-site storage are operator-only.
+- 2026-11-16 — Task 7.5: The repository provides a production release, hardened
+  Dockerfile, and GitHub Actions CI. It does not contain cloud credentials or an
+  actual deploy target, so publishing/deploying remains operator-only.
+- 2026-11-16 — Task 7.7: Operator-only items are annotated in `TASKS.md` and
+  documented as blockers rather than marked as fully provisioned.
 - 2026-11-16 — Task 6.1–6.7: The URL contract uses status slugs (`status=applied`)
   rather than status ids, and tag ids for tags (`tags[]=1&tags[]=2`). Invalid or
   unknown values fall back to the defaults instead of producing an error page.
@@ -142,7 +187,20 @@ Phase 6 added 28 tests; the suite is 231 tests and `mix precommit` passes.
 
 ## Blockers and Open Questions
 
-None.
+Operator-only blockers (no code blocker):
+
+- Real domain/DNS and a TLS certificate, plus load-balancer/proxy configuration.
+- Provisioning the persistent volume, setting ownership to UID 65534, and
+  confirming local-filesystem semantics (no NFS).
+- Storing `SECRET_KEY_BASE` and other credentials in a secret manager.
+- External monitoring/alerting and log aggregation.
+- Scheduled, encrypted, off-site backups with retention and periodic restore
+  drills.
+- The actual image publish and deploy step; CI currently verifies only.
+
+Open question: the target hosting platform is not specified, so the deployment
+guide describes generic release/Docker steps and leaves platform-specific wiring
+to the operator.
 
 ## Deviations from PRODUCT.md
 
@@ -150,18 +208,54 @@ None. If this file and PRODUCT.md conflict, PRODUCT.md wins; list the conflict h
 
 ## Next Actions
 
-1. Await Phase 6 review.
-2. After review, start Phase 7.1: security review.
-3. Continue Phase 7 with tenant isolation review, query/SQLite concurrency review,
-   production SQLite storage, HTTPS, logging/monitoring, backups with a tested
-   restore, deployment pipeline, end-to-end tests, and deployment documentation.
-4. Do not release to real users until Phase 7 is complete.
+1. Await Phase 7 review.
+2. Operator: provision DNS/TLS, the persistent volume, and production secrets.
+3. Operator: connect monitoring/log aggregation and schedule encrypted off-site
+   backups; run a restore drill.
+4. On the real host, run `bin/migrate`, verify `/health` returns `200`, and
+   confirm the HTTPS redirect, HSTS, and `Secure` cookies through the proxy.
+5. Deploy and keep one application instance per SQLite database file. Do not
+   scale horizontally against a shared volume.
+6. Re-run `mix precommit` after any change. Do not release until the operator
+   checklist in `docs/DEPLOYMENT.md` is complete.
 
 ---
 
 ## Session Log
 
 Add one entry per session, newest first, in this format:
+
+### 2026-11-16
+
+- **Done:** Phase 7, task groups 7.1–7.7. Hardened production cookies
+  (`HttpOnly`, `Secure`, `SameSite=Lax`), enabled `force_ssl` with one-year HSTS
+  and `/health` exclusion, added safe-URL regression tests, and ignored database
+  sidecars, `.env*`, backups, and release artifacts. Reviewed tenant isolation
+  end to end, added cross-user tag-association and filter-option tests, and
+  documented the resource × operation matrix. Added SQLite production settings
+  (WAL, foreign keys, 5-second busy timeout, pool 5, tuned queues), a composite/
+  NOCASE index migration, and changed company/recruiter filters to
+  `COLLATE NOCASE`; confirmed index-backed plans with `EXPLAIN QUERY PLAN`. Added
+  `DATABASE_PATH`/`DATA_DIR` handling, a database-backed `/health` endpoint, and
+  verified a production release boot. Added online `sqlite3 .backup` backup and
+  restore scripts and verified a restore with matching counts/schema and
+  `integrity_check: ok`. Added release scaffolding, a hardened non-root Docker
+  image using `tini`, GitHub Actions CI, and a full end-to-end test. Wrote
+  `docs/DEPLOYMENT.md` and `docs/SECURITY.md`. The suite is 241 tests (up from
+  231) and `mix precommit` passes.
+- **Commits:**
+  - `2a0861a` Phase 7.1: Harden production cookies, transport security, and URL rendering
+  - `a6c4413` Phase 7.2: Add tenant isolation coverage and production query indexes
+  - `0dc6205` Phase 7.3: Add health endpoint and production runtime configuration
+  - `11c2c44` Phase 7.4: Add SQLite backup and restore tooling
+  - `6d66063` Phase 7.5: Add release, Docker, and CI deployment pipeline
+  - `077ccfd` Phase 7.6: Add end-to-end workflow test
+  - Phase 7.7: Document Phase 7 and update handoff (this commit; see `git log`)
+- **Assumptions:** See the Assumptions Made section above.
+- **Blockers:** Operator-only: DNS/TLS, persistent volume, production secrets,
+  external monitoring/logging, scheduled encrypted off-site backups, and the
+  actual deploy step.
+- **Next:** Await Phase 7 review; complete the operator checklist and deploy.
 
 ### 2026-11-16
 

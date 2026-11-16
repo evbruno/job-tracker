@@ -4,9 +4,12 @@
 
 **Current phase:** Phase 6 — Search and Usability (complete; MVP functionally complete, awaiting review)
 
-**Overall status:** Phases 1–6 complete — the MVP is functionally complete; Phase 7 (Production Readiness) is next after review.
+**Overall status:** Phases 1–7 complete in the repository. The MVP is
+functionally complete and production-ready on the application side; the remaining
+items are operator-only infrastructure steps documented in `docs/DEPLOYMENT.md`.
 
-**Current milestone:** Phase 6 verified; next implement production readiness (Phase 7).
+**Current milestone:** Phase 7 verified; awaiting operator provisioning of
+domain/TLS, persistent volume, secrets, monitoring, and off-site backups.
 
 ---
 
@@ -290,23 +293,91 @@
 
 ## Phase 7 — Production Readiness
 
-- [ ] Security review.
-- [ ] Tenant isolation review.
-- [ ] Query performance and SQLite concurrency review (busy timeout, pool size).
-- [ ] Configure the production SQLite database file on a persistent volume.
-- [ ] Configure HTTPS.
-- [ ] Configure logging and monitoring.
-- [ ] Configure backups (SQLite online backup or Litestream) and test a restore.
-- [ ] Configure deployment pipeline.
-- [ ] Run end-to-end tests.
-- [ ] Document deployment.
+- [x] Security review. Findings and accepted risks are recorded in
+  `docs/SECURITY.md`; cookie flags, HSTS, URL safety, and dependency audit were
+  verified.
+- [x] Tenant isolation review. Every user-owned context function takes a
+  `%Scope{}` and the resource × operation matrix is in `docs/SECURITY.md`.
+- [x] Query performance and SQLite concurrency review (busy timeout, pool size).
+  `EXPLAIN QUERY PLAN` confirms index-backed listing, filter, history, and tag
+  queries; production WAL/foreign-key/busy-timeout/pool settings are documented.
+- [x] Configure the production SQLite database file on a persistent volume.
+  `DATABASE_PATH`/`DATA_DIR`, parent-directory creation, and WAL sidecar
+  handling are implemented and verified against a temporary production path.
+  Physical volume provisioning and permissions remain operator-only.
+- [x] Configure HTTPS. `force_ssl`, HSTS, proxy-header handling, and secure
+  cookies are configured and verified on a production release. DNS and the TLS
+  certificate remain operator-only.
+- [x] Configure logging and monitoring. Production logging is `:info` with
+  request ids and no SQL parameters; `GET /health` returns `200 ok` or
+  `503 unavailable`. External log aggregation and alerting remain operator-only.
+- [x] Configure backups (SQLite online backup) and test a restore.
+  `scripts/backup_sqlite.sh` and `scripts/restore_sqlite.sh` use `sqlite3
+  .backup`; a seeded backup was restored with matching counts, matching schema,
+  and `integrity_check: ok`. Scheduling, encryption, and off-site copies remain
+  operator-only.
+- [x] Configure deployment pipeline. A hardened multi-stage Dockerfile, release
+  scripts, and GitHub Actions CI (format, warnings-as-errors, Credo, tests) are
+  in place. Publishing and deploying to a real environment remain operator-only.
+- [x] Run end-to-end tests. `test/track_my_job_ex_web/end_to_end_test.exs` drives
+  login, create with tags, status/history, filters, pagination, sorting,
+  cross-user isolation, and delete cascades through the real router/LiveViews.
+- [x] Document deployment. `docs/DEPLOYMENT.md` covers prerequisites,
+  environment variables, release/Docker builds, migrations, persistent storage,
+  HTTPS, health, logging, backups with verified restore output, rollback, CI,
+  and the operator checklist.
 
 **Acceptance criteria:**
-- Application deploys successfully.
-- Production configuration is secure.
-- Backups are configured and a restore has been tested.
-- Critical workflows work in production.
-- Tenant isolation tests pass.
+- Application deploys successfully. (Verified locally as a production release
+  boot; a real environment deploy requires operator credentials and DNS.)
+- Production configuration is secure. (Cookie flags, force_ssl, HSTS, secrets
+  handling, and non-root container verified.)
+- Backups are configured and a restore has been tested. (Scripted and verified
+  locally; scheduling/off-site storage is operator-only.)
+- Critical workflows work in production. (End-to-end test plus production
+  release boot.)
+- Tenant isolation tests pass. (Cross-user read/list/update/delete/associate
+  tests pass for applications, tags, history, and tag links.)
+
+**Phase 7 completion notes:**
+- Security: production session and remember-me cookies set `HttpOnly`,
+  `Secure`, and `SameSite=Lax`; `force_ssl` uses `X-Forwarded-Proto`, one-year
+  HSTS, and excludes `/health` and localhost. Job URLs render only through
+  `Formatters.safe_http_url/1`. Database files, sidecars, `.env*`, backups, and
+  release artifacts are gitignored. `mix hex.audit` reports no retired or
+  advisory packages.
+- Tenant isolation: every user-owned query is scoped through
+  `current_scope.user.id`; there are no unscoped application/tag getters.
+  Association ids are re-fetched through the scope before linking and roll back
+  on failure. `docs/SECURITY.md` contains the full resource × operation matrix
+  and test locations.
+- SQLite/performance: production uses WAL, foreign keys, a 5-second busy
+  timeout, pool size 5, and `queue_target: 50`/`queue_interval: 1000`.
+  Migration `20261116130000` adds `(user_id, status_id)`,
+  `(user_id, recruiter_name)`, `(user_id, inserted_at)`, `(user_id, updated_at)`,
+  NOCASE company/recruiter indexes, `(application_id, changed_at)` history, and
+  `(tag_id, application_id)` tag-link indexes. Company/recruiter filters now use
+  `COLLATE NOCASE`, and `EXPLAIN QUERY PLAN` confirms index use for listing,
+  filters, search, history, tag links, suggestions, and the tag AND filter.
+- Production storage: `DATABASE_PATH` defaults to
+  `${DATA_DIR:-/data}/track_my_job_ex/track_my_job_ex.db`; its parent directory
+  is created on boot. The release was booted against a temporary production path
+  and served `/health` with `200 ok`.
+- Backups: online `sqlite3 .backup` scripts verify `PRAGMA integrity_check` and
+  checkpoint the copy. A seeded backup was restored to a separate path;
+  users=1, applications=1, history=1, tags=1, tag links=1, statuses=13, with a
+  matching schema and `integrity_check: ok`.
+- Deployment: `mix phx.gen.release --docker` scaffolding plus
+  `TrackMyJobEx.Release.migrate/0`, `bin/migrate`, and `bin/server`. The
+  Dockerfile is multi-stage, runs as `nobody`, and uses `tini`. GitHub Actions
+  runs formatting, warnings-as-errors compilation, Credo strict, and the full
+  test suite. `MIX_ENV=prod mix release` builds and boots successfully.
+- Testing: Phase 7 added 10 tests (241 total, up from 231), covering health,
+  safe URL schemes, session cookie flags, cross-user tag association/filter
+  isolation, and a full end-to-end workflow. `mix precommit` passes.
+- Operator blockers: real domain/DNS/TLS, persistent volume provisioning and
+  permissions, production secrets, external monitoring/log aggregation, and
+  scheduled/off-site/encrypted backups. See `docs/DEPLOYMENT.md`.
 
 ---
 
