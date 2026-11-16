@@ -83,6 +83,20 @@ defmodule TrackMyJobEx.JobApplicationsTest do
       assert fetched.status.slug == "interested"
     end
 
+    test "creates the initial Interested history record atomically", %{scope: scope} do
+      attrs = JobApplicationsFixtures.valid_application_attributes()
+
+      assert {:ok, application} = JobApplications.create_application(scope, attrs)
+
+      assert [entry] = JobApplications.list_status_history(scope, application)
+      assert entry.previous_status == nil
+      assert entry.previous_status_id == nil
+      assert entry.new_status.slug == "interested"
+      assert entry.notes == nil
+      assert entry.changed_at == application.inserted_at
+      assert Repo.aggregate(ApplicationStatusHistory, :count) == 1
+    end
+
     test "stores blank recruiter and blank URL as NULL", %{scope: scope} do
       attrs =
         JobApplicationsFixtures.valid_application_attributes(%{
@@ -271,31 +285,31 @@ defmodule TrackMyJobEx.JobApplicationsTest do
   describe "status history" do
     test "lists append-only history oldest first with statuses preloaded", %{scope: scope} do
       application = JobApplicationsFixtures.application_fixture(scope)
-      interested = JobApplications.default_status()
       applied = JobApplications.get_status_by_slug("applied")
+      interview = JobApplications.get_status_by_slug("interview")
 
-      second =
-        JobApplicationsFixtures.status_history_fixture(application, %{
-          previous_status_id: interested.id,
-          new_status_id: applied.id,
-          changed_at: ~U[2026-11-14 12:00:00Z],
-          notes: "Heard back"
-        })
+      assert {:ok, _application} =
+               JobApplications.change_status(scope, application, %{
+                 status_id: applied.id,
+                 notes: "Heard back"
+               })
 
-      first =
-        JobApplicationsFixtures.status_history_fixture(application, %{
-          new_status_id: interested.id,
-          changed_at: ~U[2026-11-13 12:00:00Z]
-        })
+      assert {:ok, _application} =
+               JobApplications.change_status(scope, application, %{
+                 status_id: interview.id
+               })
 
       history = JobApplications.list_status_history(scope, application)
 
-      assert Enum.map(history, & &1.id) == [first.id, second.id]
+      assert Enum.map(history, & &1.new_status.slug) == ["interested", "applied", "interview"]
+
       assert Enum.at(history, 0).previous_status == nil
       assert Enum.at(history, 0).new_status.slug == "interested"
       assert Enum.at(history, 1).previous_status.slug == "interested"
       assert Enum.at(history, 1).new_status.slug == "applied"
       assert Enum.at(history, 1).notes == "Heard back"
+      assert Enum.at(history, 2).previous_status.slug == "applied"
+      assert Enum.at(history, 2).new_status.slug == "interview"
     end
 
     test "rejects history notes over 2000 characters" do
@@ -318,6 +332,193 @@ defmodule TrackMyJobEx.JobApplicationsTest do
       assert_raise Ecto.NoResultsError, fn ->
         JobApplications.list_status_history(other_scope, application)
       end
+    end
+  end
+
+  describe "change_status/4" do
+    test "changes to any other status, appends history, and touches updated_at", %{scope: scope} do
+      application = JobApplicationsFixtures.application_fixture(scope)
+      old = DateTime.add(DateTime.utc_now(:second), -86_400, :second)
+      set_updated_at(application, old)
+      accepted = JobApplications.get_status_by_slug("accepted")
+
+      assert {:ok, updated} =
+               JobApplications.change_status(scope, application, %{
+                 status_id: accepted.id,
+                 notes: "  Signed the offer  "
+               })
+
+      assert updated.status_id == accepted.id
+      assert updated.status.slug == "accepted"
+      assert DateTime.compare(reload(application).updated_at, old) == :gt
+
+      history = JobApplications.list_status_history(scope, application)
+      assert length(history) == 2
+
+      entry = List.last(history)
+      assert entry.previous_status.slug == "interested"
+      assert entry.new_status.slug == "accepted"
+      assert entry.notes == "Signed the offer"
+    end
+
+    test "supports any-to-any transitions", %{scope: scope} do
+      application = JobApplicationsFixtures.application_fixture(scope)
+
+      for slug <- ~w(rejected technical_interview on_hold offer withdrawn interested) do
+        status = JobApplications.get_status_by_slug(slug)
+
+        assert {:ok, updated} =
+                 JobApplications.change_status(scope, application, %{status_id: status.id})
+
+        assert updated.status.slug == slug
+      end
+
+      history = JobApplications.list_status_history(scope, application)
+      assert length(history) == 7
+
+      assert Enum.map(history, & &1.new_status.slug) == [
+               "interested",
+               "rejected",
+               "technical_interview",
+               "on_hold",
+               "offer",
+               "withdrawn",
+               "interested"
+             ]
+
+      assert Enum.map(Enum.drop(history, 1), & &1.previous_status.slug) == [
+               "interested",
+               "rejected",
+               "technical_interview",
+               "on_hold",
+               "offer",
+               "withdrawn"
+             ]
+    end
+
+    test "rejects changing to the same status", %{scope: scope} do
+      application = JobApplicationsFixtures.application_fixture(scope)
+
+      assert {:error, changeset} =
+               JobApplications.change_status(scope, application, %{
+                 status_id: application.status_id
+               })
+
+      assert errors_on(changeset).status_id == ["is already the current status"]
+      assert length(JobApplications.list_status_history(scope, application)) == 1
+      assert reload(application).status_id == application.status_id
+    end
+
+    test "requires a status and rejects unknown status ids", %{scope: scope} do
+      application = JobApplicationsFixtures.application_fixture(scope)
+
+      assert {:error, missing_changeset} =
+               JobApplications.change_status(scope, application, %{notes: "No status"})
+
+      assert errors_on(missing_changeset).status_id == ["can't be blank"]
+
+      assert {:error, unknown_changeset} =
+               JobApplications.change_status(scope, application, %{status_id: 999_999})
+
+      assert errors_on(unknown_changeset).status_id == ["is not a valid status"]
+
+      assert length(JobApplications.list_status_history(scope, application)) == 1
+      assert reload(application).status_id == application.status_id
+    end
+
+    test "trims notes, stores blank notes as nil, and accepts the maximum length", %{scope: scope} do
+      application = JobApplicationsFixtures.application_fixture(scope)
+      applied = JobApplications.get_status_by_slug("applied")
+      screening = JobApplications.get_status_by_slug("screening")
+      max_notes = String.duplicate("n", 2_000)
+
+      assert {:ok, _updated} =
+               JobApplications.change_status(scope, application, %{
+                 status_id: applied.id,
+                 notes: "  Phone screen scheduled  "
+               })
+
+      assert List.last(JobApplications.list_status_history(scope, application)).notes ==
+               "Phone screen scheduled"
+
+      assert {:ok, _updated} =
+               JobApplications.change_status(scope, application, %{
+                 status_id: screening.id,
+                 notes: max_notes
+               })
+
+      assert List.last(JobApplications.list_status_history(scope, application)).notes == max_notes
+
+      interview = JobApplications.get_status_by_slug("interview")
+
+      assert {:ok, _updated} =
+               JobApplications.change_status(scope, application, %{
+                 status_id: interview.id,
+                 notes: "   "
+               })
+
+      assert List.last(JobApplications.list_status_history(scope, application)).notes == nil
+    end
+
+    test "rejects notes over the maximum length without partial changes", %{scope: scope} do
+      application = JobApplicationsFixtures.application_fixture(scope)
+      applied = JobApplications.get_status_by_slug("applied")
+
+      assert {:error, changeset} =
+               JobApplications.change_status(scope, application, %{
+                 status_id: applied.id,
+                 notes: String.duplicate("n", 2_001)
+               })
+
+      assert errors_on(changeset).notes != []
+      assert length(JobApplications.list_status_history(scope, application)) == 1
+      assert reload(application).status_id == application.status_id
+    end
+
+    test "rolls back the application update when the history insert fails", %{scope: scope} do
+      application = JobApplicationsFixtures.application_fixture(scope)
+      applied = JobApplications.get_status_by_slug("applied")
+      original_status_id = application.status_id
+
+      Repo.query!("""
+      CREATE TRIGGER application_status_histories_abort_insert
+      BEFORE INSERT ON application_status_histories
+      BEGIN
+        SELECT RAISE(ABORT, 'forced history failure');
+      END
+      """)
+
+      assert_raise Exqlite.Error, fn ->
+        JobApplications.change_status(scope, application, %{status_id: applied.id})
+      end
+
+      assert reload(application).status_id == original_status_id
+      assert length(JobApplications.list_status_history(scope, application)) == 1
+    end
+
+    test "does not let another user change the status", %{scope: scope} do
+      application = JobApplicationsFixtures.application_fixture(scope)
+      other_scope = AccountsFixtures.user_scope_fixture()
+      applied = JobApplications.get_status_by_slug("applied")
+
+      assert_raise Ecto.NoResultsError, fn ->
+        JobApplications.change_status(other_scope, application, %{status_id: applied.id})
+      end
+
+      assert_raise Ecto.NoResultsError, fn ->
+        JobApplications.change_status_changeset(other_scope, application)
+      end
+
+      assert reload(application).status_id == application.status_id
+      assert length(JobApplications.list_status_history(scope, application)) == 1
+    end
+
+    test "has no API for updating or deleting history rows" do
+      functions = JobApplications.__info__(:functions)
+
+      refute :create_status_history in functions
+      refute :update_status_history in functions
+      refute :delete_status_history in functions
     end
   end
 
@@ -482,6 +683,10 @@ defmodule TrackMyJobEx.JobApplicationsTest do
 
       names = JobApplications.list_application_tags(scope, application) |> Enum.map(& &1.name)
       assert names == ["Elixir", "Remote", "Startup"]
+
+      assert [entry] = JobApplications.list_status_history(scope, application)
+      assert entry.previous_status == nil
+      assert entry.new_status.slug == "interested"
     end
 
     test "reuses an existing tag for an inline name case-insensitively", %{scope: scope} do
@@ -531,6 +736,7 @@ defmodule TrackMyJobEx.JobApplicationsTest do
 
       assert errors_on(changeset).tags == ["contain an invalid or unknown tag"]
       assert JobApplications.list_applications(scope) == []
+      assert Repo.aggregate(ApplicationStatusHistory, :count) == 0
       assert Repo.aggregate(ApplicationTag, :count) == 0
     end
 
@@ -545,6 +751,7 @@ defmodule TrackMyJobEx.JobApplicationsTest do
 
       assert errors_on(changeset).tags != []
       assert JobApplications.list_applications(scope) == []
+      assert Repo.aggregate(ApplicationStatusHistory, :count) == 0
     end
 
     test "rolls back the application when an inline tag name is invalid", %{scope: scope} do
@@ -558,6 +765,7 @@ defmodule TrackMyJobEx.JobApplicationsTest do
 
       assert errors_on(changeset).tags != []
       assert JobApplications.list_applications(scope) == []
+      assert Repo.aggregate(ApplicationStatusHistory, :count) == 0
       assert Repo.aggregate(Tag, :count) == 0
     end
 
@@ -567,6 +775,7 @@ defmodule TrackMyJobEx.JobApplicationsTest do
 
       assert errors_on(changeset).position != []
       assert JobApplications.list_applications(scope) == []
+      assert Repo.aggregate(ApplicationStatusHistory, :count) == 0
     end
   end
 

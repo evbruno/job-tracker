@@ -291,7 +291,7 @@ defmodule TrackMyJobExWeb.ApplicationLiveTest do
   end
 
   describe "details" do
-    test "displays the application fields, tags, timestamps, and empty history", %{conn: conn} do
+    test "displays the application fields, tags, timestamps, and initial history", %{conn: conn} do
       user = user_fixture()
       scope = Scope.for_user(user)
 
@@ -324,7 +324,10 @@ defmodule TrackMyJobExWeb.ApplicationLiveTest do
       assert has_element?(view, "#tags-#{tag.id}", "Elixir")
       assert has_element?(view, "#application-created-at")
       assert has_element?(view, "#application-updated-at")
-      assert has_element?(view, "#application-history-empty")
+
+      assert [initial] = JobApplications.list_status_history(scope, application)
+      refute has_element?(view, "#application-history-empty")
+      assert has_element?(view, "#history-#{initial.id}-status", "Interested")
     end
 
     test "hides optional fields and shows fallbacks when absent", %{conn: conn} do
@@ -346,24 +349,37 @@ defmodule TrackMyJobExWeb.ApplicationLiveTest do
       assert has_element?(view, "#application-tags-empty")
     end
 
-    test "renders the status history when present", %{conn: conn} do
+    test "renders the status history chronologically, oldest first", %{conn: conn} do
       user = user_fixture()
       scope = Scope.for_user(user)
       application = application_fixture(scope)
+      applied = JobApplications.get_status_by_slug("applied")
 
-      history =
-        status_history_fixture(application, %{
-          changed_at: ~U[2026-11-14 12:00:00Z],
-          notes: "Recruiter reached out"
-        })
+      assert {:ok, _application} =
+               JobApplications.change_status(scope, application, %{
+                 status_id: applied.id,
+                 notes: "Recruiter reached out"
+               })
+
+      assert [initial, latest] = JobApplications.list_status_history(scope, application)
 
       {:ok, view, _html} =
         conn |> log_in_user(user) |> live(~p"/applications/#{application.id}")
 
       refute has_element?(view, "#application-history-empty")
-      assert has_element?(view, "#history-#{history.id}")
-      assert has_element?(view, "#history-#{history.id}-status", "Interested")
-      assert has_element?(view, "#history-#{history.id}-changed-at", "2026-11-14 12:00 UTC")
+      assert has_element?(view, "#history-#{initial.id}-status", "Interested")
+      assert has_element?(view, "#history-#{latest.id}-status", "Applied")
+      assert has_element?(view, "#history-#{latest.id}-previous", "From Interested")
+      assert has_element?(view, "#history-#{latest.id}-notes", "Recruiter reached out")
+
+      document = LazyHTML.from_fragment(render(view))
+
+      assert document
+             |> LazyHTML.query("#application-history ol > li")
+             |> LazyHTML.attribute("id") == [
+               "history-#{initial.id}",
+               "history-#{latest.id}"
+             ]
     end
 
     test "renders an unsafe stored URL as plain text instead of a link", %{conn: conn} do
@@ -378,6 +394,114 @@ defmodule TrackMyJobExWeb.ApplicationLiveTest do
 
       refute has_element?(view, "#application-job-posting-url")
       assert has_element?(view, "#application-job-posting-url-empty")
+    end
+  end
+
+  describe "status changes" do
+    test "renders the status change form with every predefined status", %{conn: conn} do
+      user = user_fixture()
+      application = application_fixture(Scope.for_user(user))
+
+      {:ok, view, _html} =
+        conn |> log_in_user(user) |> live(~p"/applications/#{application.id}")
+
+      assert has_element?(view, "#status-change-form")
+      assert has_element?(view, "#status_change_status_id")
+      assert has_element?(view, "#status_change_notes[maxlength='2000']")
+      assert has_element?(view, "#status-change-submit")
+      assert has_element?(view, "#current-status-name", "Interested")
+
+      document = LazyHTML.from_fragment(render(view))
+
+      assert document
+             |> LazyHTML.query("#status_change_status_id option")
+             |> LazyHTML.attribute("value") ==
+               ["" | Enum.map(JobApplications.list_statuses(), &to_string(&1.id))]
+    end
+
+    test "changes the status with a note and appends to the timeline", %{conn: conn} do
+      user = user_fixture()
+      scope = Scope.for_user(user)
+      application = application_fixture(scope)
+      applied = JobApplications.get_status_by_slug("applied")
+
+      {:ok, view, _html} =
+        conn |> log_in_user(user) |> live(~p"/applications/#{application.id}")
+
+      view
+      |> form("#status-change-form", %{
+        "status_change" => %{
+          "status_id" => to_string(applied.id),
+          "notes" => "  Phone screen scheduled  "
+        }
+      })
+      |> render_submit()
+
+      assert has_element?(view, "#flash-info", "Status updated.")
+      assert has_element?(view, "#application-status", "Applied")
+      assert has_element?(view, "#current-status-name", "Applied")
+
+      history = JobApplications.list_status_history(scope, application)
+      assert length(history) == 2
+      latest = List.last(history)
+
+      assert has_element?(view, "#history-#{latest.id}-status", "Applied")
+      assert has_element?(view, "#history-#{latest.id}-previous", "From Interested")
+      assert has_element?(view, "#history-#{latest.id}-notes", "Phone screen scheduled")
+
+      assert JobApplications.get_application!(scope, application.id).status.slug == "applied"
+    end
+
+    test "rejects changing to the current status", %{conn: conn} do
+      user = user_fixture()
+      scope = Scope.for_user(user)
+      application = application_fixture(scope)
+      interested = JobApplications.get_status_by_slug("interested")
+
+      {:ok, view, _html} =
+        conn |> log_in_user(user) |> live(~p"/applications/#{application.id}")
+
+      html =
+        view
+        |> form("#status-change-form", %{
+          "status_change" => %{"status_id" => to_string(interested.id)}
+        })
+        |> render_submit()
+
+      assert html =~ "is already the current status"
+      assert has_element?(view, "#application-status", "Interested")
+      assert length(JobApplications.list_status_history(scope, application)) == 1
+    end
+
+    test "rejects a missing status and overlong notes without changing anything", %{conn: conn} do
+      user = user_fixture()
+      scope = Scope.for_user(user)
+      application = application_fixture(scope)
+      applied = JobApplications.get_status_by_slug("applied")
+
+      {:ok, view, _html} =
+        conn |> log_in_user(user) |> live(~p"/applications/#{application.id}")
+
+      missing_html =
+        view
+        |> form("#status-change-form", %{"status_change" => %{"status_id" => ""}})
+        |> render_submit()
+
+      assert missing_html =~ "can&#39;t be blank"
+
+      notes_html =
+        view
+        |> form("#status-change-form", %{
+          "status_change" => %{
+            "status_id" => to_string(applied.id),
+            "notes" => String.duplicate("n", 2_001)
+          }
+        })
+        |> render_submit()
+
+      assert notes_html =~ "should be at most 2000 character(s)"
+      assert has_element?(view, "#application-status", "Interested")
+      assert length(JobApplications.list_status_history(scope, application)) == 1
     end
   end
 

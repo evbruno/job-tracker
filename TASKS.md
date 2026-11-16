@@ -2,11 +2,11 @@
 
 ## Current Project Status
 
-**Current phase:** Phase 4 — Job Application Management (complete; awaiting review)
+**Current phase:** Phase 5 — Application Status and History (complete; awaiting review)
 
-**Overall status:** Phase 4 complete — ready for Phase 5 after review
+**Overall status:** Phase 5 complete — ready for Phase 6 after review
 
-**Current milestone:** Phase 4 verified; next implement status history (Phase 5).
+**Current milestone:** Phase 5 verified; next implement search and usability (Phase 6).
 
 ---
 
@@ -176,15 +176,15 @@
 
 ## Phase 5 — Application Status and History
 
-- [ ] Wire the seeded statuses (Phase 3) to applications and history.
-- [ ] Set Interested as the default status.
-- [ ] Create initial history record.
-- [ ] Implement status transitions (any status to any other).
-- [ ] Reject a change to the same status.
-- [ ] Implement optional status notes.
-- [ ] Implement transactional status updates.
-- [ ] Display application timeline.
-- [ ] Add status history tests.
+- [x] Wire the seeded statuses (Phase 3) to applications and history (verified existing from Phase 3).
+- [x] Set Interested as the default status (verified existing from Phase 3).
+- [x] Create initial history record.
+- [x] Implement status transitions (any status to any other).
+- [x] Reject a change to the same status.
+- [x] Implement optional status notes.
+- [x] Implement transactional status updates.
+- [x] Display application timeline.
+- [x] Add status history tests.
 
 **Acceptance criteria:**
 - Every application has a current status.
@@ -192,6 +192,35 @@
 - History records are append-only and removed only when their application is deleted.
 - Status and history updates are atomic.
 - Users can review the complete recruitment timeline.
+
+**Phase 5 completion notes:**
+- Tasks 5.1 and 5.2 were verified as already implemented in Phase 3: applications
+  reference the seeded `statuses` table by foreign key, `new_application_changeset/2`
+  assigns `Interested`, and client-supplied `status_id` values are ignored. No
+  Phase 5 changes were needed for them.
+- Application creation now inserts the application and its initial `Interested`
+  history row (`previous_status_id` nil) in one `Ecto.Multi` transaction. The
+  same applies to `create_application_with_tags/4`; an invalid tag rolls back
+  the application, its initial history, and any tag links.
+- `change_status/4` validates through `StatusChange` and then updates the
+  application status and appends a history row in one `Ecto.Multi` transaction.
+  Any status may follow any other. Same-status changes and unknown or missing
+  statuses are rejected with changeset errors.
+- Notes are optional, trimmed, blank values become `NULL`, and the maximum is
+  2,000 characters. History is append-only: the context exposes reads only, with
+  no create/update/delete API for individual rows.
+- The application details page now includes a status-change form with an
+  optional note and a chronological timeline showing each new status, the
+  previous status when present, the change timestamp, and notes. `updated_at`
+  changes on every status change.
+- All reads and writes are scoped. Another user's application behaves as not
+  found, including through the status-change form changeset and context
+  function.
+- Phase 5 added 14 tests (203 total), covering initial history creation,
+  any-to-any transitions, same-status rejection, notes trimming and limits,
+  ordering, `updated_at`, transactional rollback (including a forced history
+  insert failure), append-only API checks, cross-user isolation, and LiveView
+  status changes and timeline rendering. `mix precommit` passes.
 
 ## Phase 6 — Search and Usability
 

@@ -7,40 +7,33 @@ Update it before ending every session.
 
 ## Current State
 
-- **Current phase:** Phase 4 — Job Application Management (complete; awaiting review)
-- **Current task group:** 4.10 — complete.
-- **Next task:** Phase 5.1 after review — verify the already-wired statuses and
-  default `Interested`, then implement the initial history record and status
-  transitions.
-- **Overall status:** Phase 4 complete and verified; Phase 5 not started.
-- **Last commit:** Phase 4.10: Implement application-tag associations (final
-  Phase 4 commit; see `git log`).
+- **Current phase:** Phase 5 — Application Status and History (complete; awaiting review)
+- **Current task group:** 5.9 — complete.
+- **Next task:** Phase 6.1 after review — implement application search and usability.
+- **Overall status:** Phase 5 complete and verified; Phase 6 not started.
+- **Last commit:** Phase 5.9: Add status history tests (final Phase 5 commit;
+  see `git log`).
 
 ## Last Session Summary
 
-Phase 4 (Job Application Management) is complete. The app now has protected
-LiveViews for application listing, creation, editing, details, and deletion, plus
-a standalone tag management page. Navigation exposes Applications and Tags.
+Phase 5 (Application Status and History) is complete. Applications are created
+atomically with their initial `Interested` history row, every later status change
+updates the application and appends a history row in one `Ecto.Multi`
+transaction, and the application details page now provides a status-change form
+with an optional note plus a chronological timeline.
 
-The list shows position, company, current status, creation date, and tags,
-newest first. Phase 6 filters, search, sorting, and pagination are intentionally
-not implemented yet. The shared `ApplicationForm` provides company/recruiter
-`datalist` suggestions from the current user's values, existing-tag multi-select,
-and comma-separated inline tag creation. Creation and editing with tags are
-transactional: unknown or other-user tag IDs roll back all changes, and an inline
-name reuses an existing tag case-insensitively while preserving its casing.
+Tasks 5.1 and 5.2 were verified as already implemented in Phase 3: the status
+foreign key, the default `Interested` status, and ignoring client-supplied
+`status_id` values. No changes were needed for them.
 
-Application details render all fields, a validated external job-posting link,
-tags, timestamps, and read-only status history. Status changes and history
-creation remain Phase 5. Deletion requires confirmation and is a hard delete;
-database cascades remove history and tag links. Tag deletion removes links only.
-Cross-user records behave as not found: contexts return/raise as before, and
-LiveViews redirect to the list with an error flash.
+Status changes reject the current status and unknown or missing status ids with
+changeset errors. Any status may transition to any other. Notes are trimmed,
+blank notes become `NULL`, and notes are limited to 2,000 characters. History is
+append-only with no update or delete API. `updated_at` changes on every status
+change. Cross-user access behaves as not found for status reads, writes, and
+history reads.
 
-Phase 3 remains as previously recorded: five domain schemas, 13 seeded statuses,
-scoped contexts, database constraints/indexes, cascades, and cross-user domain
-isolation tests. Phase 4 added 67 tests; the suite is 189 tests and
-`mix precommit` passes.
+Phase 5 added 14 tests; the suite is 203 tests and `mix precommit` passes.
 
 ## Assumptions Made
 
@@ -111,12 +104,31 @@ isolation tests. Phase 4 added 67 tests; the suite is 189 tests and
   `update_application_with_tags/5`, and `set_application_tags/3` use
   `Repo.transaction/1` (not `Ecto.Multi`) to keep creation/update and tag links
   atomic.
+- 2026-11-16 — Task 5.1/5.2: Verified that Phase 3 already wired statuses to
+  applications/history and defaulted new applications to `Interested`, including
+  ignoring client-supplied status ids. No Phase 5 changes were needed.
+- 2026-11-16 — Task 5.3: `create_application/2` and
+  `create_application_with_tags/4` now use `Ecto.Multi`, so the application and
+  its initial `Interested` history row are committed together. The initial
+  history timestamp is the application's `inserted_at`.
+- 2026-11-16 — Task 5.4–5.7: Status change input is validated through a
+  form-only `StatusChange` embedded schema (`status_id`, `notes`). It is not
+  persisted; the context maps it onto the application update and a new history
+  row inside one `Ecto.Multi` transaction.
+- 2026-11-16 — Task 5.6: Status notes are trimmed and blank notes become `NULL`.
+  The 2,000-character limit is enforced in the status-change and history
+  changesets.
+- 2026-11-16 — Task 5.9: Transactional rollback is covered both by invalid-tag
+  creation failures (application, initial history, and links all roll back) and
+  by a SQLite test trigger that forces a history insert failure and proves the
+  application status update rolls back.
+- 2026-11-16 — Task 5.9: History remains append-only; the context exposes no
+  update or delete functions for individual history rows, and a test asserts that
+  API surface stays closed.
 
 ## Blockers and Open Questions
 
-- Phase 5 tasks 5.1 (wire seeded statuses) and 5.2 (default `Interested`) are
-  already implemented in Phase 3. Phase 5 should verify and mark them rather than
-  duplicate the work, then start with the initial history record (5.3).
+None.
 
 ## Deviations from PRODUCT.md
 
@@ -124,19 +136,42 @@ None. If this file and PRODUCT.md conflict, PRODUCT.md wins; list the conflict h
 
 ## Next Actions
 
-1. Await Phase 4 review.
-2. After review, verify Phase 5.1/5.2 (already wired in Phase 3: status foreign
-   key and default `Interested`) and mark them complete.
-3. Implement the initial `Interested` history record and transactional status
-   transitions with optional notes (5.3–5.7), rejecting same-status changes.
-4. Add the status-change UI and chronological timeline (5.8), then status
-   history tests (5.9). Keep all reads/writes scoped and history append-only.
+1. Await Phase 5 review.
+2. After review, start Phase 6.1: implement application search using `LIKE` or
+   `lower()` (SQLite has no `ILIKE`).
+3. Continue Phase 6 with status, company, recruiter, and tag filters, then
+   sorting, URL-persisted state, empty states, responsive UI, and 25-per-page
+   pagination.
+4. Keep all list queries scoped to `current_scope` and do not expose unscoped
+   lookups.
 
 ---
 
 ## Session Log
 
 Add one entry per session, newest first, in this format:
+
+### 2026-11-16
+
+- **Done:** Phase 5, task groups 5.1–5.9. Verified the Phase 3 status wiring
+  and default `Interested` status (5.1–5.2, no code changes). Application
+  creation now writes the application and its initial history row atomically.
+  Added `StatusChange` form validation and scoped
+  `change_status_changeset/3`/`change_status/4` context functions using
+  `Ecto.Multi` for status + history updates, same-status and unknown-status
+  rejection, trimmed optional notes with a 2,000-character limit, and
+  append-only history reads. The details page now has a status-change form and
+  a chronological timeline with previous status, new status, timestamp, and
+  notes. Added 14 tests (203 total), including transactional rollback and
+  cross-user isolation; `mix precommit` passes.
+- **Commits:**
+  - `628577c` Phase 5.3: Create initial history and status change context
+  - `999b6b9` Phase 5.8: Display application timeline and status change form
+  - Phase 5.9: Add status history tests and document phase (final Phase 5
+    commit; see `git log`)
+- **Assumptions:** See the Assumptions Made section above.
+- **Blockers:** None.
+- **Next:** Await Phase 5 review, then Phase 6.1 search.
 
 ### 2026-11-16
 
