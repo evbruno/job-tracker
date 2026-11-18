@@ -36,6 +36,15 @@ defmodule TrackMyJobEx.AccountsFixtures do
     Scope.for_user(user)
   end
 
+  @doc """
+  Creates an MCP token for the scope and returns `{token, plaintext}`.
+  """
+  def mcp_token_fixture(%Scope{} = scope, attrs \\ %{}) do
+    attrs = Enum.into(attrs, %{name: "Test MCP client"})
+    {:ok, token, plaintext} = Accounts.create_mcp_token(scope, attrs)
+    {token, plaintext}
+  end
+
   def override_token_authenticated_at(token, authenticated_at) when is_binary(token) do
     TrackMyJobEx.Repo.update_all(
       from(t in Accounts.UserToken,

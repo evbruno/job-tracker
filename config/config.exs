@@ -70,6 +70,16 @@ config :logger, :default_formatter,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
+# MCP Streamable HTTP clients negotiate Server-Sent Events alongside JSON.
+config :mime, :types, %{
+  "text/event-stream" => ["sse"]
+}
+
+# Browser Origins allowed to call the MCP endpoint. Requests without an Origin
+# header (native MCP clients) are always allowed; this list only guards against
+# browser-based DNS-rebinding attacks.
+config :track_my_job_ex, :mcp_allowed_origins, ["http://localhost:4000"]
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"

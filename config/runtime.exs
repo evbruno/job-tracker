@@ -23,6 +23,14 @@ end
 config :track_my_job_ex, TrackMyJobExWeb.Endpoint,
   http: [port: String.to_integer(System.get_env("PORT", "4000"))]
 
+# Browser Origins allowed to call the MCP endpoint (comma-separated). Native
+# MCP clients send no Origin header and are unaffected.
+if origins = System.get_env("MCP_ALLOWED_ORIGINS") do
+  config :track_my_job_ex,
+         :mcp_allowed_origins,
+         origins |> String.split(",", trim: true) |> Enum.map(&String.trim/1)
+end
+
 if config_env() == :dev do
   # Reload browser tabs when matching files change.
   config :track_my_job_ex, TrackMyJobExWeb.Endpoint,

@@ -17,6 +17,13 @@ defmodule TrackMyJobExWeb.Router do
     plug :accepts, ["json"]
   end
 
+  # MCP Streamable HTTP. Deliberately outside the browser pipeline: there is no
+  # session cookie and no CSRF token, and authentication happens inside the MCP
+  # router's `connect/2` callback using a per-user Bearer token.
+  pipeline :mcp do
+    plug :accepts, ["json", "sse"]
+  end
+
   # Other scopes may use custom stacks.
   # scope "/api", TrackMyJobExWeb do
   #   pipe_through :api
@@ -44,6 +51,18 @@ defmodule TrackMyJobExWeb.Router do
   # pipeline so they do not create sessions or require CSRF tokens.
   scope "/", TrackMyJobExWeb do
     get "/health", HealthController, :index
+  end
+
+  # MCP clients authenticate with a per-user Bearer token inside the MCP router,
+  # so this route has its own pipeline with no session or CSRF requirements.
+  scope "/mcp" do
+    pipe_through :mcp
+
+    forward "/", Phantom.Plug,
+      router: TrackMyJobExWeb.MCP.Router,
+      pubsub: TrackMyJobEx.PubSub,
+      origins: {TrackMyJobExWeb.MCP.Origin, :allowed?, []},
+      validate_origin: true
   end
 
   # Login is public; logout is a controller route that only makes sense for

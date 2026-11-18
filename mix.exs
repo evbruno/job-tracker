@@ -67,6 +67,7 @@ defmodule TrackMyJobEx.MixProject do
        compile: false,
        depth: 1},
       {:req, "~> 0.5"},
+      {:phantom_mcp, "~> 0.8.0"},
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"},
       {:gettext, "~> 1.0"},
