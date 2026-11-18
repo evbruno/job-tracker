@@ -176,6 +176,7 @@ write raises/returns an error without revealing whether the record exists.
 
 | Tool | Behavior | Test |
 |---|---|---|
+| `account_get` | Returns the authenticated account's id and email | `tools_test.exs` |
 | `applications_list` | Search, filters, sorting, pagination scoped to the owner; other users' tag ids ignored | `tools_test.exs` |
 | `applications_get` / `applications_status_history` | Not found for another user's id | `tools_test.exs` |
 | `applications_create` | Owner from token; tag ids validated; initial history row created | `tools_test.exs` |

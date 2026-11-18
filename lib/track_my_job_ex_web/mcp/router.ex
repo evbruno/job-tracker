@@ -190,6 +190,7 @@ defmodule TrackMyJobExWeb.MCP.Router do
 
   ## Reference data
 
+  tool(:account_get, Tools, read_only: true)
   tool(:tags_list, Tools, read_only: true)
 
   tool(:statuses_list, Tools, read_only: true)

@@ -207,6 +207,16 @@ defmodule TrackMyJobExWeb.MCP.Tools do
 
   ## Reference data
 
+  @doc "Returns the authenticated account's identity."
+  def account_get(_params, session) do
+    scope = scope(session)
+
+    reply(
+      text(%{"id" => scope.user.id, "email" => scope.user.email}),
+      session
+    )
+  end
+
   @doc "Lists the caller's tags, ordered by name."
   def tags_list(_params, session) do
     tags = Tags.list_tags(scope(session)) |> Enum.map(&Serializer.tag/1)

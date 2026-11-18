@@ -500,9 +500,9 @@ migrations, URL contracts, ownership rules, and flash strings are unchanged. See
   `get_mcp_token/2`, `revoke_mcp_token/2`, and the global
   `get_user_by_mcp_token/1` authentication lookup. `last_used_at` is refreshed
   at most once every five minutes.
-- Router: `TrackMyJobExWeb.MCP.Router` uses `Phantom.Router` with 14 tools and
-  `connect/2` returning `{:unauthorized, %{...}}` for bad credentials. Tools
-  live in `TrackMyJobExWeb.MCP.Tools`; serialization in
+- Router: `TrackMyJobExWeb.MCP.Router` uses `Phantom.Router` with 15 tools (including
+  `account_get`) and `connect/2` returning `{:unauthorized, %{...}}` for bad
+  credentials. Tools live in `TrackMyJobExWeb.MCP.Tools`; serialization in
   `TrackMyJobExWeb.MCP.Serializer`.
 - Mix tasks: `mix mcp.tokens.create EMAIL --name NAME [--expires-in DAYS]`,
   `mix mcp.tokens.list EMAIL`, `mix mcp.tokens.revoke EMAIL TOKEN_ID`.

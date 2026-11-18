@@ -263,6 +263,14 @@ defmodule TrackMyJobExWeb.MCP.ToolsTest do
   end
 
   describe "reference data" do
+    test "account_get returns the authenticated identity", %{session: session, scope: scope} do
+      result = call_tool(session, :account_get, %{})
+
+      assert not failed?(result)
+      assert result.structuredContent["id"] == scope.user.id
+      assert result.structuredContent["email"] == scope.user.email
+    end
+
     test "tags_list and statuses_list", %{session: session, scope: scope} do
       tag = TagsFixtures.tag_fixture(scope, %{name: "remote"})
 

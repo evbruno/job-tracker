@@ -108,6 +108,7 @@ defmodule TrackMyJobExWeb.MCP.AuthTest do
 
       assert Enum.sort(names) ==
                Enum.sort(~w[
+                 account_get
                  applications_change_status
                  applications_create
                  applications_delete

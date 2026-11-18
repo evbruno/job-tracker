@@ -251,8 +251,8 @@ Context Protocol (MCP) server so other agents can use it.
 - Transport: Streamable HTTP only (no stdio). Origin validation rejects
   browser-based DNS-rebinding attempts.
 - Tool surface: full CRUD for applications and resumes, plus read-only
-  `tags_list` and `statuses_list`. Each tool acts only on the token owner's
-  records; another user's identifiers behave as not found.
+  `account_get`, `tags_list`, and `statuses_list`. Each tool acts only on the
+  token owner's records; another user's identifiers behave as not found.
 - Ownership rules from section 4 apply unchanged: every tool derives the
   `%Scope{}` from the authenticated token, re-fetches records through scoped
   context functions, validates submitted tag ids against the owner, and never
