@@ -24,6 +24,8 @@ defmodule TrackMyJobExWeb.MCP.Serializer do
       "recruiter_name" => application.recruiter_name,
       "description" => application.description,
       "job_posting_url" => application.job_posting_url,
+      "budget_min" => application.budget_min,
+      "budget_max" => application.budget_max,
       "status" => status(application.status),
       "tags" => tags(application.tags),
       "inserted_at" => datetime(application.inserted_at),

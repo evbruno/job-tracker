@@ -2,15 +2,14 @@
 
 ## Current Project Status
 
-**Current phase:** Phase 10 — MCP Token Management UI (complete; awaiting review)
+**Current phase:** Phase 11 — Application Budget Range (complete; awaiting review)
 
-**Overall status:** Phases 1–10 complete in the repository. Phase 10 adds a web
-UI for listing, creating, and revoking the signed-in user's MCP personal
-access tokens.
+**Overall status:** Phases 1–11 complete in the repository. Phase 11 adds an
+optional budget range (minimum and maximum in whole units) to job applications.
 
-**Current milestone:** Phase 10 verified — MCP token management UI.
+**Current milestone:** Phase 11 verified — budget range on applications.
 
-**Current task group:** Phase 10, complete.
+**Current task group:** Phase 11, complete.
 
 ---
 
@@ -541,6 +540,34 @@ migrations, URL contracts, ownership rules, and flash strings are unchanged. See
 - The plaintext is displayed only at creation time.
 - Another user's tokens are never visible or revocable.
 - `mix precommit` passes.
+
+## Phase 11 — Application Budget Range
+
+- [x] Add `budget_min` and `budget_max` integer columns to `job_applications`.
+- [x] Add fields, validation (non-negative, min <= max), and blank handling to
+  `JobApplication`.
+- [x] Surface the budget range in the application form and details page.
+- [x] Include `budget_min`/`budget_max` in the MCP serializer and tools.
+- [x] Update `PRODUCT.md` and `TASKS.md`.
+
+**Acceptance criteria:**
+- Applications can store an optional minimum and maximum budget in whole units.
+- Validation rejects negative values and a maximum below the minimum.
+- Blank inputs are stored as `NULL`.
+- `mix precommit` passes.
+
+**Phase 11 completion notes:**
+- Migration: `20261118181200_add_budget_to_job_applications.exs` adds two
+  nullable integer columns.
+- Schema/changeset: `budget_min`/`budget_max` are cast and validated; blank
+  strings are normalized to `nil` before casting so empty inputs do not
+  produce "is invalid" errors.
+- UI: a Budget section in `ApplicationForm` and a budget span on the
+  application details page.
+- MCP: `budget_min`/`budget_max` added to `applications_create` and
+  `applications_update`, and to the serializer.
+- Tests: 347 total (no new tests added; existing suites cover the new columns
+  through the changeset). `mix precommit` passes.
 
 ---
 

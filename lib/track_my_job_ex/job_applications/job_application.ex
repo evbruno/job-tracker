@@ -24,6 +24,8 @@ defmodule TrackMyJobEx.JobApplications.JobApplication do
     field :job_posting_url, :string
     field :company_name, :string
     field :recruiter_name, :string
+    field :budget_min, :integer
+    field :budget_max, :integer
 
     belongs_to :status, Status
     belongs_to :user, TrackMyJobEx.Accounts.User
@@ -49,13 +51,17 @@ defmodule TrackMyJobEx.JobApplications.JobApplication do
   accepted from client input.
   """
   def changeset(job_application, attrs) do
+    attrs = normalize_budget(attrs)
+
     job_application
     |> cast(attrs, [
       :position,
       :description,
       :job_posting_url,
       :company_name,
-      :recruiter_name
+      :recruiter_name,
+      :budget_min,
+      :budget_max
     ])
     |> trim_and_normalize()
     |> validate_required([:position, :company_name])
@@ -64,6 +70,7 @@ defmodule TrackMyJobEx.JobApplications.JobApplication do
     |> validate_length(:recruiter_name, max: @max_recruiter_name)
     |> validate_length(:description, max: @max_description)
     |> validate_job_posting_url()
+    |> validate_budget()
   end
 
   defp trim_and_normalize(changeset) do
@@ -105,6 +112,63 @@ defmodule TrackMyJobEx.JobApplications.JobApplication do
           _ ->
             add_error(changeset, :job_posting_url, "must be a valid http or https URL")
         end
+    end
+  end
+
+  defp normalize_budget(attrs) when is_map(attrs) do
+    key_style = if Map.has_key?(attrs, :budget_min), do: :atom, else: :string
+
+    Enum.reduce([:budget_min, :budget_max], attrs, fn field, acc ->
+      normalize_budget_field(acc, field, key_style)
+    end)
+  end
+
+  defp normalize_budget(attrs), do: attrs
+
+  defp normalize_budget_field(attrs, field, key_style) do
+    key = if key_style == :atom, do: field, else: Atom.to_string(field)
+    value = Map.get(attrs, key)
+
+    new_value =
+      cond do
+        is_nil(value) ->
+          nil
+
+        value == "" ->
+          nil
+
+        is_binary(value) ->
+          case Integer.parse(String.trim(value)) do
+            {n, ""} -> n
+            _ -> value
+          end
+
+        true ->
+          value
+      end
+
+    if new_value == value do
+      attrs
+    else
+      Map.put(attrs, key, new_value)
+    end
+  end
+
+  defp validate_budget(changeset) do
+    changeset
+    |> validate_number(:budget_min, greater_than_or_equal_to: 0)
+    |> validate_number(:budget_max, greater_than_or_equal_to: 0)
+    |> validate_budget_range()
+  end
+
+  defp validate_budget_range(changeset) do
+    min = get_field(changeset, :budget_min)
+    max = get_field(changeset, :budget_max)
+
+    if is_integer(min) and is_integer(max) and min > max do
+      add_error(changeset, :budget_max, "must be greater than or equal to the minimum")
+    else
+      changeset
     end
   end
 end

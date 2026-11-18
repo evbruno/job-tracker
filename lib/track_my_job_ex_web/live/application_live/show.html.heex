@@ -25,6 +25,15 @@
           Recruiter
           <span id="application-recruiter" class="text-ink">{@application.recruiter_name}</span>
         </span>
+        <span :if={@application.budget_min || @application.budget_max} aria-hidden="true">·</span>
+        <span :if={@application.budget_min || @application.budget_max} id="application-budget">
+          Budget
+          <span class="text-ink">
+            {if @application.budget_min, do: @application.budget_min, else: "—"} – {if @application.budget_max,
+              do: @application.budget_max,
+              else: "—"}
+          </span>
+        </span>
         <span aria-hidden="true">·</span>
         <span>
           Created

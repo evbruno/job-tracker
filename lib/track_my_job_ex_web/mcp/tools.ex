@@ -19,7 +19,7 @@ defmodule TrackMyJobExWeb.MCP.Tools do
   alias TrackMyJobEx.Tags
   alias TrackMyJobExWeb.MCP.Serializer
 
-  @application_fields ~w[position company_name recruiter_name description job_posting_url]
+  @application_fields ~w[position company_name recruiter_name description job_posting_url budget_min budget_max]
 
   @resume_fields ~w[title body email full_name headline phone location linkedin_url github_url portfolio_url]
 

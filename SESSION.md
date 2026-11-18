@@ -7,13 +7,13 @@ Update it before ending every session.
 
 ## Current State
 
-- **Current phase:** Phase 10 — MCP Token Management UI (complete; awaiting
+- **Current phase:** Phase 11 — Application Budget Range (complete; awaiting
   review).
-- **Current task group:** Phase 10, complete.
-- **Next task:** Await review of Phase 10.
-- **Overall status:** Phases 1–10 complete and verified locally. `mix precommit`
-  passes with 346 tests.
-- **Last commit:** Phase 10 commit pending.
+- **Current task group:** Phase 11, complete.
+- **Next task:** Await review of Phase 11.
+- **Overall status:** Phases 1–11 complete and verified locally. `mix precommit`
+  passes with 347 tests.
+- **Last commit:** Phase 11 commit pending.
 
 ## Last Session Summary
 
@@ -287,6 +287,21 @@ None. If this file and PRODUCT.md conflict, PRODUCT.md wins; list the conflict h
 ## Session Log
 
 Add one entry per session, newest first, in this format:
+
+### 2026-11-18
+
+- **Done:** Phase 11 — Application budget range. Added `budget_min` and
+  `budget_max` integer columns to `job_applications`, with non-negative and
+  min<=max validation and blank-to-null normalization in `JobApplication`.
+  Surfaced the range in `ApplicationForm` and the application details page.
+  Added both fields to the MCP serializer and to `applications_create`/
+  `applications_update`. Updated `PRODUCT.md`, `TASKS.md`, and `SESSION.md`.
+  `mix precommit` passes with 347 tests.
+- **Commits:** (pending) `Phase 11: Add application budget range`.
+- **Assumptions:** Budgets are whole units (no currency or cents). Blank
+  inputs are stored as `NULL`.
+- **Blockers:** None.
+- **Next:** Await review of Phase 11.
 
 ### 2026-11-18
 

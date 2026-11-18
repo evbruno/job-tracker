@@ -43,6 +43,9 @@ Fields:
 - Job posting URL (must be a valid `http`/`https` URL when present).
 - Company name (required, plain text, max 255 characters).
 - Recruiter name (optional, plain text, max 255 characters).
+- Budget range (optional): minimum and maximum in whole units. Both are
+  non-negative integers; when both are present the minimum must not exceed the
+  maximum. Blank values are stored as `NULL`.
 - Current application status.
 - Relevant tags.
 - Creation timestamp.
@@ -411,6 +414,7 @@ The MVP is successful when a user can:
 | MCP transport library | Phantom MCP (`phantom_mcp`) |
 | MCP deletes | Hard delete, explicit single id, marked destructive |
 | `updated_at` changes on | Field edits, status changes, tag changes |
+| Budget range | Optional minimum and maximum in whole units; minimum <= maximum when both are present |
 | Timestamps | Stored and displayed in UTC |
 | Database | SQLite3 (`ecto_sqlite3`) |
 | User provisioning | Custom Mix task |

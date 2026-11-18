@@ -87,6 +87,11 @@ defmodule TrackMyJobExWeb.MCP.Router do
     field :job_posting_url, :string,
       description: "Optional absolute http or https URL for the job posting."
 
+    field :budget_min, :integer, description: "Optional minimum budget (whole units)."
+
+    field :budget_max, :integer,
+      description: "Optional maximum budget (whole units). Must be >= budget_min."
+
     field :tag_ids, {:array, :integer},
       description: "Ids of existing tags owned by the caller to link."
 
@@ -104,6 +109,10 @@ defmodule TrackMyJobExWeb.MCP.Router do
 
     field :job_posting_url, :string,
       description: "Absolute http or https URL for the job posting; blank clears it."
+
+    field :budget_min, :integer, description: "Minimum budget (whole units); blank clears it."
+
+    field :budget_max, :integer, description: "Maximum budget (whole units); blank clears it."
 
     field :tag_ids, {:array, :integer},
       description:

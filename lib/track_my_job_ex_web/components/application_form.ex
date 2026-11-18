@@ -84,6 +84,31 @@ defmodule TrackMyJobExWeb.ApplicationForm do
 
         <section class="rounded border border-rule bg-surface">
           <div class="border-b border-rule px-4 py-3">
+            <h2 class="text-sm font-semibold text-ink">Budget</h2>
+            <p class="mt-0.5 text-xs text-ink-muted">
+              Optional salary or rate range in whole units.
+            </p>
+          </div>
+          <div class="grid gap-4 px-4 py-4 sm:grid-cols-2">
+            <.input
+              field={@form[:budget_min]}
+              type="number"
+              label="Minimum"
+              min="0"
+              inputmode="numeric"
+            />
+            <.input
+              field={@form[:budget_max]}
+              type="number"
+              label="Maximum"
+              min="0"
+              inputmode="numeric"
+            />
+          </div>
+        </section>
+
+        <section class="rounded border border-rule bg-surface">
+          <div class="border-b border-rule px-4 py-3">
             <h2 class="text-sm font-semibold text-ink">Description</h2>
             <p class="mt-0.5 text-xs text-ink-muted">
               Optional notes about the role, the team, or the process.
