@@ -94,6 +94,8 @@ defmodule TrackMyJobExWeb.Router do
       live "/resumes/:id", ResumeLive.Show, :show
       live "/tags", TagLive.Index, :index
       live "/mcp-tokens", McpTokenLive.Index, :index
+      live "/admin", AdminLive.Index, :index
+      live "/admin/tokens", AdminLive.Tokens, :index
     end
 
     delete "/users/log-out", UserSessionController, :delete

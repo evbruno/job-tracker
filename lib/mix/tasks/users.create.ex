@@ -19,7 +19,7 @@ defmodule Mix.Tasks.Users.Create do
 
   alias TrackMyJobEx.Accounts
 
-  @switches [password: :string]
+  @switches [password: :string, admin: :boolean]
 
   @impl Mix.Task
   def run(args) do
@@ -42,7 +42,7 @@ defmodule Mix.Tasks.Users.Create do
     email = parse_email!(argv)
     password = opts[:password] || prompt_password!()
 
-    case Accounts.create_user(%{email: email, password: password}) do
+    case Accounts.create_user(%{email: email, password: password, is_admin: opts[:admin] == true}) do
       {:ok, user} ->
         Mix.shell().info("Created user #{user.email}")
 

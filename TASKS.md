@@ -2,16 +2,15 @@
 
 ## Current Project Status
 
-**Current phase:** Phase 12 — Application Start Date, Ghosted Status, and
-Archiving (complete; awaiting review)
+**Current phase:** Phase 13 — Admin Role and User Management (complete; awaiting
+review)
 
-**Overall status:** Phases 1–12 complete in the repository. Phase 12 adds an
-optional start date, a predefined "ghosted" status, and reversible application
-archiving (hidden by default, with a filter to show archived).
+**Overall status:** Phases 1–13 complete in the repository. Phase 13 adds an
+administrator role with user management and cross-user MCP token management.
 
-**Current milestone:** Phase 12 verified.
+**Current milestone:** Phase 13 verified — admin UI.
 
-**Current task group:** Phase 12, complete.
+**Current task group:** Phase 13, complete.
 
 ---
 
@@ -606,6 +605,31 @@ migrations, URL contracts, ownership rules, and flash strings are unchanged. See
   `applications_unarchive` tools.
 - Tests: the seeded-status count updated to 14; 347 total. `mix precommit`
   passes.
+
+## Phase 13 — Admin Role and User Management
+
+- [x] Add `is_admin` boolean column to `users` (default false).
+- [x] Add `Scope.admin?/1` and admin-gated `Accounts` functions: `list_users/1`,
+  `create_user/2`, `delete_user/2`, `set_user_admin/3`, `list_all_mcp_tokens/1`,
+  `create_mcp_token_for_user/3`, and admin-aware `revoke_mcp_token/2`.
+- [x] Add `--admin` flag to `mix users.create`.
+- [x] Add `AdminLive.Index` (user management) and `AdminLive.Tokens` (cross-user
+  MCP token management) with routes and a nav link visible to admins.
+- [x] Add admin LiveView tests.
+- [x] Update `PRODUCT.md`, `TASKS.md`, and `SESSION.md`.
+
+**Acceptance criteria:**
+- A user can be an administrator or a regular user.
+- Administrators can list, create, and delete users (not themselves).
+- Administrators can list, create, and revoke MCP tokens for any user.
+- Non-administrators cannot access admin pages or functions.
+- `mix precommit` passes.
+
+**Phase 13 completion notes:**
+- Migration: `20261118190157_add_is_admin_to_users.exs`.
+- Context: admin functions return `{:error, :unauthorized}` for non-admins.
+- UI: `/admin` and `/admin/tokens`, nav link shown only to admins.
+- Tests: 2 admin LiveView tests (349 total). `mix precommit` passes.
 
 ---
 

@@ -32,4 +32,7 @@ defmodule TrackMyJobEx.Accounts.Scope do
   end
 
   def for_user(nil), do: nil
+
+  def admin?(%__MODULE__{user: %{is_admin: true}}), do: true
+  def admin?(_scope), do: false
 end

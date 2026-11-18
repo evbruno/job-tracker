@@ -106,6 +106,16 @@ defmodule TrackMyJobExWeb.Layouts do
                   MCP tokens
                 </.link>
               </li>
+              <li :if={@current_scope.user.is_admin}>
+                <.link
+                  navigate={~p"/admin"}
+                  id="nav-admin"
+                  class={nav_link(@active == :admin)}
+                  aria-current={@active == :admin && "page"}
+                >
+                  Admin
+                </.link>
+              </li>
             </ul>
           </nav>
 

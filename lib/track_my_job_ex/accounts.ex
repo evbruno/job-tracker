@@ -43,10 +43,30 @@ defmodule TrackMyJobEx.Accounts do
 
   This is the only way to create users. Public registration is disabled.
   """
-  def create_user(attrs) do
-    %User{}
+  def create_user(attrs) when is_map(attrs) do
+    is_admin = truthy_attr?(attrs, :is_admin)
+
+    attrs = drop_attr(attrs, :is_admin)
+
+    %User{is_admin: is_admin}
     |> User.creation_changeset(attrs)
     |> Repo.insert()
+  end
+
+  defp truthy_attr?(attrs, key) when is_map(attrs) do
+    value =
+      case Map.get(attrs, key) do
+        nil -> Map.get(attrs, Atom.to_string(key))
+        v -> v
+      end
+
+    value in [true, "true", 1, "1", "on"]
+  end
+
+  defp drop_attr(attrs, key) when is_map(attrs) do
+    attrs
+    |> Map.delete(key)
+    |> Map.delete(Atom.to_string(key))
   end
 
   ## Session
@@ -139,11 +159,134 @@ defmodule TrackMyJobEx.Accounts do
   behaves as not found.
   """
   def revoke_mcp_token(%Scope{} = scope, id) do
-    case get_mcp_token(scope, id) do
+    token =
+      if Scope.admin?(scope) do
+        case Ecto.Type.cast(:id, id) do
+          {:ok, id} -> Repo.get(MCPToken, id)
+          :error -> nil
+        end
+      else
+        get_mcp_token(scope, id)
+      end
+
+    case token do
       nil -> {:error, :not_found}
       token -> Repo.delete(token)
     end
   end
+
+  @doc """
+  Returns true when the scope belongs to an administrator.
+  """
+  def admin?(%Scope{} = scope), do: Scope.admin?(scope)
+
+  @doc """
+  Lists every user. Administrators only.
+
+  Returns `{:ok, users}` or `{:error, :unauthorized}`.
+  """
+  def list_users(%Scope{user: %{is_admin: true}}) do
+    users =
+      from(user in User, order_by: [asc: user.email, asc: user.id])
+      |> Repo.all()
+
+    {:ok, users}
+  end
+
+  def list_users(%Scope{}), do: {:error, :unauthorized}
+
+  @doc """
+  Creates a user. Administrators only.
+
+  Returns `{:ok, user}` or `{:error, :unauthorized}` / `{:error, changeset}`.
+  """
+  def create_user(%Scope{user: %{is_admin: true}}, attrs) when is_map(attrs) do
+    create_user(attrs)
+  end
+
+  def create_user(%Scope{}, _attrs), do: {:error, :unauthorized}
+
+  @doc """
+  Deletes a user. Administrators only; a user cannot delete themselves.
+
+  Returns `{:ok, user}`, `{:error, :unauthorized}`, or `{:error, :cannot_delete_self}`.
+  """
+  def delete_user(%Scope{user: %{is_admin: true, id: admin_id}}, user_id) do
+    case Ecto.Type.cast(:id, user_id) do
+      {:ok, id} when id == admin_id ->
+        {:error, :cannot_delete_self}
+
+      {:ok, id} ->
+        case Repo.get(User, id) do
+          nil -> {:error, :not_found}
+          user -> Repo.delete(user)
+        end
+
+      :error ->
+        {:error, :not_found}
+    end
+  end
+
+  def delete_user(%Scope{}, _user_id), do: {:error, :unauthorized}
+
+  @doc """
+  Sets or clears the admin flag on a user. Administrators only.
+
+  Returns `{:ok, user}`, `{:error, :unauthorized}`, or `{:error, :not_found}`.
+  """
+  def set_user_admin(%Scope{user: %{is_admin: true}}, user_id, is_admin)
+      when is_boolean(is_admin) do
+    case Ecto.Type.cast(:id, user_id) do
+      {:ok, id} ->
+        case Repo.get(User, id) do
+          nil -> {:error, :not_found}
+          user -> user |> Ecto.Changeset.change(is_admin: is_admin) |> Repo.update()
+        end
+
+      :error ->
+        {:error, :not_found}
+    end
+  end
+
+  def set_user_admin(%Scope{}, _user_id, _is_admin), do: {:error, :unauthorized}
+
+  ## MCP personal access tokens (admin)
+
+  @doc """
+  Lists every MCP token. Administrators only.
+
+  Returns `{:ok, tokens}` (with the owning user preloaded) or
+  `{:error, :unauthorized}`.
+  """
+  def list_all_mcp_tokens(%Scope{user: %{is_admin: true}}) do
+    tokens =
+      from(token in MCPToken,
+        order_by: [desc: token.inserted_at, desc: token.id],
+        preload: [:user]
+      )
+      |> Repo.all()
+
+    {:ok, tokens}
+  end
+
+  def list_all_mcp_tokens(%Scope{}), do: {:error, :unauthorized}
+
+  @doc """
+  Creates an MCP token for the given user. Administrators only.
+
+  Returns `{:ok, token, plaintext}` or `{:error, :unauthorized}` / `{:error, changeset}`.
+  """
+  def create_mcp_token_for_user(%Scope{user: %{is_admin: true}}, user_id, attrs)
+      when is_map(attrs) do
+    with {:ok, id} <- Ecto.Type.cast(:id, user_id),
+         %User{} = user <- Repo.get(User, id) do
+      create_mcp_token(Scope.for_user(user), attrs)
+    else
+      _other -> {:error, :not_found}
+    end
+  end
+
+  def create_mcp_token_for_user(%Scope{}, _user_id, _attrs), do: {:error, :unauthorized}
 
   @doc """
   Authenticates a plaintext MCP token and returns `{:ok, user, token}`.

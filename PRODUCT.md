@@ -31,7 +31,11 @@ Requirements:
 - Sessions use the standard expiry provided by the Phoenix authentication generator; no custom session policy is required.
 - Login rate limiting is out of scope for the initial version.
 
-There is no administrative panel.
+Users may be administrators. An administrator can list, create, and delete user
+accounts and manage (list, create, revoke) MCP tokens for any user. A user cannot
+delete their own account or demote themselves. Public registration remains
+disabled; the Mix task `mix users.create EMAIL [--admin]` can provision an
+administrator.
 
 ### 3.2 Job Applications
 
@@ -435,7 +439,7 @@ The MVP is successful when a user can:
 | Database | SQLite3 (`ecto_sqlite3`) |
 | User provisioning | Custom Mix task |
 | Public registration | Disabled |
-| Admin panel | Not required |
+| Admin panel | Required for user and MCP token administration |
 
 ## 11. Project Workflow
 

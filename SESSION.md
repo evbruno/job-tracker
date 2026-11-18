@@ -7,13 +7,13 @@ Update it before ending every session.
 
 ## Current State
 
-- **Current phase:** Phase 12 — Application Start Date, Ghosted Status, and
-  Archiving (complete; awaiting review).
-- **Current task group:** Phase 12, complete.
-- **Next task:** Await review of Phase 12.
-- **Overall status:** Phases 1–12 complete and verified locally. `mix precommit`
-  passes with 347 tests.
-- **Last commit:** Phase 12 commit pending.
+- **Current phase:** Phase 13 — Admin Role and User Management (complete;
+  awaiting review).
+- **Current task group:** Phase 13, complete.
+- **Next task:** Await review of Phase 13.
+- **Overall status:** Phases 1–13 complete and verified locally. `mix precommit`
+  passes with 349 tests.
+- **Last commit:** Phase 13 commit pending.
 
 ## Last Session Summary
 
@@ -287,6 +287,21 @@ None. If this file and PRODUCT.md conflict, PRODUCT.md wins; list the conflict h
 ## Session Log
 
 Add one entry per session, newest first, in this format:
+
+### 2026-11-18
+
+- **Done:** Phase 13 — Admin role and user management. Added `is_admin` to
+  users, `Scope.admin?/1`, and admin-gated `Accounts` functions for listing,
+  creating, and deleting users and managing MCP tokens across users. Added
+  `--admin` to `mix users.create`. Added `AdminLive.Index` and
+  `AdminLive.Tokens` with routes and an admin-only nav link, plus 2 LiveView
+  tests. Updated `PRODUCT.md`, `TASKS.md`, and `SESSION.md`. `mix precommit`
+  passes with 349 tests.
+- **Commits:** (pending) `Phase 13: Add admin role and user management`.
+- **Assumptions:** Administrators are provisioned via `mix users.create --admin`
+  or promoted in the UI; no self-deletion or self-demotion is allowed.
+- **Blockers:** None.
+- **Next:** Await review of Phase 13.
 
 ### 2026-11-18
 

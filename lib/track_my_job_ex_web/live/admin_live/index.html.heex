@@ -1,0 +1,119 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} active={:admin}>
+  <.header>
+    Admin · Users
+    <:subtitle>
+      Create, list, and delete user accounts. Administrators only.
+    </:subtitle>
+  </.header>
+
+  <div class="mt-2">
+    <.link
+      navigate={~p"/admin/tokens"}
+      id="admin-tokens-link"
+      class="text-xs font-medium text-cobalt hover:underline"
+    >
+      Manage MCP tokens for all users →
+    </.link>
+  </div>
+
+  <div class="mt-6 rounded border border-rule bg-surface p-4">
+    <h2 class="text-sm font-semibold text-ink">Create a user</h2>
+
+    <.form
+      for={@create_form}
+      id="create-user-form"
+      phx-submit="create"
+      class="mt-3 flex flex-wrap items-end gap-3"
+    >
+      <div class="min-w-48 flex-1">
+        <.input
+          field={@create_form[:email]}
+          id="new-user-email"
+          type="email"
+          label="Email"
+          required
+        />
+      </div>
+      <div class="min-w-48 flex-1">
+        <.input
+          field={@create_form[:password]}
+          id="new-user-password"
+          type="password"
+          label="Password"
+          required
+        />
+      </div>
+      <div class="flex items-center gap-2">
+        <input
+          type="checkbox"
+          name="user[is_admin]"
+          value="true"
+          id="new-user-is-admin"
+        />
+        <label for="new-user-is-admin" class="text-sm text-ink">Admin</label>
+      </div>
+      <button type="submit" id="create-user" class="btn btn-primary btn-sm">
+        Create user
+      </button>
+    </.form>
+  </div>
+
+  <div class="mt-6 divide-y divide-rule overflow-hidden rounded border border-rule bg-surface">
+    <div
+      :for={user <- @users}
+      id={"user-#{user.id}"}
+      class="flex flex-wrap items-center justify-between gap-2 px-3 py-2.5"
+    >
+      <div class="min-w-0">
+        <span id={"user-email-#{user.id}"} class="text-sm font-medium text-ink">
+          {user.email}
+        </span>
+        <span
+          :if={user.is_admin}
+          id={"user-admin-badge-#{user.id}"}
+          class="ml-2 rounded bg-cobalt/10 px-1.5 py-0.5 text-xs font-medium text-cobalt"
+        >
+          Admin
+        </span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          id={"toggle-admin-#{user.id}"}
+          phx-click="toggle_admin"
+          phx-value-id={user.id}
+          class="btn btn-ghost btn-sm"
+        >
+          {if user.is_admin, do: "Demote", else: "Promote"}
+        </button>
+        <button
+          type="button"
+          id={"delete-user-#{user.id}"}
+          phx-click="prompt_delete"
+          phx-value-id={user.id}
+          class="btn btn-ghost btn-sm text-red-700 hover:bg-red-50"
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <.empty_state :if={@users_empty?} id="users-empty" icon="hero-users" title="No users yet">
+    Create a user above.
+  </.empty_state>
+
+  <.confirm_modal
+    :if={@pending_delete}
+    id="delete-user-modal"
+    title="Delete user?"
+    confirm_label="Delete user"
+    confirm_event="delete"
+    confirm_value={@pending_delete.id}
+  >
+    <p>
+      <span class="font-medium text-ink">{@pending_delete.email}</span>
+      and all of their data will be permanently deleted.
+    </p>
+  </.confirm_modal>
+</Layouts.app>
