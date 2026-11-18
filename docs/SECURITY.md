@@ -161,15 +161,37 @@ write raises/returns an error without revealing whether the record exists.
 | Read another user's application links | Not reachable because the application read is scoped | `job_applications_test.exs:578` |
 | List tag links | Scoped through the application query | `job_applications_test.exs:203` |
 
-### Sessions and authentication
+### MCP personal access tokens (`MCPToken`)
 
-| Case | Expected behavior | Test |
+| Operation | Expected behavior for another user's token | Test |
 |---|---|---|
-| Two users log in independently | Each session resolves to its own user | `test/track_my_job_ex_web/tenant_isolation_test.exs:31` |
-| Logout of one session | Does not invalidate the other | `tenant_isolation_test.exs:46` |
-| Anonymous request | Redirected to login; LiveView mount halted | `tenant_isolation_test.exs:79,88` |
-| Cookie flags | `Secure` in prod, `HttpOnly`, `SameSite=Lax` | `test/track_my_job_ex_web/controllers/user_session_controller_test.exs` |
+| Create | Owner is taken from the scope; client `user_id` is ignored | `test/track_my_job_ex/accounts_mcp_tokens_test.exs` create tests |
+| List | Only the scope's tokens | `accounts_mcp_tokens_test.exs` list tests |
+| Read/get | Another user's token id returns `nil` | `accounts_mcp_tokens_test.exs` list/get tests |
+| Revoke | Another user's token returns `{:error, :not_found}` and is not deleted | `accounts_mcp_tokens_test.exs` revoke tests |
+| Authenticate | Unknown, malformed, expired, and revoked tokens return `:error` without revealing the reason; valid use refreshes `last_used_at` at most once every five minutes | `accounts_mcp_tokens_test.exs` verification tests |
+| Cross-user data access | A token only sees its owner's applications, resumes, and tags; another user's ids behave as not found | `test/track_my_job_ex_web/mcp/auth_test.exs`, `test/track_my_job_ex_web/mcp/tools_test.exs` |
 
+### MCP tools
+
+| Tool | Behavior | Test |
+|---|---|---|
+| `applications_list` | Search, filters, sorting, pagination scoped to the owner; other users' tag ids ignored | `tools_test.exs` |
+| `applications_get` / `applications_status_history` | Not found for another user's id | `tools_test.exs` |
+| `applications_create` | Owner from token; tag ids validated; initial history row created | `tools_test.exs` |
+| `applications_update` | Fields and tag links scoped; omitting `tag_ids` preserves tags; `[]` clears them | `tools_test.exs` |
+| `applications_delete` | Hard delete; other user's id not found | `tools_test.exs` |
+| `applications_change_status` | Atomic status + history; invalid/unknown/same status rejected | `tools_test.exs` |
+| `resumes_list` / `resumes_get` / `resumes_create` / `resumes_update` / `resumes_delete` | Same ownership and validation rules as the web UI, including email prefill | `tools_test.exs` |
+| `tags_list` / `statuses_list` | Only the owner's tags; predefined global statuses | `tools_test.exs` |
+
+### MCP token handling
+
+- Tokens are stored as SHA-256 hashes plus a public prefix; the plaintext is returned once and never persisted.
+- Token verification is an authentication lookup in `TrackMyJobEx.Accounts` (in the same category as the session-token lookup) and derives a `%Scope{}`. It is never used as a domain ownership check.
+- `last_used_at` is throttled to one write per five minutes to avoid SQLite write contention.
+- The `/mcp` route is outside the `:browser` pipeline: no session cookie, no CSRF token. Origin validation defaults to localhost and is configurable via `MCP_ALLOWED_ORIGINS`.
+- Tokens are hard-deleted on revoke; revocation is immediate.
 ## Session and cookie settings
 
 - Session store: signed cookie, `SameSite=Lax`, `HttpOnly`, `Secure` in

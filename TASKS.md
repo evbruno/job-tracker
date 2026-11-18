@@ -2,16 +2,16 @@
 
 ## Current Project Status
 
-**Current phase:** Phase 8 — Resume Management (complete; awaiting review)
+**Current phase:** Phase 9 — MCP Server (complete; awaiting review)
 
-**Overall status:** Phases 1–8 complete in the repository. Phase 8 adds multiple
-resume versions per user. The remaining Phase 7 items are operator-only
-infrastructure steps documented in `docs/DEPLOYMENT.md`.
+**Overall status:** Phases 1–9 complete in the repository. Phase 9 exposes
+application and resume CRUD plus read-only tags/statuses over an authenticated
+MCP Streamable HTTP endpoint at `/mcp`, using per-user personal access tokens.
 
-**Current milestone:** Phase 8 verified — resumes with tags, contact links, and
-email prefill.
+**Current milestone:** Phase 9 verified — MCP server with 14 tools and
+personal access tokens.
 
-**Current task group:** Phase 8, tasks 8.1–8.9 complete.
+**Current task group:** Phase 9, tasks 9.1–9.8 complete.
 
 ---
 
@@ -462,6 +462,53 @@ migrations, URL contracts, ownership rules, and flash strings are unchanged. See
 - Deliberately not done: no application links, file uploads, PDF generation,
   version chains, version comparison, default resume flag, filters, or
   pagination for resumes.
+
+## Phase 9 — MCP Server
+
+- [x] 9.1 Add `phantom_mcp` dependency, MIME `sse` type, `:mcp` pipeline, and
+  `/mcp` route forwarding to `Phantom.Plug`.
+- [x] 9.2 Add `mcp_tokens` table, `TrackMyJobEx.Accounts.MCPToken` schema, and
+  scoped create/list/get/revoke plus global verification in `Accounts`.
+- [x] 9.3 Add `mix mcp.tokens.create|list|revoke` tasks.
+- [x] 9.4 Implement `connect/2` authentication and tenant scope derivation.
+- [x] 9.5 Implement read tools: `applications_list`, `applications_get`,
+  `applications_status_history`, `resumes_list`, `resumes_get`, `tags_list`,
+  `statuses_list`.
+- [x] 9.6 Implement application write tools: `applications_create`,
+  `applications_update`, `applications_delete`, `applications_change_status`.
+- [x] 9.7 Implement resume write tools: `resumes_create`, `resumes_update`,
+  `resumes_delete`.
+- [x] 9.8 Add context, auth, tool, and Mix task tests; update docs.
+
+**Acceptance criteria:**
+- An MCP client authenticates with `Authorization: Bearer tmj_<prefix>_<secret>`.
+- Unauthenticated or invalid requests return 401 with a `WWW-Authenticate`
+  challenge; disallowed browser origins return 403.
+- All 14 tools operate only on the token owner's records; another user's ids
+  behave as not found.
+- Application status changes append history atomically.
+- Tag ids are validated against the owner; inline names reuse existing tags.
+- `mix precommit` passes.
+
+**Phase 9 completion notes:**
+- Dependency: `phantom_mcp ~> 0.8.0` (MIT) plus `uuid_v7` (transitive),
+  justified by the MCP framing/transport. `Phantom.Tracker` added to the
+  application supervision tree.
+- Data model: `mcp_tokens` stores `name`, `token_prefix` (unique), `token_hash`
+  (SHA-256, 32 bytes), `last_used_at`, `expires_at`, `user_id` (FK cascade),
+  and timestamps. Plaintext is never stored.
+- Context: `TrackMyJobEx.Accounts` owns `create_mcp_token/2`, `list_mcp_tokens/1`,
+  `get_mcp_token/2`, `revoke_mcp_token/2`, and the global
+  `get_user_by_mcp_token/1` authentication lookup. `last_used_at` is refreshed
+  at most once every five minutes.
+- Router: `TrackMyJobExWeb.MCP.Router` uses `Phantom.Router` with 14 tools and
+  `connect/2` returning `{:unauthorized, %{...}}` for bad credentials. Tools
+  live in `TrackMyJobExWeb.MCP.Tools`; serialization in
+  `TrackMyJobExWeb.MCP.Serializer`.
+- Mix tasks: `mix mcp.tokens.create EMAIL --name NAME [--expires-in DAYS]`,
+  `mix mcp.tokens.list EMAIL`, `mix mcp.tokens.revoke EMAIL TOKEN_ID`.
+- Tests: 14 context tests, 9 auth tests, 13 tool tests, 11 Mix task tests
+  (342 total). `mix precommit` passes.
 
 ---
 

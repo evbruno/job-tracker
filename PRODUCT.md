@@ -238,6 +238,29 @@ Resumes are hard-deleted together with their tag links (cascade). Tags are never
 
 Linking resumes to applications, file uploads or attachments, PDF generation, version comparison, and default/primary resumes are out of scope for this version.
 
+### 3.8 MCP Access
+
+The application exposes its application and resume functionality as a Model
+Context Protocol (MCP) server so other agents can use it.
+
+- Endpoint: Streamable HTTP at `/mcp`, served by the same Phoenix endpoint.
+- Authentication: per-user personal access tokens sent as
+  `Authorization: Bearer tmj_<prefix>_<secret>`. Tokens are created, listed, and
+  revoked with `mix mcp.tokens.create|list|revoke`. Only a SHA-256 hash and a
+  public prefix are stored; the plaintext is shown once.
+- Transport: Streamable HTTP only (no stdio). Origin validation rejects
+  browser-based DNS-rebinding attempts.
+- Tool surface: full CRUD for applications and resumes, plus read-only
+  `tags_list` and `statuses_list`. Each tool acts only on the token owner's
+  records; another user's identifiers behave as not found.
+- Ownership rules from section 4 apply unchanged: every tool derives the
+  `%Scope{}` from the authenticated token, re-fetches records through scoped
+  context functions, validates submitted tag ids against the owner, and never
+  trusts a client-supplied `user_id`.
+- Destructive tools (`applications_delete`, `resumes_delete`) are marked
+  `destructiveHint` and require an explicit record id; there are no bulk
+  operations.
+
 ## 4. Data Ownership and Privacy
 
 The platform is multi-tenant.
@@ -253,6 +276,7 @@ Requirements:
 - All queries and mutations must enforce ownership server-side.
 - LiveView events must never trust client-provided record identifiers without authorization checks.
 - Context functions take the current user (or scope) as an explicit argument; there are no unscoped "get by id" functions for user-owned records.
+- MCP personal access tokens are user-owned: another user's token cannot be listed, revoked, or used to access that user's data. Token verification is an authentication lookup that derives a `%Scope{}`; it is never used as a domain ownership check.
 - Accessing another user's record behaves as "not found" (no information leak about existence).
 
 ## 5. Technical Stack
@@ -262,6 +286,7 @@ Requirements:
 - Phoenix Framework
 - Phoenix LiveView
 - Ecto
+- Phantom MCP (`phantom_mcp`) for the MCP Streamable HTTP transport.
 
 Use the latest stable versions of Elixir, Phoenix, and LiveView available at project start, and pin them in the repository (`.tool-versions` or equivalent).
 
@@ -282,6 +307,7 @@ Use the latest stable versions of Elixir, Phoenix, and LiveView available at pro
 - Email/password authentication.
 - Secure password hashing.
 - Session-based authentication.
+- Personal access tokens for MCP clients: SHA-256 hashed, revocable, expirable, created through `mix mcp.tokens.*`.
 
 ### User Provisioning
 - Custom Mix task for creating users (`mix users.create EMAIL`), which prompts for or accepts a password and fails clearly on duplicate emails or invalid input.
@@ -313,6 +339,7 @@ Use the latest stable versions of Elixir, Phoenix, and LiveView available at pro
 - Company and recruiter tests must verify that values are trimmed, a blank recruiter is stored as `NULL`, suggestions and filters only use the current user's values, and filters match case-insensitively.
 - Listing tests cover each filter, search, sorting, and pagination.
 - Resume tests cover the email prefill, validation (title, body, email, URLs), tag creation and reuse, ordering, deletion cascades, and cross-user isolation.
+- MCP tests cover token creation, hashing, expiry, revocation, cross-user token isolation, authentication challenges, tool CRUD for applications and resumes, tag ownership validation, status history, and the predefined status list.
 - Add LiveView tests for the main flows: login, create application (with company, recruiter, and inline tag creation), change status with notes, create and edit a resume with tags, and filter the list.
 - `mix test` must pass before any task is considered complete.
 - If tests fail with "database is locked/busy" errors, run database tests with `async: false`.
@@ -335,6 +362,7 @@ Use the latest stable versions of Elixir, Phoenix, and LiveView available at pro
 - Editing or deleting individual status history entries.
 - Resume file uploads, PDF generation, version comparison, and linking resumes to applications.
 - Password reset and email confirmation flows (users are provisioned by the Mix task; remove or disable these generator-provided flows).
+- OAuth 2.1 authorization, dynamic client registration, and stdio transport for the MCP endpoint (personal access tokens and Streamable HTTP only).
 
 ## 9. Success Criteria
 
@@ -349,6 +377,7 @@ The MVP is successful when a user can:
 7. Search, filter and sort applications.
 8. Create, edit, and delete multiple resume versions with tags.
 9. Be confident that other users cannot access their information.
+10. Manage applications and resumes through the MCP endpoint with a personal access token, without affecting other users' data.
 
 ## 10. Confirmed Product Decisions
 
@@ -374,6 +403,10 @@ The MVP is successful when a user can:
 | Resume listing | Most recently updated first; no filters or pagination in this version |
 | Resume extras | Full name, headline, phone, and location are optional fields |
 | Resume scope | Text only; no file uploads, PDF generation, or application links |
+| MCP endpoint | Streamable HTTP at `/mcp` |
+| MCP authentication | Per-user personal access tokens, SHA-256 hashed, revocable and expirable |
+| MCP transport library | Phantom MCP (`phantom_mcp`) |
+| MCP deletes | Hard delete, explicit single id, marked destructive |
 | `updated_at` changes on | Field edits, status changes, tag changes |
 | Timestamps | Stored and displayed in UTC |
 | Database | SQLite3 (`ecto_sqlite3`) |

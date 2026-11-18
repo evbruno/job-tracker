@@ -101,6 +101,49 @@ Development and test SQLite databases are created in the project root
 SQLite foreign keys are enforced and WAL journal mode is enabled in every
 environment.
 
+## MCP server
+
+The application exposes its application and resume functionality as a Model
+Context Protocol (MCP) server over Streamable HTTP at `/mcp`. Authentication
+uses per-user personal access tokens.
+
+Create a token for an existing user:
+
+```sh
+mix mcp.tokens.create alice@example.com --name "Claude Desktop"
+```
+
+The plaintext token is printed once. Configure the MCP client with:
+
+```json
+{
+  "mcpServers": {
+    "job-tracker": {
+      "type": "http",
+      "url": "http://localhost:4000/mcp",
+      "headers": {
+        "Authorization": "Bearer tmj_<prefix>_<secret>"
+      }
+    }
+  }
+}
+```
+
+List and revoke tokens:
+
+```sh
+mix mcp.tokens.list alice@example.com
+mix mcp.tokens.revoke alice@example.com 1
+```
+
+The endpoint exposes 14 tools: `applications_list`, `applications_get`,
+`applications_create`, `applications_update`, `applications_delete`,
+`applications_change_status`, `applications_status_history`, `resumes_list`,
+`resumes_get`, `resumes_create`, `resumes_update`, `resumes_delete`,
+`tags_list`, and `statuses_list`. Every tool acts only on the token owner's
+records; another user's identifiers are reported as not found. Browser origins
+allowed to call the endpoint are configured through `MCP_ALLOWED_ORIGINS`.
+
 ## Tests
 
 ```sh

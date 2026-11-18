@@ -7,16 +7,13 @@ Update it before ending every session.
 
 ## Current State
 
-- **Current phase:** Phase 8 — Resume Management (complete; awaiting review).
-- **Current task group:** 8.1–8.9 — complete. A presentation-only UI refresh
-  (2026-11-18) is also complete and committed; it adds no product scope.
-- **Next task:** Review Phase 8. Operator provisioning remains outstanding for
-  Phase 7. No Phase 9 is defined.
-- **Overall status:** Phases 1–8 complete and verified locally. The application
-  is production-ready on the code side; real deployment requires operator-only
-  DNS/TLS, volume, secrets, monitoring, and off-site backups.
-- **Last commit:** `Phase 8.9: Add a resume creation Mix task` follows the UI
-  refresh and Phase 8.8 commits.
+- **Current phase:** Phase 9 — MCP Server (complete; awaiting review).
+- **Current task group:** 9.1–9.8 — complete.
+- **Next task:** Await review of Phase 9. Operator provisioning remains
+  outstanding for Phase 7.
+- **Overall status:** Phases 1–9 complete and verified locally. `mix precommit`
+  passes with 342 tests.
+- **Last commit:** Phase 8.9 precedes this work; Phase 9 commits pending.
 
 ## Last Session Summary
 
@@ -290,6 +287,25 @@ None. If this file and PRODUCT.md conflict, PRODUCT.md wins; list the conflict h
 ## Session Log
 
 Add one entry per session, newest first, in this format:
+
+### 2026-11-18
+
+- **Done:** Phase 9 — MCP server. Added `phantom_mcp ~> 0.8.0`, a `:mcp`
+  pipeline, and a `/mcp` Streamable HTTP route. Added the `mcp_tokens` table
+  and `TrackMyJobEx.Accounts.MCPToken`, with scoped create/list/get/revoke and
+  global verification, plus `mix mcp.tokens.create|list|revoke`. Implemented
+  `TrackMyJobExWeb.MCP.Router` with `connect/2` Bearer-token authentication and
+  14 tools (applications CRUD + status/history, resumes CRUD, tags_list,
+  statuses_list), a serializer, and thin tool handlers over the existing
+  contexts. Added 14 context tests, 9 auth tests, 13 tool tests, and 11 Mix
+  task tests (342 total). Updated `PRODUCT.md`, `TASKS.md`, `README.md`, and
+  `docs/SECURITY.md`. `mix precommit` passes.
+- **Commits:** (pending) `Phase 9.8: Expose applications and resumes over MCP`.
+- **Assumptions:** Personal access tokens over Streamable HTTP instead of OAuth
+  2.1, as confirmed during planning. `last_used_at` is throttled to one write
+  per five minutes. `Phantom.Tracker` is added to the supervision tree.
+- **Blockers:** None.
+- **Next:** Await review of Phase 9.
 
 ### 2026-11-18
 
