@@ -514,9 +514,12 @@ defmodule TrackMyJobExWeb.ApplicationLiveTest do
 
       {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/applications")
 
-      assert has_element?(view, "#delete-application-#{application.id}[data-confirm]")
+      assert has_element?(view, "#delete-application-#{application.id}")
 
       view |> element("#delete-application-#{application.id}") |> render_click()
+      assert has_element?(view, "#delete-application-modal")
+
+      view |> element("#delete-application-modal-confirm") |> render_click()
 
       assert JobApplications.get_application(scope, application.id) == nil
       refute has_element?(view, "#applications-#{application.id}")
@@ -531,6 +534,7 @@ defmodule TrackMyJobExWeb.ApplicationLiveTest do
       {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/applications")
 
       view |> element("#delete-application-#{application.id}") |> render_click()
+      view |> element("#delete-application-modal-confirm") |> render_click()
 
       assert has_element?(view, "#applications-empty")
     end
@@ -543,9 +547,11 @@ defmodule TrackMyJobExWeb.ApplicationLiveTest do
       {:ok, view, _html} =
         conn |> log_in_user(user) |> live(~p"/applications/#{application.id}")
 
-      assert has_element?(view, "#delete-application[data-confirm]")
+      assert has_element?(view, "#delete-application")
 
       view |> element("#delete-application") |> render_click()
+      assert has_element?(view, "#delete-application-modal")
+      view |> element("#delete-application-modal-confirm") |> render_click()
 
       {path, flash} = assert_redirect(view)
       assert path == "/applications"
@@ -719,7 +725,7 @@ defmodule TrackMyJobExWeb.ApplicationLiveTest do
 
       {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/applications/new")
 
-      assert has_element?(view, "#application-tag-ids[multiple]")
+      assert has_element?(view, "#application-tag-ids")
       assert has_element?(view, "#application-new-tags")
     end
 
@@ -810,7 +816,7 @@ defmodule TrackMyJobExWeb.ApplicationLiveTest do
       {:ok, view, _html} =
         conn |> log_in_user(user) |> live(~p"/applications/#{application.id}/edit")
 
-      assert has_element?(view, "#application-tag-ids option[value='#{tag.id}'][selected]")
+      assert has_element?(view, "#application-tag-ids input[value='#{tag.id}'][checked]")
     end
 
     test "replaces and creates tags on save and shows them on details", %{conn: conn} do
@@ -1024,8 +1030,8 @@ defmodule TrackMyJobExWeb.ApplicationLiveTest do
 
       assert has_element?(view, "#applications-#{both.id}")
       refute has_element?(view, "#applications-#{only_elixir.id}")
-      assert has_element?(view, "#filter-tags option[value='#{elixir.id}'][selected]")
-      assert has_element?(view, "#filter-tags option[value='#{remote.id}'][selected]")
+      assert has_element?(view, "#filter-tags input[value='#{elixir.id}'][checked]")
+      assert has_element?(view, "#filter-tags input[value='#{remote.id}'][checked]")
     end
 
     test "shows a no-matches empty state with a clear-filters action", %{conn: conn} do
@@ -1058,6 +1064,7 @@ defmodule TrackMyJobExWeb.ApplicationLiveTest do
 
       refute has_element?(view, "#applications-#{other.id}")
       view |> element("#delete-application-#{matching.id}") |> render_click()
+      view |> element("#delete-application-modal-confirm") |> render_click()
 
       assert has_element?(view, "#applications-no-matches")
       refute has_element?(view, "#applications-#{other.id}")

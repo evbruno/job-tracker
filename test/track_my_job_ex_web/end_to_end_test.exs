@@ -39,7 +39,6 @@ defmodule TrackMyJobExWeb.EndToEndTest do
         "job_posting_url" => "https://example.com/jobs/staff-engineer",
         "description" => "Platform team"
       },
-      "tag_ids" => [],
       "new_tags" => "Elixir, Remote"
     })
     |> render_submit()
@@ -161,6 +160,7 @@ defmodule TrackMyJobExWeb.EndToEndTest do
     # Delete the application and verify database cascades.
     {:ok, delete_view, _html} = live(conn, ~p"/applications/#{application.id}")
     delete_view |> element("#delete-application") |> render_click()
+    delete_view |> element("#delete-application-modal-confirm") |> render_click()
 
     {path, delete_flash} = assert_redirect(delete_view)
     assert path == ~p"/applications"

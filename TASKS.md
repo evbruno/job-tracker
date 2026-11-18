@@ -381,6 +381,26 @@ domain/TLS, persistent volume, secrets, monitoring, and off-site backups.
 
 ---
 
+## UI Refresh (post-Phase 7)
+
+Presentation-only refresh; no product scope or behavior change.
+
+- [x] Audit every screen and agree on the design direction (palette, type,
+  status families, layout).
+- [x] Add design tokens, a single light theme, and the app shell.
+- [x] Refresh the application list, details, create/edit form, tag page, login,
+  and dashboard.
+- [x] Replace native confirmation dialogs with accessible modals.
+- [x] Validate every screen at a 390px-wide viewport and run `mix precommit`.
+
+**Notes:** The generator's theme toggle and dark theme were removed in favour of
+one light theme. Tag filters and the form tag picker are checkbox chips with the
+same container ids. Confirmation is now a two-step modal flow. Contexts, schemas,
+migrations, URL contracts, ownership rules, and flash strings are unchanged. See
+`SESSION.md` for the design tokens, status families, and per-screen summary.
+
+---
+
 ## Development Rules
 
 1. Work on one task at a time.

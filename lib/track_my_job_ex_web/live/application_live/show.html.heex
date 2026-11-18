@@ -1,8 +1,43 @@
-<Layouts.app flash={@flash} current_scope={@current_scope}>
-  <.header>
-    {@application.position}
-    <:subtitle>{@application.company_name}</:subtitle>
-    <:actions>
+<Layouts.app flash={@flash} current_scope={@current_scope} active={:applications}>
+  <div class="mb-4">
+    <.link
+      navigate={~p"/applications"}
+      class="inline-flex items-center gap-1 text-xs font-medium text-cobalt hover:underline"
+    >
+      <.icon name="hero-arrow-left" class="size-3.5" /> Applications
+    </.link>
+  </div>
+
+  <header class="flex flex-col gap-4 border-b border-rule pb-5 sm:flex-row sm:items-start sm:justify-between">
+    <div class="min-w-0">
+      <.status_badge
+        status={@application.status}
+        id="application-status"
+        name_id="current-status-name"
+      />
+      <h1 class="mt-2 text-xl font-semibold tracking-tight text-ink sm:text-2xl">
+        {@application.position}
+      </h1>
+      <p class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink-muted">
+        <span id="application-company" class="text-ink">{@application.company_name}</span>
+        <span :if={@application.recruiter_name} aria-hidden="true">·</span>
+        <span :if={@application.recruiter_name}>
+          Recruiter
+          <span id="application-recruiter" class="text-ink">{@application.recruiter_name}</span>
+        </span>
+        <span aria-hidden="true">·</span>
+        <span>
+          Created
+          <time
+            id="application-created-at"
+            datetime={DateTime.to_iso8601(@application.inserted_at)}
+          >
+            {Formatters.format_utc_datetime(@application.inserted_at)}
+          </time>
+        </span>
+      </p>
+    </div>
+    <div class="flex shrink-0 items-center gap-2">
       <.link
         navigate={~p"/applications/#{@application.id}/edit"}
         id="edit-application"
@@ -10,187 +45,211 @@
       >
         Edit application
       </.link>
-      <.link navigate={~p"/applications"} class="btn btn-ghost btn-sm">
-        Back to applications
-      </.link>
       <button
         type="button"
         id="delete-application"
-        phx-click="delete"
-        data-confirm="Delete this application? Its status history and tag links will also be removed."
-        class="btn btn-error btn-outline btn-sm"
+        phx-click="prompt_delete"
+        class="btn btn-ghost btn-sm text-red-700 hover:bg-red-50"
       >
         Delete
       </button>
-    </:actions>
-  </.header>
+    </div>
+  </header>
 
-  <section id="application-details" class="card border border-base-300 bg-base-100 shadow-sm">
-    <div class="card-body gap-6">
-      <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div>
-          <dt class="text-xs uppercase tracking-wide text-base-content/60">Company</dt>
-          <dd id="application-company">{@application.company_name}</dd>
-        </div>
-        <div :if={@application.recruiter_name}>
-          <dt class="text-xs uppercase tracking-wide text-base-content/60">Recruiter</dt>
-          <dd id="application-recruiter">{@application.recruiter_name}</dd>
-        </div>
-        <div>
-          <dt class="text-xs uppercase tracking-wide text-base-content/60">Status</dt>
-          <dd>
-            <span class="badge badge-primary badge-outline" id="application-status">
-              {@application.status.name}
-            </span>
-          </dd>
-        </div>
-        <div>
-          <dt class="text-xs uppercase tracking-wide text-base-content/60">Created</dt>
-          <dd id="application-created-at">
-            {Formatters.format_utc_datetime(@application.inserted_at)}
-          </dd>
-        </div>
-        <div>
-          <dt class="text-xs uppercase tracking-wide text-base-content/60">Last updated</dt>
-          <dd id="application-updated-at">
-            {Formatters.format_utc_datetime(@application.updated_at)}
-          </dd>
-        </div>
-      </dl>
-
-      <div>
-        <h2 class="mb-2 text-sm font-semibold">Job posting</h2>
-        <%= if url = Formatters.safe_http_url(@application.job_posting_url) do %>
-          <a
-            id="application-job-posting-url"
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="link link-primary break-all"
-          >
-            {url}
-          </a>
-        <% else %>
-          <p id="application-job-posting-url-empty" class="text-sm text-base-content/60">
-            No job posting URL provided.
-          </p>
-        <% end %>
-      </div>
-
-      <div>
-        <h2 class="mb-2 text-sm font-semibold">Description</h2>
-        <p
-          :if={@application.description}
-          id="application-description"
-          class="whitespace-pre-line text-sm"
-        >
-          {@application.description}
-        </p>
-        <p
-          :if={is_nil(@application.description)}
-          id="application-description-empty"
-          class="text-sm text-base-content/60"
-        >
-          No description provided.
-        </p>
-      </div>
-
-      <div>
-        <h2 class="mb-2 text-sm font-semibold">Tags</h2>
-        <div id="application-tags" phx-update="stream" class="flex flex-wrap gap-2">
-          <span
-            :for={{dom_id, tag} <- @streams.tags}
-            id={dom_id}
-            class="badge badge-outline"
-          >
-            {tag.name}
+  <div id="application-details" class="mt-5 grid gap-5 lg:grid-cols-3">
+    <div class="flex flex-col gap-5 lg:col-span-2">
+      <section id="application-status-change" class="rounded border border-rule bg-surface">
+        <div class="flex flex-wrap items-baseline gap-x-2 gap-y-1 border-b border-rule px-4 py-3">
+          <h2 class="text-sm font-semibold text-ink">Change status</h2>
+          <span class="text-xs text-ink-muted">
+            Current status since
+            <time datetime={DateTime.to_iso8601(@status_since)}>
+              {Formatters.format_utc_datetime(@status_since)}
+            </time>
           </span>
         </div>
-        <p :if={@tags_empty?} id="application-tags-empty" class="text-sm text-base-content/60">
-          No tags.
-        </p>
-      </div>
-    </div>
-  </section>
+        <div class="px-4 py-4">
+          <p class="text-xs text-ink-muted">
+            Any status can follow any other. Every change is added to the history below.
+          </p>
+          <.form
+            for={@status_form}
+            id="status-change-form"
+            phx-change="validate_status"
+            phx-submit="change_status"
+            class="mt-3 grid gap-3"
+          >
+            <.input
+              field={@status_form[:status_id]}
+              type="select"
+              label="New status"
+              options={Enum.map(@statuses, &{&1.name, &1.id})}
+              prompt="Select a status"
+              required
+            />
+            <.input
+              field={@status_form[:notes]}
+              type="textarea"
+              label="Note (optional)"
+              rows="2"
+              maxlength="2000"
+              placeholder="e.g. Recruiter called to schedule a technical interview"
+            />
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <p class="text-xs text-ink-muted">
+                Up to 2,000 characters. Leading and trailing spaces are trimmed.
+              </p>
+              <button type="submit" id="status-change-submit" class="btn btn-primary btn-sm">
+                Update status
+              </button>
+            </div>
+          </.form>
+        </div>
+      </section>
 
-  <section
-    id="application-status-change"
-    class="card mt-6 border border-base-300 bg-base-100 shadow-sm"
-  >
-    <div class="card-body gap-3">
-      <h2 class="card-title text-base">Change status</h2>
-      <p class="text-sm text-base-content/60">
-        Current status: <span id="current-status-name">{@application.status.name}</span>. Any status can
-        follow any other status. A status change always creates a timeline entry.
-      </p>
-      <.form
-        for={@status_form}
-        id="status-change-form"
-        phx-change="validate_status"
-        phx-submit="change_status"
-        class="space-y-3"
-      >
-        <.input
-          field={@status_form[:status_id]}
-          type="select"
-          label="New status"
-          options={Enum.map(@statuses, &{&1.name, &1.id})}
-          prompt="Select a status"
-          required
-        />
-        <.input
-          field={@status_form[:notes]}
-          type="textarea"
-          label="Notes (optional)"
-          rows="3"
-          maxlength="2000"
-          placeholder="e.g. Recruiter called to schedule a technical interview"
-        />
-        <p class="text-xs text-base-content/60">
-          Optional context for this change, up to 2,000 characters. Leading and trailing spaces are trimmed.
-        </p>
-        <button type="submit" id="status-change-submit" class="btn btn-primary btn-sm">
-          Update status
-        </button>
-      </.form>
+      <section class="rounded border border-rule bg-surface">
+        <h2 class="border-b border-rule px-4 py-3 text-sm font-semibold text-ink">Description</h2>
+        <div class="px-4 py-4">
+          <p
+            :if={@application.description}
+            id="application-description"
+            class="max-w-prose whitespace-pre-line text-sm leading-relaxed text-ink"
+          >
+            {@application.description}
+          </p>
+          <p
+            :if={is_nil(@application.description)}
+            id="application-description-empty"
+            class="text-sm text-ink-muted"
+          >
+            No description provided.
+          </p>
+        </div>
+      </section>
     </div>
-  </section>
 
-  <section id="application-history" class="card mt-6 border border-base-300 bg-base-100 shadow-sm">
-    <div class="card-body gap-3">
-      <h2 class="card-title text-base">Status history</h2>
-      <p :if={@history_empty?} id="application-history-empty" class="text-sm text-base-content/60">
+    <aside class="flex flex-col gap-5">
+      <section class="rounded border border-rule bg-surface">
+        <h2 class="border-b border-rule px-4 py-3 text-sm font-semibold text-ink">Job posting</h2>
+        <div class="px-4 py-4">
+          <%= if url = Formatters.safe_http_url(@application.job_posting_url) do %>
+            <a
+              id="application-job-posting-url"
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="break-all text-sm text-cobalt hover:underline"
+            >
+              {url}
+            </a>
+          <% else %>
+            <p id="application-job-posting-url-empty" class="text-sm text-ink-muted">
+              No job posting URL provided.
+            </p>
+          <% end %>
+        </div>
+      </section>
+
+      <section class="rounded border border-rule bg-surface">
+        <h2 class="border-b border-rule px-4 py-3 text-sm font-semibold text-ink">Tags</h2>
+        <div class="px-4 py-4">
+          <div id="application-tags" phx-update="stream" class="flex flex-wrap gap-1.5">
+            <.tag_chip
+              :for={{dom_id, tag} <- @streams.tags}
+              id={dom_id}
+              name={tag.name}
+            />
+          </div>
+          <p :if={@tags_empty?} id="application-tags-empty" class="text-sm text-ink-muted">
+            No tags.
+          </p>
+        </div>
+      </section>
+
+      <section class="rounded border border-rule bg-surface">
+        <h2 class="border-b border-rule px-4 py-3 text-sm font-semibold text-ink">Record</h2>
+        <dl class="px-4 py-4 text-sm">
+          <div class="flex items-baseline justify-between gap-3">
+            <dt class="text-ink-muted">Created</dt>
+            <dd class="font-mono text-xs tabular-nums text-ink">
+              {Formatters.format_utc_datetime(@application.inserted_at)}
+            </dd>
+          </div>
+          <div class="mt-2 flex items-baseline justify-between gap-3">
+            <dt class="text-ink-muted">Last updated</dt>
+            <dd id="application-updated-at" class="font-mono text-xs tabular-nums text-ink">
+              {Formatters.format_utc_datetime(@application.updated_at)}
+            </dd>
+          </div>
+        </dl>
+      </section>
+    </aside>
+  </div>
+
+  <section id="application-history" class="mt-5 rounded border border-rule bg-surface">
+    <div class="border-b border-rule px-4 py-3">
+      <h2 class="text-sm font-semibold text-ink">Status history</h2>
+      <p class="mt-0.5 text-xs text-ink-muted">Oldest first.</p>
+    </div>
+    <div class="px-4 py-4">
+      <p :if={@history_empty?} id="application-history-empty" class="text-sm text-ink-muted">
         No status history yet.
       </p>
       <ol
         :if={!@history_empty?}
         id="application-history-entries"
         phx-update="stream"
-        class="space-y-2"
+        class="history-timeline"
       >
         <li
           :for={{dom_id, entry} <- @streams.history}
           id={dom_id}
-          class="rounded-lg border border-base-300 p-3"
+          class="history-item"
+          data-family={status_family(entry.new_status.slug)}
         >
-          <p class="text-sm font-medium" id={"#{dom_id}-status"}>
-            {entry.new_status.name}
-          </p>
+          <.status_marker slug={entry.new_status.slug} class="history-dot" />
+          <div class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+            <span id={"#{dom_id}-status"} class="text-sm font-medium text-ink">
+              {entry.new_status.name}
+            </span>
+            <span
+              :if={entry.previous_status}
+              id={"#{dom_id}-previous"}
+              class="text-xs text-ink-muted"
+            >
+              From {entry.previous_status.name}
+            </span>
+            <time
+              id={"#{dom_id}-changed-at"}
+              datetime={DateTime.to_iso8601(entry.changed_at)}
+              class="ml-auto font-mono text-xs tabular-nums text-ink-muted"
+            >
+              {Formatters.format_utc_datetime(entry.changed_at)}
+            </time>
+          </div>
           <p
-            :if={entry.previous_status}
-            class="text-xs text-base-content/60"
-            id={"#{dom_id}-previous"}
+            :if={entry.notes}
+            id={"#{dom_id}-notes"}
+            class="mt-1.5 max-w-prose border-l-2 border-rule pl-2 text-sm leading-relaxed text-ink"
           >
-            From {entry.previous_status.name}
-          </p>
-          <p class="text-xs text-base-content/60" id={"#{dom_id}-changed-at"}>
-            {Formatters.format_utc_datetime(entry.changed_at)}
-          </p>
-          <p :if={entry.notes} class="mt-1 text-sm" id={"#{dom_id}-notes"}>
             {entry.notes}
           </p>
         </li>
       </ol>
     </div>
   </section>
+
+  <.confirm_modal
+    :if={@pending_delete}
+    id="delete-application-modal"
+    title="Delete application?"
+    confirm_label="Delete application"
+    confirm_event="delete"
+  >
+    <p>
+      <span class="font-medium text-ink">{@pending_delete.position}</span>
+      at {@pending_delete.company_name} will be permanently deleted, along with
+      its status history and its tag links. The tags themselves are kept.
+    </p>
+  </.confirm_modal>
 </Layouts.app>

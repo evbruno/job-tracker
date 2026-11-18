@@ -1,4 +1,4 @@
-<Layouts.app flash={@flash} current_scope={@current_scope}>
+<Layouts.app flash={@flash} current_scope={@current_scope} active={:applications}>
   <.header>
     New application
     <:subtitle>Record a new opportunity. New applications start as Interested.</:subtitle>
@@ -9,19 +9,15 @@
     </:actions>
   </.header>
 
-  <section class="card border border-base-300 bg-base-100 shadow-sm">
-    <div class="card-body">
-      <ApplicationForm.application_form
-        form={@form}
-        submit_label="Create application"
-        company_suggestions={@company_suggestions}
-        recruiter_suggestions={@recruiter_suggestions}
-        tags={@tags}
-        selected_tag_ids={@selected_tag_ids}
-        new_tags={@new_tags}
-        tag_errors={@tag_errors}
-        cancel_path={~p"/applications"}
-      />
-    </div>
-  </section>
+  <ApplicationForm.application_form
+    form={@form}
+    submit_label="Create application"
+    company_suggestions={@company_suggestions}
+    recruiter_suggestions={@recruiter_suggestions}
+    tags={@tags}
+    selected_tag_ids={@selected_tag_ids}
+    new_tags={@new_tags}
+    tag_errors={@tag_errors}
+    cancel_path={~p"/applications"}
+  />
 </Layouts.app>

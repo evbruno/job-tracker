@@ -129,9 +129,12 @@ defmodule TrackMyJobExWeb.TagLiveTest do
 
       {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/tags")
 
-      assert has_element?(view, "#delete-tag-#{tag.id}[data-confirm]")
+      assert has_element?(view, "#delete-tag-#{tag.id}")
 
       view |> element("#delete-tag-#{tag.id}") |> render_click()
+      assert has_element?(view, "#delete-tag-modal")
+
+      view |> element("#delete-tag-modal-confirm") |> render_click()
 
       assert Tags.get_tag(scope, tag.id) == nil
       assert JobApplications.get_application(scope, application.id)

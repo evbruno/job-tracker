@@ -17,6 +17,7 @@ defmodule TrackMyJobExWeb.TagLive.Index do
      |> assign(:tags_empty?, tags == [])
      |> assign(:editing_tag_id, nil)
      |> assign(:rename_form, nil)
+     |> assign(:pending_delete, nil)
      |> stream(:tags, tags)}
   end
 
@@ -75,12 +76,26 @@ defmodule TrackMyJobExWeb.TagLive.Index do
     end
   end
 
+  def handle_event("prompt_delete", %{"id" => id}, socket) do
+    case Tags.get_tag(socket.assigns.current_scope, id) do
+      nil ->
+        {:noreply, put_flash(socket, :error, "Tag not found.")}
+
+      tag ->
+        {:noreply, assign(socket, :pending_delete, tag)}
+    end
+  end
+
+  def handle_event("cancel_delete", _params, socket) do
+    {:noreply, assign(socket, :pending_delete, nil)}
+  end
+
   def handle_event("delete", %{"id" => id}, socket) do
     scope = socket.assigns.current_scope
 
     case Tags.get_tag(scope, id) do
       nil ->
-        {:noreply, put_flash(socket, :error, "Tag not found.")}
+        {:noreply, socket |> assign(:pending_delete, nil) |> put_flash(:error, "Tag not found.")}
 
       tag ->
         {:ok, _deleted} = Tags.delete_tag(scope, tag)
@@ -92,6 +107,7 @@ defmodule TrackMyJobExWeb.TagLive.Index do
          |> assign(:tags_empty?, tags == [])
          |> assign(:editing_tag_id, nil)
          |> assign(:rename_form, nil)
+         |> assign(:pending_delete, nil)
          |> stream(:tags, tags, reset: true)}
     end
   end

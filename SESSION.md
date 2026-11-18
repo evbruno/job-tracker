@@ -9,13 +9,13 @@ Update it before ending every session.
 
 - **Current phase:** Phase 7 — Production Readiness (complete in the repository;
   operator provisioning remains).
-- **Current task group:** 7.1–7.7 — complete.
+- **Current task group:** 7.1–7.7 — complete. A presentation-only UI refresh
+  (2026-11-18) is also complete and committed; it adds no product scope.
 - **Next task:** Operator provisioning and Phase 7 review. No Phase 8 is defined.
 - **Overall status:** Phases 1–7 complete and verified locally. The application
   is production-ready on the code side; real deployment requires operator-only
   DNS/TLS, volume, secrets, monitoring, and off-site backups.
-- **Last commit:** Phase 7.6 end-to-end test; Phase 7.7 documentation commit
-  follows (see `git log`).
+- **Last commit:** the UI refresh commit (see `git log`); Phase 7.7 follows it.
 
 ## Last Session Summary
 
@@ -55,6 +55,26 @@ items are operator-only and are listed under Blockers and in
 
 ## Assumptions Made
 
+- 2026-11-18 — UI refresh: the app ships one light theme. The generator's theme
+  toggle, `dark` theme styles, and the inline theme script were removed. No dark
+  mode or other themes were added.
+- 2026-11-18 — Native `data-confirm` dialogs were replaced by server-rendered
+  confirmation modals. The flows are two-step (open, then confirm) and the
+  LiveView tests assert that sequence.
+- 2026-11-18 — Tag filters and the application form's tag picker use checkbox
+  chips. The container ids `#filter-tags` and `#application-tag-ids` are
+  unchanged; checked state is asserted with `input[checked]` instead of
+  `option[selected]`.
+- 2026-11-18 — Status names are always rendered as text; the five colour families
+  are a secondary cue only. Unknown status slugs fall back to the neutral "early"
+  family.
+- 2026-11-18 — The dashboard change is copy and layout only: links to
+  Applications and Tags. No counts, aggregates, or new queries were added.
+- 2026-11-18 — The list filter bar stays visible at every width instead of being
+  collapsed behind a disclosure. This keeps filter state in the DOM and avoids
+  the disclosure reopening on LiveView patches.
+- 2026-11-18 — Presentation-only refactor: contexts, schemas, migrations, query
+  contracts, ownership rules, and flash strings were not changed.
 - 2026-11-16 — Task 7.1: Cookies use `Secure` only when `Mix.env() == :prod` so
   local development and tests can keep using HTTP.
 - 2026-11-16 — Task 7.1: HSTS is one year. `/health` and localhost are excluded
@@ -224,6 +244,51 @@ None. If this file and PRODUCT.md conflict, PRODUCT.md wins; list the conflict h
 ## Session Log
 
 Add one entry per session, newest first, in this format:
+
+### 2026-11-18
+
+- **Done:** Presentation-only UI refresh across the whole app. Added design
+  tokens in `assets/css/app.css` (ink `#101720`, ink-muted `#5A6675`, canvas
+  `#F1F4F7`, surface `#FFFFFF`, rule `#CBD3DC`, cobalt `#1F4FD8`; system sans for
+  UI and system mono for timestamps/counts), a single light daisyUI theme, five
+  status colour families, a vertical history timeline, a modal entrance
+  animation, and a `prefers-reduced-motion` block. Added
+  `TrackMyJobExWeb.UI` (`status_badge/1`, `status_marker/1`, `tag_chip/1`,
+  `empty_state/1`, `confirm_modal/1` with a colocated `.Modal` hook for focus,
+  Tab trapping, Escape, and focus restore). Reworked the app shell (sticky
+  header, wrapping nav, `active` section highlight, mono email), restyled the
+  shared input/header/flash primitives, and rewrote the list, details, create,
+  edit, tags, login, and dashboard screens. Deleted the native `data-confirm`
+  flows in favour of real modals and changed tag pickers to checkbox chips.
+  Updated the LiveView and end-to-end tests for the two-step delete flow and
+  chip state. `mix precommit` passes with 248 tests. Validated every screen at a
+  390px-wide viewport: no horizontal overflow, the modal becomes a bottom sheet,
+  and the status history timeline is vertical. (A daisyUI `.timeline` class
+  collision initially forced the history items horizontal; the styles were
+  renamed to `.history-*`.)
+- **Screens:** login (centered panel, no nav when signed out); dashboard (copy +
+  links to Applications and Tags); application list (dense ledger rows with a
+  3px status edge, always-visible filter bar with a 2-column mobile grid,
+  removable filter chips, direction toggle, both empty states, pagination,
+  confirmation modal); application details (status badge in the header, status
+  change panel with "current status since", two-column body, full-width
+  oldest-first timeline, confirmation modal); create/edit (sectioned form with
+  datalists, checkbox tag chips, comma-separated new tags, sticky action row);
+  tags (ledger rows, inline rename, confirmation modal); login.
+- **Deliberately not done:** no dark mode or theme switch, no new dashboard
+  stats/queries, no new product features, no changes to contexts, schemas,
+  migrations, URL contracts, ownership logic, or flash strings. The temporary
+  demo seed files (`lib/mix/tasks/demo.seed.ex`,
+  `test/mix/tasks/demo_seed_test.exs`) remain untracked from the earlier session.
+- **Mobile check:** at 390px the header wraps the nav onto a second line, the
+  list/filter/tag rows stack without clipping, the timeline is vertical, and
+  the delete modal is a full-width bottom sheet. Text contrast is at least
+  5.3:1 for muted text and 6.3:1 or better for status text.
+- **Assumptions:** See the Assumptions Made section above.
+- **Blockers:** None for the UI refresh. Operator-only infrastructure items are
+  unchanged.
+- **Next:** Await review of the UI refresh; the operator checklist in
+  `docs/DEPLOYMENT.md` remains the only path to release.
 
 ### 2026-11-16
 

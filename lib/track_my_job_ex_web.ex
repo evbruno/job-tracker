@@ -86,6 +86,7 @@ defmodule TrackMyJobExWeb do
       import Phoenix.HTML
       # Core UI components
       import TrackMyJobExWeb.CoreComponents
+      import TrackMyJobExWeb.UI
 
       # Common modules used in templates
       alias Phoenix.LiveView.JS

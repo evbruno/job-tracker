@@ -1,4 +1,4 @@
-<Layouts.app flash={@flash} current_scope={@current_scope}>
+<Layouts.app flash={@flash} current_scope={@current_scope} active={:tags}>
   <.header>
     Tags
     <:subtitle>
@@ -6,21 +6,21 @@
     </:subtitle>
   </.header>
 
-  <div id="tags" phx-update="stream" class="flex flex-col gap-2">
-    <div
-      :for={{dom_id, tag} <- @streams.tags}
-      id={dom_id}
-      class="card border border-base-300 bg-base-100 shadow-sm"
-    >
-      <div class="card-body p-4">
-        <%= if @editing_tag_id == tag.id do %>
-          <.form
-            for={@rename_form}
-            id={"rename-tag-#{tag.id}"}
-            phx-submit="rename"
-            class="flex flex-wrap items-end gap-2"
-          >
-            <.input type="hidden" name="tag[id]" id={"rename-tag-id-#{tag.id}"} value={tag.id} />
+  <div
+    id="tags"
+    phx-update="stream"
+    class="mt-4 divide-y divide-rule overflow-hidden rounded border border-rule bg-surface"
+  >
+    <div :for={{dom_id, tag} <- @streams.tags} id={dom_id} class="px-3 py-2.5">
+      <%= if @editing_tag_id == tag.id do %>
+        <.form
+          for={@rename_form}
+          id={"rename-tag-#{tag.id}"}
+          phx-submit="rename"
+          class="flex flex-wrap items-end gap-2"
+        >
+          <.input type="hidden" name="tag[id]" id={"rename-tag-id-#{tag.id}"} value={tag.id} />
+          <div class="min-w-48 flex-1">
             <.input
               field={@rename_form[:name]}
               id={"tag-name-input-#{tag.id}"}
@@ -28,61 +28,76 @@
               maxlength="50"
               required
             />
-            <div class="flex gap-2">
-              <button type="submit" id={"save-tag-#{tag.id}"} class="btn btn-primary btn-sm">
-                Save
-              </button>
-              <button
-                type="button"
-                id={"cancel-edit-tag-#{tag.id}"}
-                phx-click="cancel_edit"
-                class="btn btn-ghost btn-sm"
-              >
-                Cancel
-              </button>
-            </div>
-          </.form>
-        <% else %>
-          <div class="flex flex-wrap items-center justify-between gap-3">
-            <span id={"tag-name-#{tag.id}"} class="font-medium">{tag.name}</span>
-            <div class="flex gap-2">
-              <button
-                type="button"
-                id={"edit-tag-#{tag.id}"}
-                phx-click="edit"
-                phx-value-id={tag.id}
-                class="btn btn-ghost btn-sm"
-              >
-                Rename
-              </button>
-              <button
-                type="button"
-                id={"delete-tag-#{tag.id}"}
-                phx-click="delete"
-                phx-value-id={tag.id}
-                data-confirm="Delete this tag? It will be removed from all applications."
-                class="btn btn-error btn-outline btn-sm"
-              >
-                Delete
-              </button>
-            </div>
           </div>
-        <% end %>
-      </div>
+          <div class="flex gap-2">
+            <button type="submit" id={"save-tag-#{tag.id}"} class="btn btn-primary btn-sm">
+              Save
+            </button>
+            <button
+              type="button"
+              id={"cancel-edit-tag-#{tag.id}"}
+              phx-click="cancel_edit"
+              class="btn btn-ghost btn-sm"
+            >
+              Cancel
+            </button>
+          </div>
+        </.form>
+      <% else %>
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <span id={"tag-name-#{tag.id}"} class="flex items-center gap-2 text-sm text-ink">
+            <.icon name="hero-tag" class="size-3.5 text-ink-muted" />
+            {tag.name}
+          </span>
+          <div class="flex items-center gap-1">
+            <button
+              type="button"
+              id={"edit-tag-#{tag.id}"}
+              phx-click="edit"
+              phx-value-id={tag.id}
+              aria-label={"Rename tag " <> tag.name}
+              class="btn btn-ghost btn-sm"
+            >
+              Rename
+            </button>
+            <button
+              type="button"
+              id={"delete-tag-#{tag.id}"}
+              phx-click="prompt_delete"
+              phx-value-id={tag.id}
+              aria-label={"Delete tag " <> tag.name}
+              class="btn btn-ghost btn-sm text-red-700 hover:bg-red-50"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      <% end %>
     </div>
   </div>
 
-  <div
+  <.empty_state
     :if={@tags_empty?}
     id="tags-empty"
-    class="card border border-dashed border-base-300 bg-base-100"
+    icon="hero-tag"
+    title="No tags yet"
   >
-    <div class="card-body items-center text-center">
-      <.icon name="hero-tag" class="size-10 text-base-content/40" />
-      <h2 class="card-title">No tags yet</h2>
-      <p class="text-sm text-base-content/70">
-        Create tags while creating or editing an application.
-      </p>
-    </div>
-  </div>
+    Create tags while creating or editing an application. They will be listed
+    here so you can rename or delete them.
+  </.empty_state>
+
+  <.confirm_modal
+    :if={@pending_delete}
+    id="delete-tag-modal"
+    title="Delete tag?"
+    confirm_label="Delete tag"
+    confirm_event="delete"
+    confirm_value={@pending_delete.id}
+  >
+    <p>
+      <span class="font-medium text-ink">{@pending_delete.name}</span>
+      will be removed from every application that uses it. The applications
+      themselves are kept.
+    </p>
+  </.confirm_modal>
 </Layouts.app>
