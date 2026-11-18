@@ -1,0 +1,21 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} active={:resumes}>
+  <.header>
+    Edit resume
+    <:subtitle>{@resume.title}</:subtitle>
+    <:actions>
+      <.link navigate={~p"/resumes/#{@resume.id}"} class="btn btn-ghost btn-sm">
+        Back to details
+      </.link>
+    </:actions>
+  </.header>
+
+  <ResumeForm.resume_form
+    form={@form}
+    submit_label="Save changes"
+    tags={@tags}
+    selected_tag_ids={@selected_tag_ids}
+    new_tags={@new_tags}
+    tag_errors={@tag_errors}
+    cancel_path={~p"/resumes/#{@resume.id}"}
+  />
+</Layouts.app>

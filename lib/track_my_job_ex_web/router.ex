@@ -69,6 +69,10 @@ defmodule TrackMyJobExWeb.Router do
       live "/applications/new", ApplicationLive.New, :new
       live "/applications/:id/edit", ApplicationLive.Edit, :edit
       live "/applications/:id", ApplicationLive.Show, :show
+      live "/resumes", ResumeLive.Index, :index
+      live "/resumes/new", ResumeLive.New, :new
+      live "/resumes/:id/edit", ResumeLive.Edit, :edit
+      live "/resumes/:id", ResumeLive.Show, :show
       live "/tags", TagLive.Index, :index
     end
 

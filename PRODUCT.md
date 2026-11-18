@@ -4,7 +4,7 @@
 
 Job Tracker is a multi-user platform for managing and tracking job applications across different companies, positions, and recruiters.
 
-It provides a centralized place to organize job opportunities, record application details, track recruitment progress, and maintain a historical record of every application status change.
+It provides a centralized place to organize job opportunities, record application details, track recruitment progress, maintain a historical record of every application status change, and keep multiple resume versions ready for each application.
 
 ## 2. Target Users
 
@@ -127,7 +127,7 @@ Requirements:
 
 ### 3.4 Tags
 
-Tags categorize job applications.
+Tags categorize job applications and resumes.
 
 Examples:
 - PHP
@@ -149,13 +149,13 @@ Fields:
 
 Requirements:
 - Users can create tags.
-- Applications can have multiple tags.
-- Tags can be reused across applications.
+- Applications and resumes can have multiple tags.
+- Tags can be reused across applications and resumes.
 - Tags are isolated between users.
 - Tag names are unique per user, case-insensitive. The original casing entered by the user is preserved for display. (Use a unique index on `user_id` and the name with `COLLATE NOCASE`.)
 - Users can filter applications by tag.
-- Tags can be created inline from the application form.
-- Tags have a simple standalone management page: list, rename, and delete. Deleting a tag removes it from all applications (hard delete of the tag and its join rows; applications are unaffected).
+- Tags can be created inline from the application form and the resume form.
+- Tags have a simple standalone management page: list, rename, and delete. Deleting a tag removes it from all applications and resumes (hard delete of the tag and its join rows; applications and resumes are unaffected).
 
 ### 3.5 Application Listing
 
@@ -194,6 +194,50 @@ The details page displays:
 
 Users can edit application details and change status from this page.
 
+### 3.7 Resumes
+
+A resume is a user-owned CV version. Users keep many resumes at once. Each resume is an independent record identified by its title; there is no parent/version chain, version comparison, or default resume flag.
+
+Fields:
+- Title (required, max 255 characters), for example `Backend — 2026`.
+- Body (required, plain text, max 50,000 characters). Line breaks are preserved when displayed.
+- Email (required, valid email address, max 255 characters). Prefilled with the signed-in user's email when a resume is created; the user may change it.
+- Full name (optional, max 255 characters).
+- Headline (optional, max 255 characters), for example `Senior backend engineer`.
+- Phone (optional, max 50 characters).
+- Location (optional, max 255 characters).
+- LinkedIn URL (optional, absolute `http`/`https` URL).
+- GitHub URL (optional, absolute `http`/`https` URL).
+- Portfolio URL (optional, absolute `http`/`https` URL).
+- Relevant tags.
+- Creation timestamp.
+- Last updated timestamp.
+
+Users can:
+- Create resumes. The create form prefills the email from the current user's account.
+- Edit resume details.
+- View resume details.
+- List their own resumes, most recently updated first.
+- Delete resumes. The UI must ask for confirmation before deleting.
+
+#### Resume Tags
+
+Resumes share the existing user-owned tag vocabulary with applications. Tags can be selected from the user's existing tags or created inline with a comma-separated input, reusing an existing name case-insensitively. A tag created from a resume is available to applications and vice versa. Deleting a tag removes it from resumes and applications without deleting either.
+
+#### Resume Validation and Storage
+
+- Text values are trimmed. Optional blank text fields and blank URLs are stored as `NULL`.
+- The email must contain an `@` sign, have no spaces, commas, or semicolons, and be at most 255 characters.
+- URL fields must be absolute `http`/`https` URLs with a host when present.
+- URLs are rendered only through the safe URL helper. The body is escaped and displayed with its line breaks preserved.
+- `updated_at` changes when resume fields are edited or tags are added or removed.
+
+#### Resume Deletion
+
+Resumes are hard-deleted together with their tag links (cascade). Tags are never deleted as a side effect.
+
+Linking resumes to applications, file uploads or attachments, PDF generation, version comparison, and default/primary resumes are out of scope for this version.
+
 ## 4. Data Ownership and Privacy
 
 The platform is multi-tenant.
@@ -203,8 +247,9 @@ Every user operates within an isolated data scope.
 Requirements:
 - Users cannot access another user's applications.
 - Users cannot access another user's tags.
+- Users cannot access another user's resumes.
 - Users cannot modify or delete another user's records.
-- Associations must validate ownership (e.g. an application cannot be linked to another user's tag, even if the ID is submitted).
+- Associations must validate ownership (e.g. an application or resume cannot be linked to another user's tag, even if the ID is submitted).
 - All queries and mutations must enforce ownership server-side.
 - LiveView events must never trust client-provided record identifiers without authorization checks.
 - Context functions take the current user (or scope) as an explicit argument; there are no unscoped "get by id" functions for user-owned records.
@@ -263,11 +308,12 @@ Use the latest stable versions of Elixir, Phoenix, and LiveView available at pro
 ## 7. Testing Requirements
 
 - Every context has tests covering its main operations.
-- Ownership isolation tests are mandatory: for each user-owned resource (applications and tags), tests must prove that user B cannot read, list, update, delete, or associate user A's records.
+- Ownership isolation tests are mandatory: for each user-owned resource (applications, tags, and resumes), tests must prove that user B cannot read, list, update, delete, or associate user A's records.
 - Status change tests must verify that the application's status and the history record are created atomically (including rollback on failure).
 - Company and recruiter tests must verify that values are trimmed, a blank recruiter is stored as `NULL`, suggestions and filters only use the current user's values, and filters match case-insensitively.
 - Listing tests cover each filter, search, sorting, and pagination.
-- Add LiveView tests for the main flows: login, create application (with company, recruiter, and inline tag creation), change status with notes, and filter the list.
+- Resume tests cover the email prefill, validation (title, body, email, URLs), tag creation and reuse, ordering, deletion cascades, and cross-user isolation.
+- Add LiveView tests for the main flows: login, create application (with company, recruiter, and inline tag creation), change status with notes, create and edit a resume with tags, and filter the list.
 - `mix test` must pass before any task is considered complete.
 - If tests fail with "database is locked/busy" errors, run database tests with `async: false`.
 
@@ -277,7 +323,6 @@ Use the latest stable versions of Elixir, Phoenix, and LiveView available at pro
 - Administrative dashboard.
 - Email integration.
 - Automated job scraping.
-- Resume management.
 - Automated application submissions.
 - Notifications and reminders.
 - AI-powered job matching.
@@ -288,6 +333,7 @@ Use the latest stable versions of Elixir, Phoenix, and LiveView available at pro
 - Login rate limiting.
 - Per-user timezone settings.
 - Editing or deleting individual status history entries.
+- Resume file uploads, PDF generation, version comparison, and linking resumes to applications.
 - Password reset and email confirmation flows (users are provisioned by the Mix task; remove or disable these generator-provided flows).
 
 ## 9. Success Criteria
@@ -301,7 +347,8 @@ The MVP is successful when a user can:
 5. Add optional notes to status changes.
 6. Review the complete status history.
 7. Search, filter and sort applications.
-8. Be confident that other users cannot access their information.
+8. Create, edit, and delete multiple resume versions with tags.
+9. Be confident that other users cannot access their information.
 
 ## 10. Confirmed Product Decisions
 
@@ -320,6 +367,13 @@ The MVP is successful when a user can:
 | Search | Case-insensitive partial match on position and company name |
 | Default sort | Created date, newest first |
 | Pagination | Yes, 25 per page |
+| Resume versions | Many independent resumes per user; no version chain or default resume |
+| Resume email | Prefilled from the signed-in user's email; editable and required |
+| Resume tags | Shared with applications; inline creation supported |
+| Resume deletion | Hard delete, cascades to tag links |
+| Resume listing | Most recently updated first; no filters or pagination in this version |
+| Resume extras | Full name, headline, phone, and location are optional fields |
+| Resume scope | Text only; no file uploads, PDF generation, or application links |
 | `updated_at` changes on | Field edits, status changes, tag changes |
 | Timestamps | Stored and displayed in UTC |
 | Database | SQLite3 (`ecto_sqlite3`) |

@@ -7,17 +7,33 @@ Update it before ending every session.
 
 ## Current State
 
-- **Current phase:** Phase 7 — Production Readiness (complete in the repository;
-  operator provisioning remains).
-- **Current task group:** 7.1–7.7 — complete. A presentation-only UI refresh
+- **Current phase:** Phase 8 — Resume Management (complete; awaiting review).
+- **Current task group:** 8.1–8.8 — complete. A presentation-only UI refresh
   (2026-11-18) is also complete and committed; it adds no product scope.
-- **Next task:** Operator provisioning and Phase 7 review. No Phase 8 is defined.
-- **Overall status:** Phases 1–7 complete and verified locally. The application
+- **Next task:** Review Phase 8. Operator provisioning remains outstanding for
+  Phase 7. No Phase 9 is defined.
+- **Overall status:** Phases 1–8 complete and verified locally. The application
   is production-ready on the code side; real deployment requires operator-only
   DNS/TLS, volume, secrets, monitoring, and off-site backups.
-- **Last commit:** the UI refresh commit (see `git log`); Phase 7.7 follows it.
+- **Last commit:** the UI refresh commit (see `git log`); the Phase 8 commit
+  follows it.
 
 ## Last Session Summary
+
+Phase 8 (Resume Management) adds many independent resumes per user. Each resume
+has a title, body, email, optional full name, headline, phone, and location, plus
+optional LinkedIn, GitHub, and portfolio URLs. New resumes prefill the email from
+the signed-in user's account; the field stays editable. Resumes reuse the
+existing per-user tags through a new `resume_tags` join table, and the tag page
+now notes that deletion removes the tag from applications and resumes.
+
+The `TrackMyJobEx.Resumes` context is scoped by `%Scope{}` throughout, uses
+transactions for create/update with tags, validates ownership of submitted tag
+ids, and returns "not found" for another user's resume. The UI adds a Resumes
+list, details page, create/edit form, safe link rendering, and a
+confirmation-gated delete, plus navigation and dashboard links. Phase 8 added 40
+tests (288 total) and `mix precommit` passes. `docs/SECURITY.md` now includes the
+resume and `ResumeTag` isolation matrices.
 
 Phase 7 (Production Readiness) is complete in the repository. Security hardening
 sets `HttpOnly`, `Secure`, and `SameSite=Lax` on session and remember-me cookies
@@ -55,6 +71,30 @@ items are operator-only and are listed under Blockers and in
 
 ## Assumptions Made
 
+- 2026-11-18 — Phase 8: "many versions of a resume" means many independent
+  resume records, each identified by its own title. There is no parent/version
+  chain, version comparison, or default/primary resume flag.
+- 2026-11-18 — Phase 8: resumes reuse the existing user-owned `tags` table
+  through a `resume_tags` join table rather than introducing a second tag
+  vocabulary. A tag is shared across applications and resumes, and deleting it
+  removes both kinds of links without deleting either record.
+- 2026-11-18 — Phase 8: the email is required. `new_resume_changeset/2` sets it
+  from `current_scope.user.email`; a supplied value overrides the default and an
+  explicit blank value fails validation, so clearing the field cannot silently
+  restore the account email.
+- 2026-11-18 — Phase 8: proposed extra fields are `full_name`, `headline`,
+  `phone`, and `location` (all optional), because a usable CV needs a person's
+  name and contact context beyond a single email. The body is required and
+  limited to 50,000 characters; the title is limited to 255.
+- 2026-11-18 — Phase 8: URL fields follow the existing job-posting rule —
+  absolute `http`/`https` with a host when present, stored as `NULL` when blank,
+  and rendered only through `Formatters.safe_http_url/1`.
+- 2026-11-18 — Phase 8: the resume list is ordered by `updated_at` descending
+  with an `id` tiebreaker. It has no filters, search, or pagination; deletion is
+  available from the details page through the existing confirmation modal.
+- 2026-11-18 — Phase 8: linking resumes to applications, file uploads, PDF
+  generation, version comparison, and default resumes are deliberately out of
+  scope and recorded in `PRODUCT.md`.
 - 2026-11-18 — UI refresh: the app ships one light theme. The generator's theme
   toggle, `dark` theme styles, and the inline theme script were removed. No dark
   mode or other themes were added.
@@ -228,7 +268,7 @@ None. If this file and PRODUCT.md conflict, PRODUCT.md wins; list the conflict h
 
 ## Next Actions
 
-1. Await Phase 7 review.
+1. Await Phase 8 review.
 2. Operator: provision DNS/TLS, the persistent volume, and production secrets.
 3. Operator: connect monitoring/log aggregation and schedule encrypted off-site
    backups; run a restore drill.
@@ -244,6 +284,25 @@ None. If this file and PRODUCT.md conflict, PRODUCT.md wins; list the conflict h
 ## Session Log
 
 Add one entry per session, newest first, in this format:
+
+### 2026-11-18
+
+- **Done:** Phase 8, task groups 8.1–8.8. Added many independent resumes per
+  user with a title, body, required email (prefilled from the signed-in user),
+  optional full name, headline, phone, and location, and optional LinkedIn,
+  GitHub, and portfolio URLs. Added the `resumes` and `resume_tags` tables with
+  cascades and indexes, the `Resume`/`ResumeTag` schemas, and the scoped
+  `TrackMyJobEx.Resumes` context with transactional create/update-with-tags and
+  ownership checks. Added `ResumeLive.Index/New/Edit/Show`, the shared
+  `ResumeForm`, nav and dashboard links, and updated the tag deletion copy.
+  Updated `docs/SECURITY.md` with the resume and `ResumeTag` isolation matrices.
+  Phase 8 added 40 tests (288 total); `mix precommit` passes.
+- **Commits:** `Phase 8.8: Add resume versions with tags` (this commit; see
+  `git log`).
+- **Assumptions:** See the Assumptions Made section above.
+- **Blockers:** None. Operator-only infrastructure items are unchanged.
+- **Next:** Await review of Phase 8; the operator checklist remains the only
+  path to release.
 
 ### 2026-11-18
 

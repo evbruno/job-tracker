@@ -33,7 +33,7 @@ defmodule TrackMyJobExWeb.Layouts do
 
   attr :active, :atom,
     default: nil,
-    doc: "the navigation section to highlight: :dashboard, :applications, :tags, or nil"
+    doc: "the navigation section to highlight: :dashboard, :applications, :resumes, :tags, or nil"
 
   slot :inner_block, required: true
 
@@ -78,6 +78,16 @@ defmodule TrackMyJobExWeb.Layouts do
               </li>
               <li>
                 <.link
+                  navigate={~p"/resumes"}
+                  id="nav-resumes"
+                  class={nav_link(@active == :resumes)}
+                  aria-current={@active == :resumes && "page"}
+                >
+                  Resumes
+                </.link>
+              </li>
+              <li>
+                <.link
                   navigate={~p"/tags"}
                   id="nav-tags"
                   class={nav_link(@active == :tags)}
@@ -116,7 +126,7 @@ defmodule TrackMyJobExWeb.Layouts do
 
       <footer class="border-t border-rule">
         <div class="mx-auto w-full max-w-5xl px-4 py-4 text-xs text-ink-muted sm:px-6 lg:px-8">
-          Job Tracker — applications, tags, and status history.
+          Job Tracker — applications, resumes, tags, and status history.
         </div>
       </footer>
 

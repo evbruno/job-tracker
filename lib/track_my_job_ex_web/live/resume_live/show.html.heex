@@ -1,0 +1,157 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} active={:resumes}>
+  <div class="mb-4">
+    <.link
+      navigate={~p"/resumes"}
+      class="inline-flex items-center gap-1 text-xs font-medium text-cobalt hover:underline"
+    >
+      <.icon name="hero-arrow-left" class="size-3.5" /> Resumes
+    </.link>
+  </div>
+
+  <header class="flex flex-col gap-4 border-b border-rule pb-5 sm:flex-row sm:items-start sm:justify-between">
+    <div class="min-w-0">
+      <h1 id="resume-title" class="text-xl font-semibold tracking-tight text-ink sm:text-2xl">
+        {@resume.title}
+      </h1>
+      <p class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink-muted">
+        <span :if={@resume.full_name} id="resume-full-name" class="text-ink">
+          {@resume.full_name}
+        </span>
+        <span :if={@resume.full_name && @resume.headline} aria-hidden="true">·</span>
+        <span :if={@resume.headline} id="resume-headline">{@resume.headline}</span>
+        <span aria-hidden="true">·</span>
+        <span>
+          Updated
+          <time id="resume-updated-at" datetime={DateTime.to_iso8601(@resume.updated_at)}>
+            {Formatters.format_utc_datetime(@resume.updated_at)}
+          </time>
+        </span>
+      </p>
+    </div>
+    <div class="flex shrink-0 items-center gap-2">
+      <.link
+        navigate={~p"/resumes/#{@resume.id}/edit"}
+        id="edit-resume"
+        class="btn btn-primary btn-sm"
+      >
+        Edit resume
+      </.link>
+      <button
+        type="button"
+        id="delete-resume"
+        phx-click="prompt_delete"
+        class="btn btn-ghost btn-sm text-red-700 hover:bg-red-50"
+      >
+        Delete
+      </button>
+    </div>
+  </header>
+
+  <div id="resume-details" class="mt-5 grid gap-5 lg:grid-cols-3">
+    <div class="flex flex-col gap-5 lg:col-span-2">
+      <section class="rounded border border-rule bg-surface">
+        <h2 class="border-b border-rule px-4 py-3 text-sm font-semibold text-ink">Resume</h2>
+        <div class="px-4 py-4">
+          <p
+            id="resume-body"
+            class="max-w-prose whitespace-pre-line break-words text-sm leading-relaxed text-ink"
+          >
+            {@resume.body}
+          </p>
+        </div>
+      </section>
+    </div>
+
+    <aside class="flex flex-col gap-5">
+      <section class="rounded border border-rule bg-surface">
+        <h2 class="border-b border-rule px-4 py-3 text-sm font-semibold text-ink">Contact</h2>
+        <dl class="space-y-2 px-4 py-4 text-sm">
+          <div class="flex items-baseline justify-between gap-3">
+            <dt class="text-ink-muted">Email</dt>
+            <dd id="resume-email" class="break-all text-right text-ink">{@resume.email}</dd>
+          </div>
+          <div class="flex items-baseline justify-between gap-3">
+            <dt class="text-ink-muted">Phone</dt>
+            <dd id="resume-phone" class="text-right text-ink">
+              {if @resume.phone, do: @resume.phone, else: "Not provided"}
+            </dd>
+          </div>
+          <div class="flex items-baseline justify-between gap-3">
+            <dt class="text-ink-muted">Location</dt>
+            <dd id="resume-location" class="text-right text-ink">
+              {if @resume.location, do: @resume.location, else: "Not provided"}
+            </dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="rounded border border-rule bg-surface">
+        <h2 class="border-b border-rule px-4 py-3 text-sm font-semibold text-ink">Links</h2>
+        <dl class="space-y-2 px-4 py-4 text-sm">
+          <div :for={link <- @links} class="flex items-baseline justify-between gap-3">
+            <dt class="text-ink-muted">{link.label}</dt>
+            <dd class="min-w-0 text-right">
+              <%= if link.url do %>
+                <a
+                  id={link.id}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="break-all text-cobalt hover:underline"
+                >
+                  {link.url}
+                </a>
+              <% else %>
+                <span id={"#{link.id}-empty"} class="text-ink-muted">Not provided</span>
+              <% end %>
+            </dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="rounded border border-rule bg-surface">
+        <h2 class="border-b border-rule px-4 py-3 text-sm font-semibold text-ink">Tags</h2>
+        <div class="px-4 py-4">
+          <div id="resume-tags" phx-update="stream" class="flex flex-wrap gap-1.5">
+            <.tag_chip :for={{dom_id, tag} <- @streams.tags} id={dom_id} name={tag.name} />
+          </div>
+          <p :if={@tags_empty?} id="resume-tags-empty" class="text-sm text-ink-muted">
+            No tags.
+          </p>
+        </div>
+      </section>
+
+      <section class="rounded border border-rule bg-surface">
+        <h2 class="border-b border-rule px-4 py-3 text-sm font-semibold text-ink">Record</h2>
+        <dl class="px-4 py-4 text-sm">
+          <div class="flex items-baseline justify-between gap-3">
+            <dt class="text-ink-muted">Created</dt>
+            <dd id="resume-created-at" class="font-mono text-xs tabular-nums text-ink">
+              {Formatters.format_utc_datetime(@resume.inserted_at)}
+            </dd>
+          </div>
+          <div class="mt-2 flex items-baseline justify-between gap-3">
+            <dt class="text-ink-muted">Last updated</dt>
+            <dd class="font-mono text-xs tabular-nums text-ink">
+              {Formatters.format_utc_datetime(@resume.updated_at)}
+            </dd>
+          </div>
+        </dl>
+      </section>
+    </aside>
+  </div>
+
+  <.confirm_modal
+    :if={@pending_delete}
+    id="delete-resume-modal"
+    title="Delete resume?"
+    confirm_label="Delete resume"
+    confirm_event="delete"
+  >
+    <p>
+      <span class="font-medium text-ink">{@pending_delete.title}</span>
+      will be permanently deleted, along with its tag links. The tags themselves
+      are kept.
+    </p>
+  </.confirm_modal>
+</Layouts.app>

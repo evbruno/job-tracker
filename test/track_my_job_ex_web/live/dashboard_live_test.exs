@@ -22,6 +22,7 @@ defmodule TrackMyJobExWeb.DashboardLiveTest do
 
     assert has_element?(view, "header a[href='/']", "Job Tracker")
     assert has_element?(view, "#dashboard")
+    assert has_element?(view, "#dashboard-resumes[href='/resumes']")
     assert has_element?(view, "#current-user-email", user.email)
     assert has_element?(view, "#log-out")
     refute has_element?(view, "#log-in")

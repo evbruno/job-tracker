@@ -2,14 +2,16 @@
 
 ## Current Project Status
 
-**Current phase:** Phase 6 — Search and Usability (complete; MVP functionally complete, awaiting review)
+**Current phase:** Phase 8 — Resume Management (complete; awaiting review)
 
-**Overall status:** Phases 1–7 complete in the repository. The MVP is
-functionally complete and production-ready on the application side; the remaining
-items are operator-only infrastructure steps documented in `docs/DEPLOYMENT.md`.
+**Overall status:** Phases 1–8 complete in the repository. Phase 8 adds multiple
+resume versions per user. The remaining Phase 7 items are operator-only
+infrastructure steps documented in `docs/DEPLOYMENT.md`.
 
-**Current milestone:** Phase 7 verified; awaiting operator provisioning of
-domain/TLS, persistent volume, secrets, monitoring, and off-site backups.
+**Current milestone:** Phase 8 verified — resumes with tags, contact links, and
+email prefill.
+
+**Current task group:** Phase 8, tasks 8.1–8.8 complete.
 
 ---
 
@@ -398,6 +400,61 @@ one light theme. Tag filters and the form tag picker are checkbox chips with the
 same container ids. Confirmation is now a two-step modal flow. Contexts, schemas,
 migrations, URL contracts, ownership rules, and flash strings are unchanged. See
 `SESSION.md` for the design tokens, status families, and per-screen summary.
+
+---
+
+## Phase 8 — Resume Management
+
+- [x] Add `resumes` and `resume_tags` tables with foreign keys, cascades, and indexes.
+- [x] Implement the `Resume` schema and validation (title, body, email, optional contact fields, URLs).
+- [x] Implement the scoped `Resumes` context with email prefill, CRUD, and tag associations.
+- [x] Implement the resume listing (most recently updated first).
+- [x] Implement resume creation and editing with existing and inline tags.
+- [x] Implement resume details with safe links and confirmation-gated deletion.
+- [x] Add Resumes navigation and dashboard entry, and update tag deletion copy/cascades.
+- [x] Add context, isolation, and LiveView tests; document the phase.
+
+**Acceptance criteria:**
+- Users can keep many independent resumes, each with a title and timestamps.
+- New resumes prefill the email from the signed-in user's account; the value stays editable.
+- Resume tags reuse the existing per-user tag vocabulary, support inline creation, and validate ownership.
+- Resume list, details, edit, and delete flows work and are owner-scoped.
+- Cross-user reads, lists, updates, deletes, and tag associations behave as not found or are rejected.
+- `mix precommit` passes and the suite grows to cover the new resource.
+
+**Phase 8 completion notes:**
+- Data model: `resumes` stores the title, body, email, optional full name,
+  headline, phone, and location, the three optional URLs, `user_id`, and
+  timestamps. `resume_tags` joins resumes to the existing `tags` table with
+  `(resume_id, tag_id)` uniqueness, cascades on both sides, and a
+  `(tag_id, resume_id)` lookup index.
+- Context: `TrackMyJobEx.Resumes` takes `%Scope{}` first everywhere, scopes
+  reads and writes by `scope.user.id`, and supports list/get/get!/create/
+  create-with-tags/change/update/update-with-tags/set-tags/delete and
+  `list_resume_tags/2`. `new_resume_changeset/2` assigns the owner and prefills
+  the email from the signed-in user; a client `user_id` is never cast.
+- Tags: resumes reuse `TrackMyJobEx.Tags` through the same fetch/reuse/validate
+  rules as applications. Selecting another user's tag id or an invalid id rolls
+  back the resume and its tag links. Inline names reuse an existing tag
+  case-insensitively and keep its original casing.
+- Validation: title (255), body (50,000), and email (255) are required; the
+  email uses the authentication regex (an `@`, no spaces/commas/semicolons).
+  Optional text and URLs are trimmed, blank values become `NULL`, and the three
+  URLs require an absolute `http`/`https` URL with a host.
+- UI: `ResumeLive.Index/New/Edit/Show` under the protected `live_session`, plus
+  the shared `ResumeForm`. The index orders by most recently updated and shows
+  title, name/headline, tags, and the updated timestamp. Details render the body
+  with preserved line breaks, contact values, safe links, tags, and timestamps,
+  and delete through the existing confirmation modal. Navigation and the
+  dashboard link to Resumes; the tag page now states that deletion affects
+  applications and resumes.
+- Tests: Phase 8 added 40 tests (288 total): 25 context/isolation tests and 15
+  LiveView tests, covering prefill, validation, tag creation/reuse and rollback,
+  ordering, list/isolation, edit, safe links, and the confirmation-gated delete.
+  `mix precommit` passes.
+- Deliberately not done: no application links, file uploads, PDF generation,
+  version chains, version comparison, default resume flag, filters, or
+  pagination for resumes.
 
 ---
 

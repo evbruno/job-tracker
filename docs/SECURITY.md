@@ -44,8 +44,8 @@ found`).
 - Browser routes use the Phoenix CSRF plug through the `:browser` pipeline, and
   LiveView forms are protected by LiveView's CSRF token handling.
 - All user-owned context functions take a `%Scope{}` first argument and filter
-  by the scope's user id. There is no unscoped `get_*`/`get_*!` for applications
-  or tags.
+  by the scope's user id. There is no unscoped `get_*`/`get_*!` for applications,
+  tags, or resumes.
 - Client-provided `user_id` values are never cast. Ownership is always derived
   from `current_scope.user.id`.
 - Association IDs (tag ids) are re-fetched through the current user's scope
@@ -122,6 +122,27 @@ write raises/returns an error without revealing whether the record exists.
 | Update/rename | Rejected | `tags_test.exs:100`; `tag_live_test.exs:90` |
 | Delete | Rejected | `tags_test.exs:125`; `tag_live_test.exs:144` |
 | Inline creation | Scoped to the current user | `job_applications_test.exs` create-with-tags tests |
+
+### Resumes (`Resume`)
+
+| Operation | Expected behavior for another user's id | Test |
+|---|---|---|
+| Read one | `get_resume/2` returns `nil`; `get_resume!/2` raises `Ecto.NoResultsError` | `test/track_my_job_ex/resumes_test.exs:190`; LiveViews at `test/track_my_job_ex_web/live/resume_live_test.exs:207,274` |
+| List | Only the scope's resumes, with preloaded tags | `resumes_test.exs:158,174` |
+| Create | Owner is taken from the scope; client `user_id` is ignored; email defaults from the scope's user | `resumes_test.exs` create/prefill tests |
+| Update | Rejected | `resumes_test.exs:216` |
+| Delete | Rejected | `resumes_test.exs:380` |
+| Render in list/details | Other users' resumes are not rendered; details redirect with "not found" | `resume_live_test.exs` index/show tests |
+
+### Resume tags (`ResumeTag`)
+
+| Operation | Expected behavior | Test |
+|---|---|---|
+| Link another user's tag | Rejected; the whole create/update rolls back | `resumes_test.exs:270`; `resume_live_test.exs:145` |
+| Replace tags with another user's tag | Rejected; no partial field or link changes | `resumes_test.exs` update-with-tags tests |
+| Read another user's resume links | Not reachable because the resume read is scoped | `resumes_test.exs:190` |
+| Delete a resume | Cascades to its tag links; tags are kept | `resumes_test.exs:362` |
+| Delete a tag | Cascades to resume links; resumes are kept | `resumes_test.exs:391` |
 
 ### Status history (`ApplicationStatusHistory`)
 

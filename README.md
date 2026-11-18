@@ -1,9 +1,9 @@
 # Job Tracker
 
 Job Tracker is a multi-user web application for organising a job search. It keeps
-applications, companies, recruiters, tags, statuses, and the full status history
-in one place so that every opportunity and every step of the recruitment process
-can be reviewed later.
+applications, companies, recruiters, resume versions, tags, statuses, and the
+full status history in one place so that every opportunity and every step of the
+recruitment process can be reviewed later.
 
 The product requirements live in [`PRODUCT.md`](PRODUCT.md), the implementation
 plan and development rules live in [`TASKS.md`](TASKS.md), and the session

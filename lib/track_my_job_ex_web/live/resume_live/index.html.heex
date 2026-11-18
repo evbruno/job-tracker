@@ -1,0 +1,85 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} active={:resumes}>
+  <.header>
+    Resumes
+    <:subtitle>Keep every version of your CV, with its own contact details and tags.</:subtitle>
+    <:actions>
+      <.link navigate={~p"/resumes/new"} id="new-resume" class="btn btn-primary btn-sm">
+        New resume
+      </.link>
+    </:actions>
+  </.header>
+
+  <div
+    :if={@resume_count > 0}
+    class="mt-4 flex items-center justify-between gap-3 border-b border-rule pb-2 text-xs text-ink-muted"
+  >
+    <p id="resumes-count">
+      {@resume_count} {if @resume_count == 1, do: "resume", else: "resumes"}
+    </p>
+    <p class="font-mono">Most recently updated first</p>
+  </div>
+
+  <div
+    id="resumes"
+    phx-update="stream"
+    class="mt-3 divide-y divide-rule overflow-hidden rounded border border-rule bg-surface"
+  >
+    <div :for={{dom_id, resume} <- @streams.resumes} id={dom_id} class="flex items-stretch">
+      <.link
+        id={"#{dom_id}-link"}
+        navigate={~p"/resumes/#{resume.id}"}
+        class="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1 py-3 pl-3 pr-2 hover:bg-canvas md:flex-nowrap md:gap-4"
+      >
+        <div class="w-full min-w-0 md:w-auto md:flex-1">
+          <h2 id={"#{dom_id}-title"} class="truncate text-[15px] font-medium text-ink">
+            {resume.title}
+          </h2>
+          <div class="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-ink-muted">
+            <span :if={resume.full_name} id={"#{dom_id}-name"} class="truncate">
+              {resume.full_name}
+            </span>
+            <span :if={resume.full_name && resume.headline} aria-hidden="true">·</span>
+            <span :if={resume.headline} id={"#{dom_id}-headline"} class="truncate">
+              {resume.headline}
+            </span>
+            <span :if={resume.tags != []} aria-hidden="true">·</span>
+            <span
+              :if={resume.tags != []}
+              id={"#{dom_id}-tags"}
+              class="flex flex-wrap items-center gap-1"
+            >
+              <.tag_chip
+                :for={tag <- Enum.sort_by(resume.tags, &String.downcase(&1.name))}
+                id={"#{dom_id}-tag-#{tag.id}"}
+                name={tag.name}
+              />
+            </span>
+          </div>
+        </div>
+
+        <time
+          id={"#{dom_id}-updated-at"}
+          datetime={DateTime.to_iso8601(resume.updated_at)}
+          class="shrink-0 font-mono text-xs tabular-nums text-ink-muted md:w-32"
+        >
+          {Formatters.format_utc_datetime(resume.updated_at)}
+        </time>
+      </.link>
+    </div>
+  </div>
+
+  <.empty_state
+    :if={@resumes_empty?}
+    id="resumes-empty"
+    icon="hero-document-text"
+    title="No resumes yet"
+  >
+    Add your first resume version. The email starts as your account email, and
+    you can keep as many versions as you need.
+    <:action>
+      <.link navigate={~p"/resumes/new"} id="empty-create-resume" class="btn btn-primary btn-sm">
+        New resume
+      </.link>
+    </:action>
+  </.empty_state>
+</Layouts.app>
