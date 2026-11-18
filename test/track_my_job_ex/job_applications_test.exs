@@ -17,13 +17,13 @@ defmodule TrackMyJobEx.JobApplicationsTest do
   end
 
   describe "statuses" do
-    test "the 13 predefined statuses are seeded and ordered" do
+    test "the 14 predefined statuses are seeded and ordered" do
       statuses = JobApplications.list_statuses()
 
       assert Enum.map(statuses, & &1.slug) == ~w(
                interested applied screening interview technical_interview
                final_interview offer accepted declined rejected withdrawn failed
-               on_hold
+               on_hold ghosted
              )
 
       assert Enum.map(statuses, & &1.name) == [
@@ -39,10 +39,11 @@ defmodule TrackMyJobEx.JobApplicationsTest do
                "Rejected",
                "Withdrawn",
                "Failed",
-               "On Hold"
+               "On Hold",
+               "Ghosted"
              ]
 
-      assert Enum.map(statuses, & &1.position) == Enum.to_list(1..13)
+      assert Enum.map(statuses, & &1.position) == Enum.to_list(1..14)
     end
 
     test "statuses can be looked up by id and slug" do
@@ -1034,7 +1035,7 @@ defmodule TrackMyJobEx.JobApplicationsTest do
 
       options = JobApplications.filter_options(scope)
 
-      assert length(options.statuses) == 13
+      assert length(options.statuses) == 14
       assert options.companies == ["Acme Corp"]
       assert options.recruiters == ["Jane Recruiter"]
       assert Enum.map(options.tags, & &1.id) == [own_tag.id]
@@ -1068,6 +1069,7 @@ defmodule TrackMyJobEx.JobApplicationsTest do
                company: nil,
                recruiter: nil,
                tags: [],
+               archived: :active,
                sort: "created",
                direction: "desc"
              }

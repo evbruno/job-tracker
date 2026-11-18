@@ -69,6 +69,10 @@ defmodule TrackMyJobExWeb.MCP.Router do
       in: ~w[desc asc]
 
     field :page, :integer, minimum: 1, description: "1-based page number; 25 per page."
+
+    field :archived, :string,
+      description: "Filter by archive state: \"active\" (default), \"archived\", or \"all\".",
+      in: ~w[active archived all]
   end
 
   tool :applications_get, Tools, [] do
@@ -92,6 +96,9 @@ defmodule TrackMyJobExWeb.MCP.Router do
     field :budget_max, :integer,
       description: "Optional maximum budget (whole units). Must be >= budget_min."
 
+    field :start_date, :string,
+      description: "Optional start date (ISO 8601, YYYY-MM-DD) for a previously applied job."
+
     field :tag_ids, {:array, :integer},
       description: "Ids of existing tags owned by the caller to link."
 
@@ -114,6 +121,8 @@ defmodule TrackMyJobExWeb.MCP.Router do
 
     field :budget_max, :integer, description: "Maximum budget (whole units); blank clears it."
 
+    field :start_date, :string, description: "Start date (ISO 8601, YYYY-MM-DD); blank clears it."
+
     field :tag_ids, {:array, :integer},
       description:
         "Replaces the linked tags with exactly these tag ids. Omit to keep the current tags; send [] to remove all."
@@ -124,6 +133,14 @@ defmodule TrackMyJobExWeb.MCP.Router do
 
   tool :applications_delete, Tools, destructive: true do
     field :id, :integer, required: true, description: "The application id to delete."
+  end
+
+  tool :applications_archive, Tools, [] do
+    field :id, :integer, required: true, description: "The application id to archive."
+  end
+
+  tool :applications_unarchive, Tools, [] do
+    field :id, :integer, required: true, description: "The application id to unarchive."
   end
 
   tool :applications_change_status, Tools, [] do

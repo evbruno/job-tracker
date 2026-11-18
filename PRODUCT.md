@@ -46,6 +46,10 @@ Fields:
 - Budget range (optional): minimum and maximum in whole units. Both are
   non-negative integers; when both are present the minimum must not exceed the
   maximum. Blank values are stored as `NULL`.
+- Start date (optional date): when the user applied or started the process.
+  Used to track opportunities applied to in the past.
+- Archived timestamp (system-managed): when set, the application is hidden
+  from the default listing. Archiving is reversible.
 - Current application status.
 - Relevant tags.
 - Creation timestamp.
@@ -68,6 +72,14 @@ Company and recruiter are plain text columns on the application. There are no se
 - Values are trimmed. A blank recruiter is stored as `NULL`.
 - The form suggests values the user has previously entered (for example with an HTML `datalist`), so names can be reused without retyping. Suggestions come only from the current user's own applications.
 - Changing the value on one application does not affect any other application.
+
+#### Application Archiving
+
+Applications can be archived instead of deleted. Archiving sets an `archived_at`
+timestamp and hides the application from the default listing; archived
+applications are reachable through an "Archived"/"All" filter. Archiving is
+reversible and does not remove status history or tag links. The UI must ask for
+confirmation before deleting; archiving requires no confirmation.
 
 #### Application Deletion
 
@@ -99,6 +111,7 @@ Initial statuses:
 - Withdrawn
 - Failed
 - On Hold
+- Ghosted
 
 Users cannot create or customize statuses.
 
@@ -415,6 +428,9 @@ The MVP is successful when a user can:
 | MCP deletes | Hard delete, explicit single id, marked destructive |
 | `updated_at` changes on | Field edits, status changes, tag changes |
 | Budget range | Optional minimum and maximum in whole units; minimum <= maximum when both are present |
+| Application start date | Optional date for previously applied opportunities |
+| Ghosted status | Predefined status for applications with no reply |
+| Application archiving | Reversible soft delete; hidden by default; filter to show archived |
 | Timestamps | Stored and displayed in UTC |
 | Database | SQLite3 (`ecto_sqlite3`) |
 | User provisioning | Custom Mix task |

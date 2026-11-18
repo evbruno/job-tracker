@@ -182,6 +182,7 @@ write raises/returns an error without revealing whether the record exists.
 | `applications_create` | Owner from token; tag ids validated; initial history row created | `tools_test.exs` |
 | `applications_update` | Fields and tag links scoped; omitting `tag_ids` preserves tags; `[]` clears them | `tools_test.exs` |
 | `applications_delete` | Hard delete; other user's id not found | `tools_test.exs` |
+| `applications_archive` / `applications_unarchive` | Reversible soft delete via `archived_at`; other user's id not found | `tools_test.exs` |
 | `applications_change_status` | Atomic status + history; invalid/unknown/same status rejected | `tools_test.exs` |
 | `resumes_list` / `resumes_get` / `resumes_create` / `resumes_update` / `resumes_delete` | Same ownership and validation rules as the web UI, including email prefill | `tools_test.exs` |
 | `tags_list` / `statuses_list` | Only the owner's tags; predefined global statuses | `tools_test.exs` |

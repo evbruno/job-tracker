@@ -34,6 +34,13 @@
               else: "—"}
           </span>
         </span>
+        <span :if={@application.start_date} aria-hidden="true">·</span>
+        <span :if={@application.start_date} id="application-start-date">
+          Started
+          <span class="text-ink">
+            {Calendar.strftime(@application.start_date, "%Y-%m-%d")}
+          </span>
+        </span>
         <span aria-hidden="true">·</span>
         <span>
           Created
@@ -61,6 +68,24 @@
         class="btn btn-ghost btn-sm text-red-700 hover:bg-red-50"
       >
         Delete
+      </button>
+      <button
+        :if={!@application.archived_at}
+        type="button"
+        id="archive-application"
+        phx-click="archive"
+        class="btn btn-ghost btn-sm"
+      >
+        Archive
+      </button>
+      <button
+        :if={@application.archived_at}
+        type="button"
+        id="unarchive-application"
+        phx-click="unarchive"
+        class="btn btn-primary btn-sm"
+      >
+        Unarchive
       </button>
     </div>
   </header>

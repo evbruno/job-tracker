@@ -26,6 +26,8 @@ defmodule TrackMyJobEx.JobApplications.JobApplication do
     field :recruiter_name, :string
     field :budget_min, :integer
     field :budget_max, :integer
+    field :start_date, :date
+    field :archived_at, :utc_datetime
 
     belongs_to :status, Status
     belongs_to :user, TrackMyJobEx.Accounts.User
@@ -51,7 +53,7 @@ defmodule TrackMyJobEx.JobApplications.JobApplication do
   accepted from client input.
   """
   def changeset(job_application, attrs) do
-    attrs = normalize_budget(attrs)
+    attrs = normalize_attributes(attrs)
 
     job_application
     |> cast(attrs, [
@@ -61,7 +63,8 @@ defmodule TrackMyJobEx.JobApplications.JobApplication do
       :company_name,
       :recruiter_name,
       :budget_min,
-      :budget_max
+      :budget_max,
+      :start_date
     ])
     |> trim_and_normalize()
     |> validate_required([:position, :company_name])
@@ -115,6 +118,23 @@ defmodule TrackMyJobEx.JobApplications.JobApplication do
     end
   end
 
+  defp normalize_attributes(attrs) when is_map(attrs) do
+    attrs
+    |> normalize_start_date()
+    |> normalize_budget()
+  end
+
+  defp normalize_attributes(attrs), do: attrs
+
+  defp normalize_start_date(attrs) do
+    key = if Map.has_key?(attrs, :start_date), do: :start_date, else: "start_date"
+
+    case Map.get(attrs, key) do
+      "" -> Map.put(attrs, key, nil)
+      _ -> attrs
+    end
+  end
+
   defp normalize_budget(attrs) when is_map(attrs) do
     key_style = if Map.has_key?(attrs, :budget_min), do: :atom, else: :string
 
@@ -122,8 +142,6 @@ defmodule TrackMyJobEx.JobApplications.JobApplication do
       normalize_budget_field(acc, field, key_style)
     end)
   end
-
-  defp normalize_budget(attrs), do: attrs
 
   defp normalize_budget_field(attrs, field, key_style) do
     key = if key_style == :atom, do: field, else: Atom.to_string(field)

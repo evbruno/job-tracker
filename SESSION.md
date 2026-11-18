@@ -7,13 +7,13 @@ Update it before ending every session.
 
 ## Current State
 
-- **Current phase:** Phase 11 — Application Budget Range (complete; awaiting
-  review).
-- **Current task group:** Phase 11, complete.
-- **Next task:** Await review of Phase 11.
-- **Overall status:** Phases 1–11 complete and verified locally. `mix precommit`
+- **Current phase:** Phase 12 — Application Start Date, Ghosted Status, and
+  Archiving (complete; awaiting review).
+- **Current task group:** Phase 12, complete.
+- **Next task:** Await review of Phase 12.
+- **Overall status:** Phases 1–12 complete and verified locally. `mix precommit`
   passes with 347 tests.
-- **Last commit:** Phase 11 commit pending.
+- **Last commit:** Phase 12 commit pending.
 
 ## Last Session Summary
 
@@ -287,6 +287,23 @@ None. If this file and PRODUCT.md conflict, PRODUCT.md wins; list the conflict h
 ## Session Log
 
 Add one entry per session, newest first, in this format:
+
+### 2026-11-18
+
+- **Done:** Phase 12 — Application start date, ghosted status, and archiving.
+  Added `start_date` (date) and `archived_at` (utc_datetime) columns, seeded
+  the `ghosted` status (position 14), and added archive/unarchive context
+  functions. Archived applications are hidden by default with an active/archived/
+  all filter on the list; archive/unarchive buttons on the details page; start
+  date on the form/details. Included `start_date` and `archived_at` in the MCP
+  serializer and added `applications_archive`/`applications_unarchive` tools.
+  Updated `PRODUCT.md`, `TASKS.md`, and `SESSION.md`. `mix precommit` passes
+  with 347 tests.
+- **Commits:** (pending) `Phase 12: Add start date, ghosted status, and archiving`.
+- **Assumptions:** Budgets and start dates are optional. Archiving is
+  reversible and touches `updated_at`; it does not change status.
+- **Blockers:** None.
+- **Next:** Await review of Phase 12.
 
 ### 2026-11-18
 

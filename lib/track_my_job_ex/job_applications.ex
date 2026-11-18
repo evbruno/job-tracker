@@ -171,6 +171,7 @@ defmodule TrackMyJobEx.JobApplications do
       company: normalize_text(Map.get(params, "company")),
       recruiter: normalize_text(Map.get(params, "recruiter")),
       tags: normalize_tag_ids(scope, Map.get(params, "tags")),
+      archived: normalize_archived(Map.get(params, "archived")),
       sort: normalize_sort(Map.get(params, "sort")),
       direction: normalize_direction(Map.get(params, "direction"))
     }
@@ -357,6 +358,35 @@ defmodule TrackMyJobEx.JobApplications do
     scope
     |> fetch_application!(application_or_id)
     |> Repo.delete()
+  end
+
+  @doc """
+  Archives an application owned by the scope by setting `archived_at`.
+
+  Archived applications are hidden from the default listing. The application's
+  `updated_at` is touched.
+  """
+  def archive_application(%Scope{} = scope, application_or_id) do
+    application = fetch_application!(scope, application_or_id)
+    now = DateTime.utc_now(:second)
+
+    application
+    |> Ecto.Changeset.change(archived_at: now, updated_at: now)
+    |> Repo.update()
+  end
+
+  @doc """
+  Unarchives an application owned by the scope by clearing `archived_at`.
+
+  The application's `updated_at` is touched.
+  """
+  def unarchive_application(%Scope{} = scope, application_or_id) do
+    application = fetch_application!(scope, application_or_id)
+    now = DateTime.utc_now(:second)
+
+    application
+    |> Ecto.Changeset.change(archived_at: nil, updated_at: now)
+    |> Repo.update()
   end
 
   ## Status changes
@@ -736,6 +766,7 @@ defmodule TrackMyJobEx.JobApplications do
     |> filter_by_text(:recruiter_name, filters.recruiter)
     |> filter_by_status(filters.status)
     |> filter_by_tags(filters.tags)
+    |> filter_by_archived(filters.archived)
   end
 
   defp filter_by_search(query, nil), do: query
@@ -772,6 +803,16 @@ defmodule TrackMyJobEx.JobApplications do
     where(query, [application], application.status_id in subquery(status_ids))
   end
 
+  defp filter_by_archived(query, :active) do
+    where(query, [application], is_nil(application.archived_at))
+  end
+
+  defp filter_by_archived(query, :archived) do
+    where(query, [application], not is_nil(application.archived_at))
+  end
+
+  defp filter_by_archived(query, :all), do: query
+
   defp filter_by_tags(query, []), do: query
 
   defp filter_by_tags(query, tag_ids) do
@@ -803,7 +844,8 @@ defmodule TrackMyJobEx.JobApplications do
 
   defp filters_active?(filters) do
     filters.tags != [] or
-      Enum.any?([filters.q, filters.status, filters.company, filters.recruiter], &is_binary/1)
+      Enum.any?([filters.q, filters.status, filters.company, filters.recruiter], &is_binary/1) or
+      filters.archived != :active
   end
 
   defp normalize_text(value) when is_binary(value) do
@@ -822,6 +864,16 @@ defmodule TrackMyJobEx.JobApplications do
   end
 
   defp normalize_status(_value), do: nil
+
+  defp normalize_archived(value) when value in [true, "true", "1", "archived"] do
+    :archived
+  end
+
+  defp normalize_archived(value) when value in ["all"] do
+    :all
+  end
+
+  defp normalize_archived(_value), do: :active
 
   defp normalize_tag_ids(%Scope{} = scope, value) do
     ids =

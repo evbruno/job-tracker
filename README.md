@@ -136,11 +136,12 @@ mix mcp.tokens.list alice@example.com
 mix mcp.tokens.revoke alice@example.com 1
 ```
 
-The endpoint exposes 15 tools: `account_get`, `applications_list`,
+The endpoint exposes 17 tools: `account_get`, `applications_list`,
 `applications_get`, `applications_create`, `applications_update`,
-`applications_delete`, `applications_change_status`,
-`applications_status_history`, `resumes_list`, `resumes_get`, `resumes_create`,
-`resumes_update`, `resumes_delete`, `tags_list`, and `statuses_list`. Every tool acts only on the token owner's
+`applications_delete`, `applications_archive`, `applications_unarchive`,
+`applications_change_status`, `applications_status_history`, `resumes_list`,
+`resumes_get`, `resumes_create`, `resumes_update`, `resumes_delete`,
+`tags_list`, and `statuses_list`. Every tool acts only on the token owner's
 records; another user's identifiers are reported as not found. Browser origins
 allowed to call the endpoint are configured through `MCP_ALLOWED_ORIGINS`.
 

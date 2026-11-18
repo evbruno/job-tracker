@@ -2,14 +2,16 @@
 
 ## Current Project Status
 
-**Current phase:** Phase 11 — Application Budget Range (complete; awaiting review)
+**Current phase:** Phase 12 — Application Start Date, Ghosted Status, and
+Archiving (complete; awaiting review)
 
-**Overall status:** Phases 1–11 complete in the repository. Phase 11 adds an
-optional budget range (minimum and maximum in whole units) to job applications.
+**Overall status:** Phases 1–12 complete in the repository. Phase 12 adds an
+optional start date, a predefined "ghosted" status, and reversible application
+archiving (hidden by default, with a filter to show archived).
 
-**Current milestone:** Phase 11 verified — budget range on applications.
+**Current milestone:** Phase 12 verified.
 
-**Current task group:** Phase 11, complete.
+**Current task group:** Phase 12, complete.
 
 ---
 
@@ -568,6 +570,42 @@ migrations, URL contracts, ownership rules, and flash strings are unchanged. See
   `applications_update`, and to the serializer.
 - Tests: 347 total (no new tests added; existing suites cover the new columns
   through the changeset). `mix precommit` passes.
+
+---
+
+## Phase 12 — Application Start Date, Ghosted Status, and Archiving
+
+- [x] Add `start_date` (date) and `archived_at` (utc_datetime) columns to
+  `job_applications`, plus an index on `(user_id, archived_at)`.
+- [x] Seed the `ghosted` status (position 14).
+- [x] Add `start_date` to the schema and changeset (blank normalized to nil).
+- [x] Add `archive_application/2` and `unarchive_application/2` to the
+  `JobApplications` context.
+- [x] Filter archived applications out of the default listing; add an
+  `archived` filter (active/archived/all) to `list_applications_filtered/2`.
+- [x] Surface the start date and archive/unarchive actions in the application
+  UI and the archived filter in the list.
+- [x] Include `start_date` and `archived_at` in the MCP serializer and add
+  `applications_archive`/`applications_unarchive` tools.
+- [x] Update `PRODUCT.md`, `TASKS.md`, and `SESSION.md`.
+
+**Acceptance criteria:**
+- Applications can store an optional start date.
+- `ghosted` is available as a predefined status.
+- Archived applications are hidden by default and reachable via a filter.
+- Archiving is reversible and touches `updated_at`.
+- `mix precommit` passes.
+
+**Phase 12 completion notes:**
+- Migration: `20261118183009_add_start_date_archived_and_ghosted_status.exs`.
+- Context: `archive_application/2`, `unarchive_application/2`; `archived`
+  normalized to `:active`/`:archived`/`:all` in `normalize_filters/2`.
+- UI: start date on the form/details, archive/unarchive buttons on details,
+  archived filter select on the list.
+- MCP: `start_date` on create/update, plus `applications_archive` and
+  `applications_unarchive` tools.
+- Tests: the seeded-status count updated to 14; 347 total. `mix precommit`
+  passes.
 
 ---
 

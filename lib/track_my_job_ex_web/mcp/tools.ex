@@ -19,11 +19,11 @@ defmodule TrackMyJobExWeb.MCP.Tools do
   alias TrackMyJobEx.Tags
   alias TrackMyJobExWeb.MCP.Serializer
 
-  @application_fields ~w[position company_name recruiter_name description job_posting_url budget_min budget_max]
+  @application_fields ~w[position company_name recruiter_name description job_posting_url budget_min budget_max start_date]
 
   @resume_fields ~w[title body email full_name headline phone location linkedin_url github_url portfolio_url]
 
-  @listing_fields ~w[q status company recruiter tags sort direction page]
+  @listing_fields ~w[q status company recruiter tags archived sort direction page]
 
   ## Applications
 
@@ -91,6 +91,32 @@ defmodule TrackMyJobExWeb.MCP.Tools do
       case JobApplications.delete_application(scope(session), application) do
         {:ok, deleted} ->
           reply(text(%{"deleted" => true, "id" => deleted.id}), session)
+
+        {:error, changeset} ->
+          validation_error(session, changeset)
+      end
+    end)
+  end
+
+  @doc "Archives an application owned by the caller."
+  def applications_archive(%{"id" => id}, session) do
+    with_application(session, id, fn _application ->
+      case JobApplications.archive_application(scope(session), id) do
+        {:ok, updated} ->
+          reply(text(%{"application" => serialize_application(session, updated.id)}), session)
+
+        {:error, changeset} ->
+          validation_error(session, changeset)
+      end
+    end)
+  end
+
+  @doc "Unarchives an application owned by the caller."
+  def applications_unarchive(%{"id" => id}, session) do
+    with_application(session, id, fn _application ->
+      case JobApplications.unarchive_application(scope(session), id) do
+        {:ok, updated} ->
+          reply(text(%{"application" => serialize_application(session, updated.id)}), session)
 
         {:error, changeset} ->
           validation_error(session, changeset)

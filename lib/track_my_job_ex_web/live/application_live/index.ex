@@ -148,6 +148,10 @@ defmodule TrackMyJobExWeb.ApplicationLive.Index do
     )
   end
 
+  defp archived_query_param(:archived), do: "archived"
+  defp archived_query_param(:all), do: "all"
+  defp archived_query_param(_), do: nil
+
   defp filters_to_params(filters) do
     %{
       "q" => filters.q,
@@ -155,10 +159,15 @@ defmodule TrackMyJobExWeb.ApplicationLive.Index do
       "company" => filters.company,
       "recruiter" => filters.recruiter,
       "tags" => Enum.map(filters.tags, &to_string/1),
+      "archived" => archived_filter_value(filters.archived),
       "sort" => filters.sort,
       "direction" => filters.direction
     }
   end
+
+  defp archived_filter_value(:archived), do: "archived"
+  defp archived_filter_value(:all), do: "all"
+  defp archived_filter_value(_), do: ""
 
   defp applications_path(filters, page) do
     params =
@@ -168,6 +177,7 @@ defmodule TrackMyJobExWeb.ApplicationLive.Index do
       |> put_query_param("company", filters.company)
       |> put_query_param("recruiter", filters.recruiter)
       |> put_query_param("tags", Enum.map(filters.tags, &to_string/1))
+      |> put_query_param("archived", archived_query_param(filters.archived))
       |> put_query_param("sort", sort_query_value(filters.sort))
       |> put_query_param("direction", direction_query_value(filters.direction))
       |> put_query_param("page", page_query_value(page))

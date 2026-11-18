@@ -87,6 +87,46 @@ defmodule TrackMyJobExWeb.ApplicationLive.Show do
     end
   end
 
+  @impl true
+  def handle_event("archive", _params, socket) do
+    scope = socket.assigns.current_scope
+
+    case JobApplications.get_application(scope, socket.assigns.application.id) do
+      nil ->
+        {:noreply, not_found(socket)}
+
+      application ->
+        {:ok, _updated} = JobApplications.archive_application(scope, application)
+
+        reloaded = JobApplications.get_application(scope, application.id)
+
+        {:noreply,
+         socket
+         |> assign(:application, reloaded)
+         |> put_flash(:info, "Application archived.")}
+    end
+  end
+
+  @impl true
+  def handle_event("unarchive", _params, socket) do
+    scope = socket.assigns.current_scope
+
+    case JobApplications.get_application(scope, socket.assigns.application.id) do
+      nil ->
+        {:noreply, not_found(socket)}
+
+      application ->
+        {:ok, _updated} = JobApplications.unarchive_application(scope, application)
+
+        reloaded = JobApplications.get_application(scope, application.id)
+
+        {:noreply,
+         socket
+         |> assign(:application, reloaded)
+         |> put_flash(:info, "Application unarchived.")}
+    end
+  end
+
   defp change_status(scope, application, params, socket) do
     case JobApplications.change_status(scope, application, params) do
       {:ok, updated} ->

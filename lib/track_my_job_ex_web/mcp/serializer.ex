@@ -26,6 +26,8 @@ defmodule TrackMyJobExWeb.MCP.Serializer do
       "job_posting_url" => application.job_posting_url,
       "budget_min" => application.budget_min,
       "budget_max" => application.budget_max,
+      "start_date" => date(application.start_date),
+      "archived_at" => datetime(application.archived_at),
       "status" => status(application.status),
       "tags" => tags(application.tags),
       "inserted_at" => datetime(application.inserted_at),
@@ -111,5 +113,11 @@ defmodule TrackMyJobExWeb.MCP.Serializer do
 
   defp datetime(%DateTime{} = datetime) do
     datetime |> DateTime.truncate(:second) |> DateTime.to_iso8601()
+  end
+
+  defp date(nil), do: nil
+
+  defp date(%Date{} = date) do
+    Date.to_iso8601(date)
   end
 end

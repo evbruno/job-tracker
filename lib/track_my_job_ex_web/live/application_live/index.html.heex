@@ -63,6 +63,16 @@
           value={@filters.recruiter}
         />
       </div>
+      <div class="lg:col-span-2">
+        <.input
+          type="select"
+          name="archived"
+          id="filter-archived"
+          label="Archived"
+          options={[{"Active only", ""}, {"Archived only", "archived"}, {"All", "all"}]}
+          value={archived_filter_value(@filters.archived)}
+        />
+      </div>
       <div class="lg:col-span-3">
         <.input
           type="select"
