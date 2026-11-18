@@ -93,6 +93,7 @@ defmodule TrackMyJobExWeb.Router do
       live "/resumes/:id/edit", ResumeLive.Edit, :edit
       live "/resumes/:id", ResumeLive.Show, :show
       live "/tags", TagLive.Index, :index
+      live "/mcp-tokens", McpTokenLive.Index, :index
     end
 
     delete "/users/log-out", UserSessionController, :delete

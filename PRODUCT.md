@@ -260,6 +260,9 @@ Context Protocol (MCP) server so other agents can use it.
 - Destructive tools (`applications_delete`, `resumes_delete`) are marked
   `destructiveHint` and require an explicit record id; there are no bulk
   operations.
+- Tokens can also be managed in the web UI at `/mcp-tokens`: list the signed-in
+  user's tokens, create one (the plaintext is shown once), and revoke one with
+  confirmation. The plaintext is never retrievable afterwards.
 
 ## 4. Data Ownership and Privacy
 

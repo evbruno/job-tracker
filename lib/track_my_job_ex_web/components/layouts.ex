@@ -96,6 +96,16 @@ defmodule TrackMyJobExWeb.Layouts do
                   Tags
                 </.link>
               </li>
+              <li>
+                <.link
+                  navigate={~p"/mcp-tokens"}
+                  id="nav-mcp-tokens"
+                  class={nav_link(@active == :mcp_tokens)}
+                  aria-current={@active == :mcp_tokens && "page"}
+                >
+                  MCP tokens
+                </.link>
+              </li>
             </ul>
           </nav>
 

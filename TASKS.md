@@ -2,16 +2,15 @@
 
 ## Current Project Status
 
-**Current phase:** Phase 9 — MCP Server (complete; awaiting review)
+**Current phase:** Phase 10 — MCP Token Management UI (complete; awaiting review)
 
-**Overall status:** Phases 1–9 complete in the repository. Phase 9 exposes
-application and resume CRUD plus read-only tags/statuses over an authenticated
-MCP Streamable HTTP endpoint at `/mcp`, using per-user personal access tokens.
+**Overall status:** Phases 1–10 complete in the repository. Phase 10 adds a web
+UI for listing, creating, and revoking the signed-in user's MCP personal
+access tokens.
 
-**Current milestone:** Phase 9 verified — MCP server with 14 tools and
-personal access tokens.
+**Current milestone:** Phase 10 verified — MCP token management UI.
 
-**Current task group:** Phase 9, tasks 9.1–9.8 complete.
+**Current task group:** Phase 10, complete.
 
 ---
 
@@ -509,6 +508,39 @@ migrations, URL contracts, ownership rules, and flash strings are unchanged. See
   `mix mcp.tokens.list EMAIL`, `mix mcp.tokens.revoke EMAIL TOKEN_ID`.
 - Tests: 14 context tests, 9 auth tests, 13 tool tests, 11 Mix task tests
   (342 total). `mix precommit` passes.
+
+## Phase 10 — MCP Token Management UI
+
+- [x] Add `McpTokenLive.Index` listing the signed-in user's tokens with name,
+  prefix, created/last-used/expires timestamps, and a revoke action.
+- [x] Add a create form (name, optional expiry in days) that shows the
+  plaintext token once in a dismissible panel.
+- [x] Add a confirmation-gated revoke flow.
+- [x] Add the `/mcp-tokens` route under the authenticated `live_session` and a
+  navigation link.
+- [x] Update `PRODUCT.md` and `TASKS.md`.
+
+**Acceptance criteria:**
+- A signed-in user can create, list, and revoke their own MCP tokens.
+- The plaintext is displayed only at creation time.
+- Another user's tokens are never visible or revocable.
+- `mix precommit` passes.
+
+**Phase 10 completion notes:**
+- LiveView: `TrackMyJobExWeb.McpTokenLive.Index` uses a plain list assign (not a
+  stream) for reliable updates; create shows the plaintext in a dismissible
+  amber panel; revoke uses the shared confirmation modal.
+- Route: `live "/mcp-tokens", McpTokenLive.Index, :index` under the
+  authenticated `live_session`; nav link id `#nav-mcp-tokens`.
+- Tests: 4 LiveView tests covering empty state, create + one-time display,
+  cross-user isolation, and confirmation-gated revoke (346 total).
+- `mix precommit` passes.
+
+**Acceptance criteria:**
+- A signed-in user can create, list, and revoke their own MCP tokens.
+- The plaintext is displayed only at creation time.
+- Another user's tokens are never visible or revocable.
+- `mix precommit` passes.
 
 ---
 

@@ -7,13 +7,13 @@ Update it before ending every session.
 
 ## Current State
 
-- **Current phase:** Phase 9 — MCP Server (complete; awaiting review).
-- **Current task group:** 9.1–9.8 — complete.
-- **Next task:** Await review of Phase 9. Operator provisioning remains
-  outstanding for Phase 7.
-- **Overall status:** Phases 1–9 complete and verified locally. `mix precommit`
-  passes with 342 tests.
-- **Last commit:** Phase 8.9 precedes this work; Phase 9 commits pending.
+- **Current phase:** Phase 10 — MCP Token Management UI (complete; awaiting
+  review).
+- **Current task group:** Phase 10, complete.
+- **Next task:** Await review of Phase 10.
+- **Overall status:** Phases 1–10 complete and verified locally. `mix precommit`
+  passes with 346 tests.
+- **Last commit:** Phase 10 commit pending.
 
 ## Last Session Summary
 
@@ -287,6 +287,22 @@ None. If this file and PRODUCT.md conflict, PRODUCT.md wins; list the conflict h
 ## Session Log
 
 Add one entry per session, newest first, in this format:
+
+### 2026-11-18
+
+- **Done:** Phase 10 — MCP token management UI. Added
+  `TrackMyJobExWeb.McpTokenLive.Index` with a create form (name, optional
+  expiry in days) that reveals the plaintext once, a list of the signed-in
+  user's tokens with name, prefix, created/last-used/expires timestamps, and a
+  confirmation-gated revoke. Added the `/mcp-tokens` route under the
+  authenticated `live_session` and a nav link. Added 4 LiveView tests. Updated
+  `PRODUCT.md`, `TASKS.md`, and `SESSION.md`. `mix precommit` passes with 346
+  tests.
+- **Commits:** (pending) `Phase 10: Add MCP token management UI`.
+- **Assumptions:** Plain list assign instead of a stream, for reliable updates
+  after revoke.
+- **Blockers:** None.
+- **Next:** Await review of Phase 10.
 
 ### 2026-11-18
 
