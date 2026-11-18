@@ -11,7 +11,7 @@ infrastructure steps documented in `docs/DEPLOYMENT.md`.
 **Current milestone:** Phase 8 verified — resumes with tags, contact links, and
 email prefill.
 
-**Current task group:** Phase 8, tasks 8.1–8.8 complete.
+**Current task group:** Phase 8, tasks 8.1–8.9 complete.
 
 ---
 
@@ -412,6 +412,7 @@ migrations, URL contracts, ownership rules, and flash strings are unchanged. See
 - [x] Implement resume creation and editing with existing and inline tags.
 - [x] Implement resume details with safe links and confirmation-gated deletion.
 - [x] Add Resumes navigation and dashboard entry, and update tag deletion copy/cascades.
+- [x] Add a Mix task that creates a simple resume for an existing user.
 - [x] Add context, isolation, and LiveView tests; document the phase.
 
 **Acceptance criteria:**
@@ -448,10 +449,16 @@ migrations, URL contracts, ownership rules, and flash strings are unchanged. See
   and delete through the existing confirmation modal. Navigation and the
   dashboard link to Resumes; the tag page now states that deletion affects
   applications and resumes.
-- Tests: Phase 8 added 40 tests (288 total): 25 context/isolation tests and 15
-  LiveView tests, covering prefill, validation, tag creation/reuse and rollback,
-  ordering, list/isolation, edit, safe links, and the confirmation-gated delete.
-  `mix precommit` passes.
+- Tests: Phase 8 added 47 tests (295 total): 25 context/isolation tests, 15
+  LiveView tests, and 7 Mix task tests, covering prefill, validation, tag
+  creation/reuse and rollback, ordering, list/isolation, edit, safe links, the
+  confirmation-gated delete, and CLI resume creation. `mix precommit` passes.
+- Mix task: `mix resumes.create EMAIL [--title TITLE]` resolves an existing user
+  through `Accounts.get_user_by_email/1`, derives ownership with
+  `Scope.for_user/1`, and creates a simple resume through the scoped context.
+  The email is prefilled from the account and the body starts as a short
+  editable outline. Unknown users, blank titles, and invalid arguments fail with
+  a clear message and a non-zero exit status.
 - Deliberately not done: no application links, file uploads, PDF generation,
   version chains, version comparison, default resume flag, filters, or
   pagination for resumes.

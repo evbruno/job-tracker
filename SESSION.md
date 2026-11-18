@@ -8,15 +8,15 @@ Update it before ending every session.
 ## Current State
 
 - **Current phase:** Phase 8 — Resume Management (complete; awaiting review).
-- **Current task group:** 8.1–8.8 — complete. A presentation-only UI refresh
+- **Current task group:** 8.1–8.9 — complete. A presentation-only UI refresh
   (2026-11-18) is also complete and committed; it adds no product scope.
 - **Next task:** Review Phase 8. Operator provisioning remains outstanding for
   Phase 7. No Phase 9 is defined.
 - **Overall status:** Phases 1–8 complete and verified locally. The application
   is production-ready on the code side; real deployment requires operator-only
   DNS/TLS, volume, secrets, monitoring, and off-site backups.
-- **Last commit:** the UI refresh commit (see `git log`); the Phase 8 commit
-  follows it.
+- **Last commit:** `Phase 8.9: Add a resume creation Mix task` follows the UI
+  refresh and Phase 8.8 commits.
 
 ## Last Session Summary
 
@@ -31,9 +31,11 @@ The `TrackMyJobEx.Resumes` context is scoped by `%Scope{}` throughout, uses
 transactions for create/update with tags, validates ownership of submitted tag
 ids, and returns "not found" for another user's resume. The UI adds a Resumes
 list, details page, create/edit form, safe link rendering, and a
-confirmation-gated delete, plus navigation and dashboard links. Phase 8 added 40
-tests (288 total) and `mix precommit` passes. `docs/SECURITY.md` now includes the
-resume and `ResumeTag` isolation matrices.
+confirmation-gated delete, plus navigation and dashboard links. The
+`mix resumes.create EMAIL [--title TITLE]` task creates a simple starting resume
+for an existing user through the scoped context. Phase 8 added 47 tests (295
+total) and `mix precommit` passes. `docs/SECURITY.md` now includes the resume and
+`ResumeTag` isolation matrices.
 
 Phase 7 (Production Readiness) is complete in the repository. Security hardening
 sets `HttpOnly`, `Secure`, and `SameSite=Lax` on session and remember-me cookies
@@ -95,6 +97,10 @@ items are operator-only and are listed under Blockers and in
 - 2026-11-18 — Phase 8: linking resumes to applications, file uploads, PDF
   generation, version comparison, and default resumes are deliberately out of
   scope and recorded in `PRODUCT.md`.
+- 2026-11-18 — Phase 8: `mix resumes.create EMAIL [--title TITLE]` targets an
+  existing user resolved by email and creates one untagged resume with the
+  default title `Simple resume` and a short editable body outline. Tags, body
+  overrides, and bulk creation stay in the web interface or a future task.
 - 2026-11-18 — UI refresh: the app ships one light theme. The generator's theme
   toggle, `dark` theme styles, and the inline theme script were removed. No dark
   mode or other themes were added.
@@ -287,7 +293,7 @@ Add one entry per session, newest first, in this format:
 
 ### 2026-11-18
 
-- **Done:** Phase 8, task groups 8.1–8.8. Added many independent resumes per
+- **Done:** Phase 8, task groups 8.1–8.9. Added many independent resumes per
   user with a title, body, required email (prefilled from the signed-in user),
   optional full name, headline, phone, and location, and optional LinkedIn,
   GitHub, and portfolio URLs. Added the `resumes` and `resume_tags` tables with
@@ -295,10 +301,12 @@ Add one entry per session, newest first, in this format:
   `TrackMyJobEx.Resumes` context with transactional create/update-with-tags and
   ownership checks. Added `ResumeLive.Index/New/Edit/Show`, the shared
   `ResumeForm`, nav and dashboard links, and updated the tag deletion copy.
-  Updated `docs/SECURITY.md` with the resume and `ResumeTag` isolation matrices.
-  Phase 8 added 40 tests (288 total); `mix precommit` passes.
-- **Commits:** `Phase 8.8: Add resume versions with tags` (this commit; see
-  `git log`).
+  Added `mix resumes.create EMAIL [--title TITLE]` for creating a simple
+  starting resume for an existing user. Updated `docs/SECURITY.md` with the
+  resume and `ResumeTag` isolation matrices. Phase 8 added 47 tests (295 total);
+  `mix precommit` passes.
+- **Commits:** `Phase 8.9: Add a resume creation Mix task` (this commit; see
+  `git log`), following `Phase 8.8: Add resume versions with tags`.
 - **Assumptions:** See the Assumptions Made section above.
 - **Blockers:** None. Operator-only infrastructure items are unchanged.
 - **Next:** Await review of Phase 8; the operator checklist remains the only

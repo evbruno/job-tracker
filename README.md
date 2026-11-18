@@ -82,6 +82,20 @@ Phoenix session token lifetime. Log out from the navigation bar. Password reset,
 email confirmation, magic-link login, and public registration are intentionally
 unavailable in this version.
 
+## Resumes
+
+Resume versions are managed in the web interface at `/resumes`. To create a
+simple starting resume for an existing user from the command line:
+
+```sh
+mix resumes.create alice@example.com
+mix resumes.create alice@example.com --title "Backend Engineer"
+```
+
+The task prefills the resume email from the user's account and adds a short
+editable body outline. The user must already exist; create the account first
+with `mix users.create`.
+
 Development and test SQLite databases are created in the project root
 (`track_my_job_ex_dev.db` and `track_my_job_ex_test.db`) and are gitignored.
 SQLite foreign keys are enforced and WAL journal mode is enabled in every
@@ -115,7 +129,8 @@ Project-specific Mix tasks live in `lib/mix/tasks/` and are namespaced by
 domain (for example `mix users.create`). Tasks validate their arguments, print
 clear errors on invalid or duplicate input, and are covered by tests where the
 behaviour is non-trivial. `mix users.create` is the only supported way to
-provision users because public registration is disabled.
+provision users because public registration is disabled; `mix resumes.create`
+creates a simple starting resume for an existing user.
 
 ## Project layout
 
