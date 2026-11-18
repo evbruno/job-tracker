@@ -56,3 +56,4 @@ npm-debug.log
 /_build/
 /rel/overlays/*.tar.gz
 
+.kamal

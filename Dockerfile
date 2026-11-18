@@ -76,6 +76,8 @@ RUN mix release
 # the compiled release and other runtime necessities
 FROM ${RUNNER_IMAGE} AS final
 
+LABEL service=job-tracker
+
 RUN apt-get update \
   && apt-get install -y --no-install-recommends libstdc++6 openssl libncurses6 locales ca-certificates tini \
   && rm -rf /var/lib/apt/lists/*
