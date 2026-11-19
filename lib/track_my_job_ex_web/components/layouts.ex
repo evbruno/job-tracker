@@ -103,7 +103,7 @@ defmodule TrackMyJobExWeb.Layouts do
                   class={["inline-flex items-center gap-1.5", nav_link(@active == :mcp_tokens)]}
                   aria-current={@active == :mcp_tokens && "page"}
                 >
-                  <.icon name="hero-key" class="size-4" /> MCP tokens
+                  <.icon name="hero-key" class="size-4" /> MCP
                 </.link>
               </li>
               <li :if={@current_scope.user.is_admin}>

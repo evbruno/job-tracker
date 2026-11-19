@@ -7,11 +7,12 @@ Update it before ending every session.
 
 ## Current State
 
-- **Current phase:** Phase 14 — OAuth for MCP (complete; awaiting review).
-- **Current task group:** Phase 14, complete.
-- **Next task:** Await review of Phase 14.
-- **Overall status:** Phases 1–14 complete and verified locally. `mix precommit`
-  passes with 354 tests.
+- **Current phase:** Phase 16 — PORT-aware Development OAuth Issuer (complete;
+  awaiting review).
+- **Current task group:** Phase 16.
+- **Next task:** Await review of Phase 16.
+- **Overall status:** Phases 1–16 complete; `mix precommit` passes with 357
+  tests.
 - **Last commit:** `3eefd36` — Phase 14: Add OAuth authentication for MCP.
 
 ## Last Session Summary
@@ -288,6 +289,33 @@ None. If this file and PRODUCT.md conflict, PRODUCT.md wins; list the conflict h
 Add one entry per session, newest first, in this format:
 
 ### 2026-11-19
+
+- **Done:** Began Phase 16 in response to a local OAuth issuer mismatch. The
+  development issuer now derives from `PORT` (default `4000`) and can be
+  overridden with `MCP_OAUTH_ISSUER_URL`; resource URL defaults to that issuer's
+  `/mcp`. OAuth metadata endpoint construction is slash-safe. Added metadata
+  coverage and updated README/deployment configuration docs.
+- **Verification:** `PORT=4005 mix run` reports issuer
+  `http://localhost:4005/`, resource `http://localhost:4005/mcp`, and listener
+  port `4005`. OAuth metadata/auth tests pass (13 tests), and `mix precommit`
+  passes with 357 tests.
+- **Assumptions:** See Phase 16 in `TASKS.md`.
+- **Blockers:** None identified.
+- **Next:** Await review of Phase 16.
+
+- **Done:** Phase 15 implementation: changed the navigation label to “MCP” while
+  retaining `/mcp-tokens`; added a scoped OAuth connection list and
+  confirmation-gated family revocation alongside PAT management. Updated
+  `PRODUCT.md`, `TASKS.md`, and added LiveView coverage for listing, revocation,
+  and cross-user isolation.
+- **Verification:** Targeted MCP token LiveView tests pass (7 tests).
+  `mix precommit` passes with 357 tests. `mix deps.get` was needed in the new
+  worktree; it reported an existing Plug advisory for the locked version.
+- **Assumptions:** An OAuth authorization is represented by a token family, so
+  revocation invalidates its access and refresh rows without affecting other
+  authorizations for that client.
+- **Blockers:** None identified.
+- **Next:** Await review of Phase 15.
 
 - **Done:** Phase 14: added DCR for public MCP clients, OAuth metadata and
   endpoints, Authorization Code + PKCE consent, hashed resource-bound access

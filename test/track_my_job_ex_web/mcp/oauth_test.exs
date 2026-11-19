@@ -23,10 +23,13 @@ defmodule TrackMyJobExWeb.MCP.OAuthTest do
 
   test "publishes protected resource and authorization server metadata", %{conn: conn} do
     resource = get(conn, "/.well-known/oauth-protected-resource/mcp")
-    assert json_response(resource, 200)["resource"] == @resource
+    resource_metadata = json_response(resource, 200)
+    assert resource_metadata["resource"] == @resource
+    assert resource_metadata["authorization_servers"] == ["http://localhost:4002/"]
 
     authorization_server = get(conn, "/.well-known/oauth-authorization-server")
     metadata = json_response(authorization_server, 200)
+    assert metadata["issuer"] == "http://localhost:4002/"
     assert metadata["authorization_endpoint"] == "http://localhost:4002/oauth/authorize"
     assert metadata["code_challenge_methods_supported"] == ["S256"]
     assert metadata["registration_endpoint"] == "http://localhost:4002/oauth/register"

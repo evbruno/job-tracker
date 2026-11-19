@@ -52,8 +52,9 @@ These are called out again in [Operator checklist](#operator-checklist).
 | `DATABASE_PATH` | Recommended | `${DATA_DIR:-/data}/track_my_job_ex/track_my_job_ex.db` | Absolute path to the SQLite file. Must be on the persistent volume. |
 | `DATA_DIR` | No | `/data` | Base directory used when `DATABASE_PATH` is not set. |
 | `PHX_HOST` | Recommended | `example.com` | Public host used for URL generation and HSTS. |
+| `MCP_OAUTH_ISSUER_URL` | No | `https://$PHX_HOST` in production; `http://localhost:$PORT/` in development | Exact OAuth issuer identifier advertised in authorization-server metadata. Set this when the externally visible issuer differs from the default. |
 | `MCP_RESOURCE_URL` | No | `https://$PHX_HOST/mcp` | Canonical OAuth audience identifier for the publicly reachable MCP endpoint. Set this when the public URL differs from this default. |
-| `PORT` | No | `4000` | HTTP listen port inside the container/host. |
+| `PORT` | No | `4000` | HTTP listen port inside the container/host; in development it also determines the default OAuth issuer and MCP resource URL. |
 | `POOL_SIZE` | No | `5` | Ecto/SQLite connection pool size. Keep small (1–5). |
 | `SQLITE_BUSY_TIMEOUT` | No | `5000` | Milliseconds a writer waits for the SQLite lock. |
 | `PHX_SERVER` | Set by `bin/server` | unset | Starts the HTTP server in a release. |

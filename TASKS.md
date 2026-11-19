@@ -2,14 +2,14 @@
 
 ## Current Project Status
 
-**Current phase:** Phase 14 — OAuth for MCP (complete; awaiting review)
+**Current phase:** Phase 16 — PORT-aware Development OAuth Issuer (complete; awaiting review)
 
-**Overall status:** Phases 1–13 complete. Phase 14 adds OAuth authorization to
-the MCP endpoint while retaining PAT authentication.
+**Overall status:** Phases 1–15 complete; Phase 16 makes development OAuth
+issuer metadata follow the configured listen port.
 
-**Current milestone:** Phase 14 — MCP OAuth server.
+**Current milestone:** Phase 16 — PORT-aware development OAuth issuer.
 
-**Current task group:** Phase 14, complete.
+**Current task group:** Phase 16, complete.
 
 ---
 
@@ -668,6 +668,44 @@ migrations, URL contracts, ownership rules, and flash strings are unchanged. See
 - Tests cover discovery, DCR constraints, authorization/consent, PKCE, resource
   binding, code replay, refresh rotation/replay, revocation, and PAT
   compatibility. `mix precommit` passes with 354 tests.
+
+## Phase 15 — Unified MCP Access Management
+
+- [x] Rename the navigation label from “MCP Tokens” to “MCP” while retaining
+  the `/mcp-tokens` route.
+- [x] List the signed-in user's OAuth connections alongside personal access
+  tokens, one row per OAuth token family/client authorization.
+- [x] Add confirmation-gated, owner-scoped revocation for an OAuth connection,
+  invalidating its access and refresh credentials.
+- [x] Add tests for OAuth listing, revocation, and cross-user isolation; update
+  product and session documentation.
+- [x] Verify with `mix precommit`.
+
+**Assumptions:** An OAuth connection is represented by a token family, not
+individual rotating access/refresh token rows. Re-authorizing the same OAuth
+client creates a separate connection, which can be revoked independently.
+
+**Implementation notes:** The existing OAuth connection persistence is queried
+through scoped `OAuth.list_connections/1` and `OAuth.revoke_connection/2`
+functions. The page lists the registered client name, authorization date, and
+latest credential expiry; no credential material is exposed. OAuth revocation
+marks every unrevoked token row in the family as revoked. The route remains
+`/mcp-tokens`.
+
+## Phase 16 — PORT-aware Development OAuth Issuer
+
+- [x] Derive the development OAuth issuer from `PORT`, with a trailing slash
+  for exact issuer matching.
+- [x] Allow `MCP_OAUTH_ISSUER_URL` and `MCP_RESOURCE_URL` to override
+  development defaults.
+- [x] Build OAuth metadata endpoint URLs safely when the issuer has a trailing
+  slash.
+- [x] Test metadata using a slash-terminated issuer and document the settings.
+- [x] Verify with `mix precommit`.
+
+**Assumption:** In development, absent an explicit issuer override, the issuer
+is `http://localhost:$PORT/`. Production continues to derive it from
+`PHX_HOST` unless `MCP_OAUTH_ISSUER_URL` is set.
 
 ## Development Rules
 

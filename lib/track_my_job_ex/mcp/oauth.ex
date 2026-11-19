@@ -10,7 +10,7 @@ defmodule TrackMyJobEx.MCP.OAuth do
 
   import Ecto.Query
 
-  alias TrackMyJobEx.Accounts.{MCPOAuthClient, MCPOAuthCode, MCPOAuthToken, User}
+  alias TrackMyJobEx.Accounts.{MCPOAuthClient, MCPOAuthCode, MCPOAuthToken, Scope, User}
   alias TrackMyJobEx.Repo
 
   @scope "job-tracker"
@@ -27,6 +27,10 @@ defmodule TrackMyJobEx.MCP.OAuth do
 
   def issuer_url do
     Application.get_env(:track_my_job_ex, :mcp_oauth_issuer_url)
+  end
+
+  def issuer_endpoint(path) when is_binary(path) do
+    String.trim_trailing(issuer_url(), "/") <> "/" <> String.trim_leading(path, "/")
   end
 
   def register_client(attrs) when is_map(attrs) do
@@ -260,6 +264,51 @@ defmodule TrackMyJobEx.MCP.OAuth do
   end
 
   def revoke_token(_token), do: :ok
+
+  @doc """
+  Lists active OAuth connections for the scope's user, one row per token family.
+  """
+  def list_connections(%Scope{user: %User{id: user_id}}) do
+    now = DateTime.utc_now(:second)
+
+    from(token in MCPOAuthToken,
+      join: client in MCPOAuthClient,
+      on: client.client_id == token.client_id,
+      where: token.user_id == ^user_id and is_nil(token.revoked_at) and token.expires_at > ^now,
+      group_by: [token.family_id, token.client_id, client.client_name],
+      order_by: [desc: min(token.inserted_at), desc: token.family_id],
+      select: %{
+        family_id: token.family_id,
+        client_id: token.client_id,
+        client_name: client.client_name,
+        connected_at: min(token.inserted_at),
+        expires_at: max(token.expires_at)
+      }
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Revokes all credentials in one OAuth connection, if owned by the scope's user.
+  """
+  def revoke_connection(%Scope{user: %User{id: user_id}}, family_id)
+      when is_binary(family_id) do
+    now = DateTime.utc_now(:second)
+
+    case Repo.update_all(
+           from(token in MCPOAuthToken,
+             where:
+               token.family_id == ^family_id and token.user_id == ^user_id and
+                 is_nil(token.revoked_at)
+           ),
+           set: [revoked_at: now]
+         ) do
+      {count, _} when count > 0 -> :ok
+      _ -> {:error, :not_found}
+    end
+  end
+
+  def revoke_connection(%Scope{}, _family_id), do: {:error, :not_found}
 
   def valid_pkce_challenge?(challenge) when is_binary(challenge) do
     byte_size(challenge) == 43 and Regex.match?(~r/^[A-Za-z0-9_-]+$/, challenge)

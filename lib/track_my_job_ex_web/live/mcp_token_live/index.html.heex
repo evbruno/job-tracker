@@ -1,9 +1,9 @@
 <Layouts.app flash={@flash} current_scope={@current_scope} active={:mcp_tokens}>
   <.header>
-    MCP tokens
+    MCP
     <:subtitle>
-      Personal access tokens for the MCP endpoint at <code>/mcp</code>. The
-      plaintext is shown once, when the token is created.
+      Manage personal access tokens and OAuth connections for the MCP endpoint
+      at <code>/mcp</code>.
     </:subtitle>
   </.header>
 
@@ -67,9 +67,54 @@
     </button>
   </div>
 
+  <section class="mt-6">
+    <h2 class="text-sm font-semibold text-ink">OAuth connections</h2>
+    <p class="mt-1 text-xs text-ink-muted">
+      Authorized MCP clients. Revoking a connection disables its access and refresh tokens.
+    </p>
+    <div
+      id="oauth-connections"
+      class="mt-3 divide-y divide-rule overflow-hidden rounded border border-rule bg-surface"
+    >
+      <div
+        :for={connection <- @oauth_connections}
+        id={"oauth-connection-#{connection.family_id}"}
+        class="px-3 py-2.5"
+      >
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="min-w-0">
+            <span class="text-sm font-medium text-ink">{connection.client_name}</span>
+            <p class="text-xs text-ink-muted">
+              Connected {Calendar.strftime(connection.connected_at, "%Y-%m-%d")}
+            </p>
+          </div>
+          <div class="flex flex-wrap items-center gap-3 text-xs text-ink-muted">
+            <span>Expires {Calendar.strftime(connection.expires_at, "%Y-%m-%d")}</span>
+            <button
+              type="button"
+              id={"revoke-oauth-connection-#{connection.family_id}"}
+              phx-click="prompt_revoke_oauth"
+              phx-value-id={connection.family_id}
+              class="btn btn-ghost btn-sm text-red-700 hover:bg-red-50"
+            >
+              Revoke
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mt-6">
+    <h2 class="text-sm font-semibold text-ink">Personal access tokens</h2>
+    <p class="mt-1 text-xs text-ink-muted">
+      The plaintext is shown once, when the token is created.
+    </p>
+  </section>
+
   <div
     id="mcp-tokens"
-    class="mt-6 divide-y divide-rule overflow-hidden rounded border border-rule bg-surface"
+    class="mt-3 divide-y divide-rule overflow-hidden rounded border border-rule bg-surface"
   >
     <div :for={token <- @tokens} id={"mcp-token-row-#{token.id}"} class="px-3 py-2.5">
       <div class="flex flex-wrap items-center justify-between gap-2">
@@ -107,8 +152,13 @@
     </div>
   </div>
 
-  <.empty_state :if={@tokens_empty?} id="mcp-tokens-empty" icon="hero-key" title="No tokens yet">
-    Create a token above to connect an MCP client to your account.
+  <.empty_state
+    :if={@tokens_empty?}
+    id="mcp-tokens-empty"
+    icon="hero-key"
+    title="No MCP access yet"
+  >
+    Create a personal access token above or connect an OAuth client to the MCP endpoint.
   </.empty_state>
 
   <.confirm_modal
@@ -122,6 +172,22 @@
     <p>
       <span class="font-medium text-ink">{@pending_delete.name}</span>
       will stop authenticating immediately. This cannot be undone.
+    </p>
+  </.confirm_modal>
+
+  <.confirm_modal
+    :if={@pending_oauth_revoke}
+    id="revoke-oauth-connection-modal"
+    title="Revoke OAuth connection?"
+    confirm_label="Revoke connection"
+    confirm_event="revoke_oauth"
+    confirm_value={@pending_oauth_revoke.family_id}
+    cancel_event="cancel_revoke_oauth"
+  >
+    <p>
+      <span class="font-medium text-ink">{@pending_oauth_revoke.client_name}</span>
+      will no longer be able to access your MCP data through this authorization.
+      This cannot be undone.
     </p>
   </.confirm_modal>
 </Layouts.app>
