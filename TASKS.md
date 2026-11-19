@@ -2,14 +2,14 @@
 
 ## Current Project Status
 
-**Current phase:** Phase 14 — OAuth for MCP (in progress)
+**Current phase:** Phase 14 — OAuth for MCP (complete; awaiting review)
 
 **Overall status:** Phases 1–13 complete. Phase 14 adds OAuth authorization to
 the MCP endpoint while retaining PAT authentication.
 
 **Current milestone:** Phase 14 — MCP OAuth server.
 
-**Current task group:** Phase 14, implementation and verification.
+**Current task group:** Phase 14, complete.
 
 ---
 

@@ -12,7 +12,7 @@ Update it before ending every session.
 - **Next task:** Await review of Phase 14.
 - **Overall status:** Phases 1–14 complete and verified locally. `mix precommit`
   passes with 354 tests.
-- **Last commit:** Phase 14 commit pending.
+- **Last commit:** `3eefd36` — Phase 14: Add OAuth authentication for MCP.
 
 ## Last Session Summary
 
@@ -296,6 +296,7 @@ Add one entry per session, newest first, in this format:
   `TASKS.md`, `README.md`, `docs/SECURITY.md`, and `docs/DEPLOYMENT.md`.
 - **Verification:** OAuth and MCP auth tests pass; `mix precommit` passes with
   354 tests and Credo strict reports no issues.
+- **Commit:** `3eefd36` — `Phase 14: Add OAuth authentication for MCP`.
 - **Assumptions:** ChatGPT-facing OAuth uses one `job-tracker` scope. Access
   tokens last 10 minutes; refresh tokens last 30 days. Public DCR is supported;
   Client ID Metadata Documents and confidential clients are not. OAuth issuer
@@ -306,7 +307,8 @@ Add one entry per session, newest first, in this format:
   commit.
 - **Blockers:** None identified. Production DCR should be rate-limited at the
   reverse proxy.
-- **Next:** Await review of Phase 14.
+- **Next:** Await review of Phase 14; production deployment must run the new
+  migration and configure `PHX_HOST`/`MCP_RESOURCE_URL`.
 
 ### 2026-11-18
 
