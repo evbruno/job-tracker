@@ -294,9 +294,12 @@ Context Protocol (MCP) server so other agents can use it.
 - Destructive tools (`applications_delete`, `resumes_delete`) are marked
   `destructiveHint` and require an explicit record id; there are no bulk
   operations.
-- Tokens can also be managed in the web UI at `/mcp-tokens`: list the signed-in
-  user's tokens, create one (the plaintext is shown once), and revoke one with
-  confirmation. The plaintext is never retrievable afterwards.
+- MCP access can be managed in the web UI at `/mcp-tokens` (navigation label:
+  **MCP**). The page lists the signed-in user's personal access tokens and OAuth
+  connections, allows creating PATs (plaintext shown once), and supports
+  confirmation-gated revocation of either credential type. An OAuth connection
+  represents one authorization/token family; revoking it disables its access
+  and refresh tokens. The plaintext is never retrievable afterwards.
 
 ### 3.9 Dashboard Summary
 
