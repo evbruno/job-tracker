@@ -709,7 +709,7 @@ migrations, URL contracts, ownership rules, and flash strings are unchanged. See
 
 **Phase 16 completion notes:**
 - Evergreen and amber tokens replace the cobalt palette. Solid 24px Heroicons are the default; explicit outline/mini variants remain available.
-- `design-system/job-tracker/MASTER.md` records v2 choices; README embeds the 1365×768 application-list screenshot.
+- `design-system/job-tracker/MASTER.md` records v2 choices; README embeds a fresh 1365×768 capture of the current application list from port 4001.
 - Browser proof covered login and applications at desktop, and the application list at 375px with no page-level horizontal overflow.
 - `mix precommit` passes with 354 tests; Credo strict reports no issues.
 

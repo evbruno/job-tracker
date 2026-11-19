@@ -12,7 +12,7 @@ Update it before ending every session.
 - **Next task:** Await review of Phase 16.
 - **Overall status:** Phases 1–16 complete and verified locally. `mix precommit`
   passes with 354 tests.
-- **Last commit:** Phase 16: UI v2 Palette and Icon Theme.
+- **Last commit:** Phase 16: Refresh README Screenshot.
 
 Phase 16 shifts the interface palette to evergreen and amber, updates all
 default Heroicons to solid 24px, and keeps explicit outline/mini variants
@@ -21,10 +21,10 @@ tokens. Product behavior, status colors, and the official supplied logo remain
 unchanged.
 
 `design-system/job-tracker/MASTER.md` records the v2 decisions. `README.md`
-embeds the v2 application-list screenshot. Browser proof covered login and
-applications on desktop and the application list at 375px with no page-level
-horizontal overflow. `mix precommit` passes with 354 tests; Credo strict reports
-no issues.
+embeds a fresh capture from the current v2 app rendered on port 4001. Browser
+proof covered login and applications on desktop and the application list at
+375px with no page-level horizontal overflow. `mix precommit` passes with 354
+tests; Credo strict reports no issues.
 
 ## Assumptions Made
 
@@ -247,6 +247,15 @@ None. If this file and PRODUCT.md conflict, PRODUCT.md wins; list the conflict h
 Add one entry per session, newest first, in this format:
 
 ### 2026-11-19
+
+- **Done:** Re-captured the README screenshot from the current v2 application
+  list at 1365×768; the rendered layout matches the latest implementation.
+- **Verification:** Preview started on port 4001; application list rendered
+  with no page-level horizontal overflow at desktop width.
+- **Commit:** `Phase 16: Refresh README Screenshot`.
+- **Assumptions:** Screenshot data is isolated local preview data.
+- **Blockers:** None.
+- **Next:** Await Phase 16 review; production blockers remain operator-owned.
 
 - **Done:** Phase 16: replaced the cobalt palette with evergreen and amber,
   switched Heroicons to solid by default, and updated the design decisions and
