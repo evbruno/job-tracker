@@ -6,10 +6,10 @@ image: educhaos/job-tracker
 servers:
   web:
     hosts:
-      - 137.131.206.147
+      - <%= ENV['DEPLOY_HOST_ADDRESS'] %>
     options:
       network-alias: job-tracker
-      
+
 proxy:
   ssl: true
   host: jobtracker.bruno.api.br
@@ -27,7 +27,6 @@ env:
   clear:
     DATA_DIR: /data
     PHX_HOST: jobtracker.bruno.api.br
-    RELEASE_NODE: track_my_job_ex
     RELEASE_DISTRIBUTION: name
     RELEASE_NODE: track_my_job_ex@127.0.0.1
   secret:
