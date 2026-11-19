@@ -669,6 +669,29 @@ migrations, URL contracts, ownership rules, and flash strings are unchanged. See
   binding, code replay, refresh rotation/replay, revocation, and PAT
   compatibility. `mix precommit` passes with 354 tests.
 
+---
+
+## Phase 15 — Beta UI Refresh
+
+- [x] Crop the supplied logo into a wordmark and icon asset; update the favicon.
+- [x] Apply the beta brand, shared responsive shell, and visual tokens across app pages.
+- [x] Refresh the login and MCP OAuth consent surfaces.
+- [x] Save UI decisions and add the application-list screenshot to README.
+- [x] Run `mix precommit`.
+
+**Acceptance criteria:**
+- All application pages, login, and OAuth consent display the beta visual identity.
+- The screenshot and UI decisions are documented in the repository.
+- `mix precommit` passes.
+
+**Phase 15 completion notes:**
+- The supplied source artwork remains at the repository root. Cropped wordmark,
+  icon, and favicon assets are served from `priv/static`.
+- The existing application flows and one-light-theme product behavior are unchanged.
+- `design-system/job-tracker/MASTER.md` records the brand, layout, accessibility,
+  and scope decisions; README embeds the 1440×1000 application-list screenshot.
+- `mix precommit` passes with 354 tests; Credo strict reports no issues.
+
 ## Development Rules
 
 1. Work on one task at a time.

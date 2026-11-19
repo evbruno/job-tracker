@@ -5,23 +5,25 @@ defmodule TrackMyJobExWeb.UserLive.Login do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <div class="mx-auto grid max-w-md gap-5 py-6 sm:py-12">
-        <div>
-          <h1 class="text-2xl font-semibold tracking-tight text-ink">Log in</h1>
-          <p class="mt-1 text-sm text-ink-muted">
-            Accounts are provisioned by an administrator. Contact them if you
-            need access.
+      <div class="mx-auto grid max-w-md gap-6 py-8 sm:py-14">
+        <div class="text-center">
+          <span class="mx-auto inline-flex items-center rounded-full bg-[#e7ecff] px-3 py-1 text-xs font-bold tracking-[0.16em] text-cobalt">
+            BETA ACCESS
+          </span>
+          <h1 class="mt-4 text-3xl font-semibold tracking-tight text-ink">Welcome back</h1>
+          <p class="mt-2 text-sm leading-6 text-ink-muted">
+            Sign in to pick up where your job search left off.
           </p>
         </div>
 
-        <div class="rounded border border-rule bg-surface">
+        <div class="rounded-xl border border-rule bg-surface shadow-sm">
           <.form
             for={@form}
             id="login_form"
             action={~p"/users/log-in"}
             phx-submit="submit"
             phx-trigger-action={@trigger_submit}
-            class="flex flex-col gap-4 px-4 py-5 sm:px-5"
+            class="flex flex-col gap-5 p-5 sm:p-7"
           >
             <.input
               field={@form[:email]}
@@ -43,7 +45,7 @@ defmodule TrackMyJobExWeb.UserLive.Login do
             <button
               type="submit"
               id="login-submit"
-              class="btn btn-primary w-full"
+              class="btn btn-primary mt-1 min-h-12 w-full rounded-lg text-sm font-semibold shadow-sm transition-colors"
               phx-disable-with="Logging in..."
             >
               Log in
@@ -51,9 +53,9 @@ defmodule TrackMyJobExWeb.UserLive.Login do
           </.form>
         </div>
 
-        <p class="text-xs text-ink-muted">
-          Sessions last up to 14 days. Log out from the header when you are on a
-          shared computer.
+        <p class="text-center text-xs leading-5 text-ink-muted">
+          Accounts are provisioned by an administrator. Contact them if you need access.
+          Sessions last up to 14 days; log out from the header on shared computers.
         </p>
       </div>
     </Layouts.app>

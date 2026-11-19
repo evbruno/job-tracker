@@ -9,6 +9,14 @@ The product requirements live in [`PRODUCT.md`](PRODUCT.md), the implementation
 plan and development rules live in [`TASKS.md`](TASKS.md), and the session
 handoff notes live in [`SESSION.md`](SESSION.md).
 
+## Beta UI
+
+![Job Tracker beta applications](docs/screenshots/beta-applications.png)
+
+The beta refresh applies the supplied wordmark across the authenticated app,
+login, and OAuth consent screens. UI decisions are recorded in
+[`design-system/job-tracker/MASTER.md`](design-system/job-tracker/MASTER.md).
+
 ## Stack
 
 - Elixir 1.20.5 / Erlang OTP 28

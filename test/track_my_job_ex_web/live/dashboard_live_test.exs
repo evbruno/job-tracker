@@ -25,7 +25,7 @@ defmodule TrackMyJobExWeb.DashboardLiveTest do
     user = user_fixture()
     {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/")
 
-    assert has_element?(view, "header a[href='/']", "Job Tracker")
+    assert has_element?(view, "header a[href='/'] img[alt='Job Tracker beta']")
     assert has_element?(view, "#dashboard")
     assert has_element?(view, "#dashboard-stats")
     assert has_element?(view, "#dashboard-applications-stat[href='/applications']")

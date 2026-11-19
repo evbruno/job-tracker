@@ -40,23 +40,22 @@ defmodule TrackMyJobExWeb.Layouts do
   def app(assigns) do
     ~H"""
     <div class="flex min-h-screen flex-col bg-canvas">
-      <header class="sticky top-0 z-40 border-b border-rule bg-surface">
-        <div class="mx-auto flex w-full max-w-5xl flex-wrap items-center gap-x-6 gap-y-1.5 px-4 py-2 sm:px-6 lg:px-8">
+      <header class="sticky top-0 z-40 border-b border-rule bg-surface/95 shadow-sm backdrop-blur">
+        <div class="mx-auto flex w-full max-w-7xl flex-wrap items-center gap-x-7 gap-y-2 px-4 py-3 sm:px-6 lg:px-8">
           <.link
             navigate={~p"/"}
-            class="flex shrink-0 items-center gap-2 text-[15px] font-semibold tracking-tight text-ink"
+            class="flex shrink-0 items-center rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cobalt"
           >
-            <.icon name="hero-briefcase" class="size-5" />
-            <span>Job Tracker</span>
+            <img src="/images/job-tracker-logo.png" alt="Job Tracker beta" class="h-9 w-auto" />
           </.link>
 
           <nav
             :if={@current_scope && @current_scope.user}
             id="main-nav"
             aria-label="Main navigation"
-            class="order-last w-full sm:order-none sm:w-auto"
+            class="order-last w-full overflow-x-auto sm:order-none sm:w-auto"
           >
-            <ul class="flex items-center gap-5 text-sm">
+            <ul class="flex items-center gap-5 whitespace-nowrap text-sm">
               <li>
                 <.link
                   navigate={~p"/"}
@@ -132,7 +131,7 @@ defmodule TrackMyJobExWeb.Layouts do
               href={~p"/users/log-out"}
               method="delete"
               id="log-out"
-              class="text-sm text-ink-muted hover:text-ink"
+              class="inline-flex min-h-10 items-center rounded-full px-3 text-sm font-medium text-ink-muted transition-colors hover:bg-canvas hover:text-ink"
             >
               Log out
             </.link>
@@ -140,13 +139,14 @@ defmodule TrackMyJobExWeb.Layouts do
         </div>
       </header>
 
-      <main class="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+      <main class="mx-auto w-full max-w-7xl flex-1 px-4 py-7 sm:px-6 sm:py-10 lg:px-8">
         {render_slot(@inner_block)}
       </main>
 
-      <footer class="border-t border-rule">
-        <div class="mx-auto w-full max-w-5xl px-4 py-4 text-xs text-ink-muted sm:px-6 lg:px-8">
-          Job Tracker — applications, resumes, tags, and status history.
+      <footer class="border-t border-rule bg-surface">
+        <div class="mx-auto w-full max-w-7xl px-4 py-4 text-xs text-ink-muted sm:px-6 lg:px-8">
+          Job Tracker beta <span aria-hidden="true">·</span>
+          Applications, resumes, tags, and status history.
         </div>
       </footer>
 
