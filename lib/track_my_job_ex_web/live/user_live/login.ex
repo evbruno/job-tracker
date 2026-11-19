@@ -7,7 +7,7 @@ defmodule TrackMyJobExWeb.UserLive.Login do
     <Layouts.app flash={@flash} current_scope={@current_scope}>
       <div class="mx-auto grid max-w-md gap-6 py-8 sm:py-14">
         <div class="text-center">
-          <span class="mx-auto inline-flex items-center rounded-full bg-[#e7ecff] px-3 py-1 text-xs font-bold tracking-[0.16em] text-cobalt">
+          <span class="mx-auto inline-flex items-center rounded-full bg-brand-soft px-3 py-1 text-xs font-bold tracking-[0.16em] text-brand">
             BETA ACCESS
           </span>
           <h1 class="mt-4 text-3xl font-semibold tracking-tight text-ink">Welcome back</h1>

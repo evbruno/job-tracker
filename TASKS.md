@@ -692,6 +692,27 @@ migrations, URL contracts, ownership rules, and flash strings are unchanged. See
   and scope decisions; README embeds the 1440×1000 application-list screenshot.
 - `mix precommit` passes with 354 tests; Credo strict reports no issues.
 
+---
+
+## Phase 16 — UI v2 Palette and Icon Theme
+
+- [x] Replace the cobalt UI palette with evergreen and amber tokens across app, login, and OAuth.
+- [x] Switch Heroicons to solid by default while retaining explicit outline/mini variants.
+- [x] Record v2 design decisions and update the README screenshot.
+- [x] Run `mix precommit` and verify the refreshed UI in a browser.
+
+**Acceptance criteria:**
+- Shared pages, login, and OAuth consent use the v2 palette.
+- All default Heroicons use the solid style; status colors and product behavior remain unchanged.
+- README shows the v2 screenshot and links the current design decisions.
+- `mix precommit` passes.
+
+**Phase 16 completion notes:**
+- Evergreen and amber tokens replace the cobalt palette. Solid 24px Heroicons are the default; explicit outline/mini variants remain available.
+- `design-system/job-tracker/MASTER.md` records v2 choices; README embeds the 1365×768 application-list screenshot.
+- Browser proof covered login and applications at desktop, and the application list at 375px with no page-level horizontal overflow.
+- `mix precommit` passes with 354 tests; Credo strict reports no issues.
+
 ## Development Rules
 
 1. Work on one task at a time.

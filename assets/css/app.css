@@ -25,18 +25,18 @@
   prefersdark: false;
   color-scheme: "light";
   --color-base-100: #ffffff;
-  --color-base-200: #f4f6fb;
-  --color-base-300: #dce3ef;
-  --color-base-content: #151923;
-  --color-primary: #3154d5;
+  --color-base-200: #f3f8f6;
+  --color-base-300: #d6e5df;
+  --color-base-content: #14332f;
+  --color-primary: #0f766e;
   --color-primary-content: #ffffff;
-  --color-secondary: #3154d5;
+  --color-secondary: #b45309;
   --color-secondary-content: #ffffff;
-  --color-accent: #3154d5;
-  --color-accent-content: #ffffff;
-  --color-neutral: #151923;
+  --color-accent: #d97706;
+  --color-accent-content: #1c1917;
+  --color-neutral: #14332f;
   --color-neutral-content: #ffffff;
-  --color-info: #3154d5;
+  --color-info: #0f766e;
   --color-info-content: #ffffff;
   --color-success: #166534;
   --color-success-content: #ffffff;
@@ -55,13 +55,14 @@
 }
 
 @theme {
-  /* Brand blue is reserved for actions, focus, and the beta mark. */
-  --color-ink: #151923;
-  --color-ink-muted: #566174;
-  --color-canvas: #f4f6fb;
+  /* Evergreen anchors the workspace; amber is reserved for highlights. */
+  --color-ink: #14332f;
+  --color-ink-muted: #506660;
+  --color-canvas: #f3f8f6;
   --color-surface: #ffffff;
-  --color-rule: #dce3ef;
-  --color-cobalt: #3154d5;
+  --color-rule: #d6e5df;
+  --color-brand: #0f766e;
+  --color-brand-soft: #def2ec;
 
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
@@ -84,12 +85,12 @@
 
   /* Visible keyboard focus everywhere, including inside custom controls. */
   :focus-visible {
-    outline: 2px solid var(--color-cobalt);
+    outline: 2px solid var(--color-brand);
     outline-offset: 2px;
   }
 
   ::selection {
-    background-color: #d9e2ff;
+    background-color: var(--color-brand-soft);
     color: var(--color-ink);
   }
 }

@@ -9,13 +9,14 @@ The product requirements live in [`PRODUCT.md`](PRODUCT.md), the implementation
 plan and development rules live in [`TASKS.md`](TASKS.md), and the session
 handoff notes live in [`SESSION.md`](SESSION.md).
 
-## Beta UI
+## Beta UI v2
 
-![Job Tracker beta applications](docs/screenshots/beta-applications.png)
+![Job Tracker beta applications — v2](docs/screenshots/beta-v2-applications.png)
 
-The beta refresh applies the supplied wordmark across the authenticated app,
-login, and OAuth consent screens. UI decisions are recorded in
+V2 introduces an evergreen-and-amber palette and solid Heroicons across the
+authenticated app, login, and OAuth consent. Decisions are recorded in
 [`design-system/job-tracker/MASTER.md`](design-system/job-tracker/MASTER.md).
+The [v1 screenshot](docs/screenshots/beta-applications.png) is retained.
 
 ## Stack
 

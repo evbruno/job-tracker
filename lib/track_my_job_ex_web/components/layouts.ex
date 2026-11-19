@@ -44,7 +44,7 @@ defmodule TrackMyJobExWeb.Layouts do
         <div class="mx-auto flex w-full max-w-7xl flex-wrap items-center gap-x-7 gap-y-2 px-4 py-3 sm:px-6 lg:px-8">
           <.link
             navigate={~p"/"}
-            class="flex shrink-0 items-center rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cobalt"
+            class="flex shrink-0 items-center rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand"
           >
             <img src="/images/job-tracker-logo.png" alt="Job Tracker beta" class="h-9 w-auto" />
           </.link>
@@ -156,7 +156,7 @@ defmodule TrackMyJobExWeb.Layouts do
   end
 
   defp nav_link(true) do
-    "border-b-2 border-cobalt pb-0.5 font-medium text-ink"
+    "border-b-2 border-brand pb-0.5 font-medium text-ink"
   end
 
   defp nav_link(false) do

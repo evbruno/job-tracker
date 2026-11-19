@@ -7,24 +7,24 @@ Update it before ending every session.
 
 ## Current State
 
-- **Current phase:** Phase 15 — Beta UI Refresh (complete; awaiting review).
-- **Current task group:** Phase 15, complete.
-- **Next task:** Await review of Phase 15.
-- **Overall status:** Phases 1–15 complete and verified locally. `mix precommit`
+- **Current phase:** Phase 16 — UI v2 Palette and Icon Theme (complete; awaiting review).
+- **Current task group:** Phase 16, complete.
+- **Next task:** Await review of Phase 16.
+- **Overall status:** Phases 1–16 complete and verified locally. `mix precommit`
   passes with 354 tests.
-- **Last commit:** Phase 15: Beta UI Refresh.
+- **Last commit:** Phase 16: UI v2 Palette and Icon Theme.
 
-Phase 15 (Beta UI Refresh) applies the supplied wordmark, icon, and favicon
-throughout the shared application shell, login, and MCP OAuth consent. The
-shared layout now uses a responsive wide container, white sticky header,
-light surfaces, and the logo's blue as the action/focus color. Existing page
-flows, statuses, and the single light theme are unchanged.
+Phase 16 shifts the interface palette to evergreen and amber, updates all
+default Heroicons to solid 24px, and keeps explicit outline/mini variants
+available. Shared pages, login, and standalone OAuth consent use matching
+tokens. Product behavior, status colors, and the official supplied logo remain
+unchanged.
 
-`design-system/job-tracker/MASTER.md` records the UI decisions. `README.md`
-embeds a screenshot of the populated application list from the local demo
-account. Narrow-screen browser proof at 375px showed no horizontal page
-overflow; the OAuth consent page was also rendered in the browser. `mix
-precommit` passes with 354 tests and Credo strict reports no issues.
+`design-system/job-tracker/MASTER.md` records the v2 decisions. `README.md`
+embeds the v2 application-list screenshot. Browser proof covered login and
+applications on desktop and the application list at 375px with no page-level
+horizontal overflow. `mix precommit` passes with 354 tests; Credo strict reports
+no issues.
 
 ## Assumptions Made
 
@@ -229,7 +229,7 @@ None. If this file and PRODUCT.md conflict, PRODUCT.md wins; list the conflict h
 
 ## Next Actions
 
-1. Await review of Phase 15.
+1. Await review of Phase 16.
 2. Operator: provision DNS/TLS, the persistent volume, and production secrets.
 3. Operator: connect monitoring/log aggregation and schedule encrypted off-site
    backups; run a restore drill.
@@ -247,6 +247,18 @@ None. If this file and PRODUCT.md conflict, PRODUCT.md wins; list the conflict h
 Add one entry per session, newest first, in this format:
 
 ### 2026-11-19
+
+- **Done:** Phase 16: replaced the cobalt palette with evergreen and amber,
+  switched Heroicons to solid by default, and updated the design decisions and
+  README screenshot.
+- **Verification:** Browser proof covered login and applications on desktop;
+  the 375px application list had no page-level horizontal overflow. `mix
+  precommit` passes with 354 tests and Credo strict reports no issues.
+- **Commit:** `Phase 16: UI v2 Palette and Icon Theme`.
+- **Assumptions:** Status colors, product behavior, and the supplied wordmark
+  remain unchanged. The local screenshot uses an isolated v2 preview account.
+- **Blockers:** None.
+- **Next:** Await Phase 16 review; production blockers remain operator-owned.
 
 - **Done:** Phase 15: cropped the supplied beta logo into wordmark and icon
   assets, updated the shared shell, login, OAuth consent, and favicon, and

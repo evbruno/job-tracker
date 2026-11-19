@@ -6,7 +6,8 @@ module.exports = plugin(function({matchComponents, theme}) {
   let iconsDir = path.join(__dirname, "../../deps/heroicons/optimized")
   let values = {}
   let icons = [
-    ["", "/24/outline"],
+    ["", "/24/solid"],
+    ["-outline", "/24/outline"],
     ["-solid", "/24/solid"],
     ["-mini", "/20/solid"],
     ["-micro", "/16/solid"]

@@ -1,33 +1,38 @@
-# Job Tracker beta — UI decisions
+# Job Tracker beta — UI decisions v2
 
 ## Direction
 
-A calm, light SaaS workspace for keeping a job search organized. Keep the existing data-first structure and one light theme; add visual confidence through clear hierarchy, generous spacing, durable surfaces, and the supplied beta identity. This is a presentation refresh, not new product functionality.
+A focused, calm job-search workspace with clearer hierarchy and a more organic color identity. V2 changes the presentation only: preserve product structure, workflows, and status meaning.
 
 ## Brand assets
 
-- Use `priv/static/images/job-tracker-logo.png` for the wordmark in the shared header, login shell, and OAuth consent. It is cropped from the provided root artwork and keeps the supplied proportions, dark briefcase, wordmark, and blue BETA mark.
+- The supplied wordmark remains unchanged in the shared header, login, and OAuth consent. Its blue BETA mark is an asset detail; the application palette is evergreen.
 - Use `priv/static/images/job-tracker-icon.png` for the icon-only square and `priv/static/favicon.ico` for browser tab sizes.
-- Preserve `new-logo.png` as the supplied source asset; never render its contact-sheet panels as a logo.
-- Meaningful logo images use `alt="Job Tracker beta"`; decorative icons retain the existing Heroicons component family.
+- Preserve `new-logo.png` as the supplied source asset.
+- Meaningful logo images use `alt="Job Tracker beta"`; interface icons use Heroicons.
 
 ## Visual system
 
-- Light-only surfaces: canvas `#f4f6fb`, white cards, ink `#151923`, muted text `#566174`, rule `#dce3ef`.
-- Brand blue `#3154d5` is for primary actions, links, focus, and active navigation. Pair action labels with white; do not use color alone for status meaning.
-- Keep the existing Inter/system sans and mono data labels. Use tabular/monospaced figures where already present.
-- Use 12–14px card radii, fine borders, and restrained shadows. No decorative glass blur on content cards.
-- Main workspace shares a wide `max-w-7xl` container, white sticky header, and responsive gutters. Navigation wraps/scrolls instead of shrinking into unreadable labels.
-- Login and OAuth use a single centered white card, explicit heading and copy, and one prominent primary action. OAuth keeps the requested scope, redirect destination, approve, and deny visible.
+- Evergreen palette: canvas `#f3f8f6`, white surfaces, ink `#14332f`, muted text `#506660`, border `#d6e5df`.
+- Primary/interactive color is evergreen `#0f766e`; white text on it meets WCAG AA (5.47:1). Links, focus, selected navigation, and actions share this token.
+- Amber `#b45309` is the secondary color (5.02:1 with white); highlight accent `#d97706` uses dark ink `#1c1917` (5.49:1). Do not use amber as small white-on-color text.
+- Keep established application status colors and their text labels unchanged.
+- Keep Inter/system sans and mono data labels, 12–14px card radii, fine borders, restrained shadows, and the shared `max-w-7xl` shell.
+- OAuth consent uses the same evergreen surfaces, focus, and primary action despite being standalone HTML.
+
+## Icon theme
+
+- Heroicons use the solid 24px set by default for a bolder, consistent interface.
+- Keep `-outline`, `-mini`, and `-micro` suffixes available for explicit variants.
+- Existing semantic icon names and labels remain; icons supplement visible text and never carry status meaning alone.
 
 ## Interaction and accessibility
 
-- Preserve semantic headings, visible input labels, autofill attributes, form IDs, CSRF, and all existing routes/actions.
-- Keep visible focus rings and reduced-motion support. Primary actions are comfortably sized; denied/secondary actions remain visually subordinate.
-- Small screens use a single-column card and wrapping consent actions; long OAuth client names and redirect URLs wrap rather than widening the page.
-- Keep established application status colors and their text labels unchanged.
+- Preserve semantic headings, visible input labels, form IDs, CSRF, routes, and actions.
+- Maintain visible focus rings, reduced-motion support, readable contrast, and the existing responsive behavior.
+- Small screens keep all controls reachable without page-level horizontal overflow; OAuth client names and redirect URLs wrap.
 
 ## Scope guardrails
 
-- No dark mode, additional routes, authentication methods, dashboard metrics, or workflow changes.
-- All authenticated product pages inherit the shared shell/tokens. OAuth is separately styled HTML and must stay visually aligned with the light theme and brand assets.
+- Light theme only. No dark-mode toggle, new routes, authentication methods, or workflow changes.
+- Existing application data, status colors, and behavior are unchanged.
