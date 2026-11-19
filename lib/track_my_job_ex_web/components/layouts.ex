@@ -60,60 +60,60 @@ defmodule TrackMyJobExWeb.Layouts do
               <li>
                 <.link
                   navigate={~p"/"}
-                  class={nav_link(@active == :dashboard)}
+                  class={["inline-flex items-center gap-1.5", nav_link(@active == :dashboard)]}
                   aria-current={@active == :dashboard && "page"}
                 >
-                  Dashboard
+                  <.icon name="hero-squares-2x2" class="size-4" /> Dashboard
                 </.link>
               </li>
               <li>
                 <.link
                   navigate={~p"/applications"}
                   id="nav-applications"
-                  class={nav_link(@active == :applications)}
+                  class={["inline-flex items-center gap-1.5", nav_link(@active == :applications)]}
                   aria-current={@active == :applications && "page"}
                 >
-                  Applications
+                  <.icon name="hero-briefcase" class="size-4" /> Applications
                 </.link>
               </li>
               <li>
                 <.link
                   navigate={~p"/resumes"}
                   id="nav-resumes"
-                  class={nav_link(@active == :resumes)}
+                  class={["inline-flex items-center gap-1.5", nav_link(@active == :resumes)]}
                   aria-current={@active == :resumes && "page"}
                 >
-                  Resumes
+                  <.icon name="hero-document-text" class="size-4" /> Resumes
                 </.link>
               </li>
               <li>
                 <.link
                   navigate={~p"/tags"}
                   id="nav-tags"
-                  class={nav_link(@active == :tags)}
+                  class={["inline-flex items-center gap-1.5", nav_link(@active == :tags)]}
                   aria-current={@active == :tags && "page"}
                 >
-                  Tags
+                  <.icon name="hero-tag" class="size-4" /> Tags
                 </.link>
               </li>
               <li>
                 <.link
                   navigate={~p"/mcp-tokens"}
                   id="nav-mcp-tokens"
-                  class={nav_link(@active == :mcp_tokens)}
+                  class={["inline-flex items-center gap-1.5", nav_link(@active == :mcp_tokens)]}
                   aria-current={@active == :mcp_tokens && "page"}
                 >
-                  MCP tokens
+                  <.icon name="hero-key" class="size-4" /> MCP tokens
                 </.link>
               </li>
               <li :if={@current_scope.user.is_admin}>
                 <.link
                   navigate={~p"/admin"}
                   id="nav-admin"
-                  class={nav_link(@active == :admin)}
+                  class={["inline-flex items-center gap-1.5", nav_link(@active == :admin)]}
                   aria-current={@active == :admin && "page"}
                 >
-                  Admin
+                  <.icon name="hero-shield-check" class="size-4" /> Admin
                 </.link>
               </li>
             </ul>
