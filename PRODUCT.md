@@ -278,7 +278,9 @@ Context Protocol (MCP) server so other agents can use it.
 - OAuth discovery: the server publishes Protected Resource Metadata and OAuth
   Authorization Server Metadata at the standard well-known URLs. OAuth tokens
   are bound to the canonical MCP resource URL; production derives this from
-  `PHX_HOST` or accepts an explicit `MCP_RESOURCE_URL`.
+  `PHX_HOST` or accepts an explicit `MCP_RESOURCE_URL`. In development, the
+  default issuer follows `PORT` (`http://localhost:$PORT/`) and can be overridden
+  with `MCP_OAUTH_ISSUER_URL`.
 - OAuth client registration supports public clients with exact redirect URI
   matching. Redirects must use HTTPS, except loopback HTTP callbacks. Client ID
   Metadata Documents and confidential clients are not supported.

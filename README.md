@@ -118,7 +118,9 @@ and expire after 30 days. The OAuth scope is `job-tracker`.
 
 Set `PHX_HOST` to the public HTTPS hostname in production. If the canonical MCP
 URL differs from `https://$PHX_HOST/mcp`, set `MCP_RESOURCE_URL` to the exact
-public MCP URL.
+public MCP URL. In development, the OAuth issuer and MCP resource URL follow
+`PORT` (default `4000`). Set `MCP_OAUTH_ISSUER_URL` to override the issuer when
+the externally visible development URL differs from `http://localhost:$PORT/`.
 
 Create a token for an existing user:
 

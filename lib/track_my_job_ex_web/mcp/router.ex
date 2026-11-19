@@ -51,7 +51,7 @@ defmodule TrackMyJobExWeb.MCP.Router do
       realm: @auth_realm,
       error: "invalid_token",
       scope: OAuth.scope(),
-      resource_metadata: OAuth.issuer_url() <> "/.well-known/oauth-protected-resource/mcp"
+      resource_metadata: OAuth.issuer_endpoint("/.well-known/oauth-protected-resource/mcp")
     }
   end
 

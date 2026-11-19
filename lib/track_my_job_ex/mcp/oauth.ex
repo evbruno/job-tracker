@@ -29,6 +29,10 @@ defmodule TrackMyJobEx.MCP.OAuth do
     Application.get_env(:track_my_job_ex, :mcp_oauth_issuer_url)
   end
 
+  def issuer_endpoint(path) when is_binary(path) do
+    String.trim_trailing(issuer_url(), "/") <> "/" <> String.trim_leading(path, "/")
+  end
+
   def register_client(attrs) when is_map(attrs) do
     redirect_uris = attrs["redirect_uris"]
     client_name = attrs["client_name"]

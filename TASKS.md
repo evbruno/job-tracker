@@ -2,14 +2,14 @@
 
 ## Current Project Status
 
-**Current phase:** Phase 15 — Unified MCP Access Management (complete; awaiting review)
+**Current phase:** Phase 16 — PORT-aware Development OAuth Issuer (complete; awaiting review)
 
-**Overall status:** Phases 1–14 complete; Phase 15 unifies PAT and OAuth access
-management in the web UI.
+**Overall status:** Phases 1–15 complete; Phase 16 makes development OAuth
+issuer metadata follow the configured listen port.
 
-**Current milestone:** Phase 15 — Unified MCP access management.
+**Current milestone:** Phase 16 — PORT-aware development OAuth issuer.
 
-**Current task group:** Phase 15, complete.
+**Current task group:** Phase 16, complete.
 
 ---
 
@@ -691,6 +691,21 @@ functions. The page lists the registered client name, authorization date, and
 latest credential expiry; no credential material is exposed. OAuth revocation
 marks every unrevoked token row in the family as revoked. The route remains
 `/mcp-tokens`.
+
+## Phase 16 — PORT-aware Development OAuth Issuer
+
+- [x] Derive the development OAuth issuer from `PORT`, with a trailing slash
+  for exact issuer matching.
+- [x] Allow `MCP_OAUTH_ISSUER_URL` and `MCP_RESOURCE_URL` to override
+  development defaults.
+- [x] Build OAuth metadata endpoint URLs safely when the issuer has a trailing
+  slash.
+- [x] Test metadata using a slash-terminated issuer and document the settings.
+- [x] Verify with `mix precommit`.
+
+**Assumption:** In development, absent an explicit issuer override, the issuer
+is `http://localhost:$PORT/`. Production continues to derive it from
+`PHX_HOST` unless `MCP_OAUTH_ISSUER_URL` is set.
 
 ## Development Rules
 
