@@ -4,6 +4,46 @@
     <:subtitle>Signed in as {@current_scope.user.email}.</:subtitle>
   </.header>
 
+  <section id="dashboard-stats" aria-labelledby="dashboard-stats-heading" class="mt-4 space-y-3">
+    <h2 id="dashboard-stats-heading" class="text-sm font-semibold text-ink">
+      Your job search at a glance
+    </h2>
+    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <.link
+        navigate={~p"/applications"}
+        id="dashboard-applications-stat"
+        class="rounded border border-rule bg-surface p-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cobalt"
+      >
+        <span class="text-sm text-ink-muted">Applications</span>
+        <span class="mt-1 block text-2xl font-semibold text-ink">{@counts.applications}</span>
+      </.link>
+      <.link
+        navigate={~p"/tags"}
+        id="dashboard-tags-stat"
+        class="rounded border border-rule bg-surface p-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cobalt"
+      >
+        <span class="text-sm text-ink-muted">Tags</span>
+        <span class="mt-1 block text-2xl font-semibold text-ink">{@counts.tags}</span>
+      </.link>
+      <.link
+        navigate={~p"/resumes"}
+        id="dashboard-resumes-stat"
+        class="rounded border border-rule bg-surface p-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cobalt"
+      >
+        <span class="text-sm text-ink-muted">Resumes</span>
+        <span class="mt-1 block text-2xl font-semibold text-ink">{@counts.resumes}</span>
+      </.link>
+      <.link
+        navigate={~p"/applications"}
+        id="dashboard-in-progress-stat"
+        class="rounded border border-rule bg-surface p-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cobalt"
+      >
+        <span class="text-sm text-ink-muted">In-progress applications</span>
+        <span class="mt-1 block text-2xl font-semibold text-ink">{@counts.in_progress_applications}</span>
+      </.link>
+    </div>
+  </section>
+
   <section id="dashboard" class="mt-4 rounded border border-rule bg-surface">
     <div class="border-b border-rule px-4 py-3">
       <h2 class="text-sm font-semibold text-ink">Start here</h2>

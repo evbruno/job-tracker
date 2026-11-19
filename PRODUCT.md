@@ -284,6 +284,10 @@ Context Protocol (MCP) server so other agents can use it.
   user's tokens, create one (the plaintext is shown once), and revoke one with
   confirmation. The plaintext is never retrievable afterwards.
 
+### 3.9 Dashboard Summary
+
+The authenticated dashboard displays user-scoped counts for applications, tags, and resume versions, plus the number of in-progress applications. In-progress includes non-archived applications in Interested, Applied, Screening, Interview, Technical Interview, Final Interview, Offer, Accepted, and On Hold. Ghosted applications are excluded. Each count links to its relevant list page (the in-progress count links to applications).
+
 ## 4. Data Ownership and Privacy
 
 The platform is multi-tenant.

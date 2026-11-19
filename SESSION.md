@@ -290,6 +290,12 @@ Add one entry per session, newest first, in this format:
 
 ### 2026-11-18
 
+- **Done:** Applied dashboard summary metrics on `rev5-opencode-deepseek`: linked, user-scoped counts for applications, tags, resumes, and in-progress applications. In-progress excludes archived applications.
+- **Verification:** Source branch checks passed before transfer (`mix precommit`, 78 tests); destination verification pending.
+- **Assumptions:** Accepted is included in in-progress; the destination branch's Ghosted status is excluded. The destination's existing admin, archiving, and resume functionality remains preserved.
+- **Blockers:** None.
+- **Next:** Run `mix precommit` on the destination branch.
+
 - **Done:** Phase 13 — Admin role and user management. Added `is_admin` to
   users, `Scope.admin?/1`, and admin-gated `Accounts` functions for listing,
   creating, and deleting users and managing MCP tokens across users. Added
