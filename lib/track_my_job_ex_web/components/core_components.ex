@@ -29,7 +29,14 @@ defmodule TrackMyJobExWeb.CoreComponents do
   use Phoenix.Component
   use Gettext, backend: TrackMyJobExWeb.Gettext
 
+  alias Phoenix.HTML.Form
   alias Phoenix.LiveView.JS
+
+  # Shared control styling. Screens add layout classes on top; the control look
+  # stays consistent everywhere. Classes are assembled in Elixir because HEEx
+  # `@` interpolation reads assigns, not module attributes.
+  @control_class "block w-full rounded border border-rule bg-surface px-2.5 py-1.5 text-sm text-ink placeholder:text-ink-muted/60 focus:border-cobalt focus:outline-none focus:ring-2 focus:ring-cobalt/15"
+  @control_error_class "border-red-700 focus:border-red-700 focus:ring-red-700/15"
 
   @doc """
   Renders flash notices.
@@ -63,23 +70,30 @@ defmodule TrackMyJobExWeb.CoreComponents do
       id={@id}
       phx-click={JS.push("lv:clear-flash", value: %{key: @kind}) |> hide("##{@id}")}
       role="alert"
-      class="toast toast-top toast-end z-50"
+      class="fixed inset-x-3 top-3 z-[60] sm:left-auto sm:right-4 sm:top-4 sm:w-96"
       {@rest}
     >
       <div class={[
-        "alert w-80 sm:w-96 max-w-80 sm:max-w-96 text-wrap",
-        @kind == :info && "alert-info",
-        @kind == :error && "alert-error"
+        "flex max-w-full items-start gap-2.5 rounded border border-rule border-l-4 bg-surface px-3 py-2.5 shadow-lg",
+        @kind == :info && "border-l-cobalt",
+        @kind == :error && "border-l-red-700"
       ]}>
-        <.icon :if={@kind == :info} name="hero-information-circle" class="size-5 shrink-0" />
-        <.icon :if={@kind == :error} name="hero-exclamation-circle" class="size-5 shrink-0" />
-        <div>
-          <p :if={@title} class="font-semibold">{@title}</p>
-          <p>{msg}</p>
+        <.icon
+          :if={@kind == :info}
+          name="hero-information-circle"
+          class="mt-0.5 size-4 shrink-0 text-cobalt"
+        />
+        <.icon
+          :if={@kind == :error}
+          name="hero-exclamation-circle"
+          class="mt-0.5 size-4 shrink-0 text-red-700"
+        />
+        <div class="min-w-0 flex-1 text-sm">
+          <p :if={@title} class="font-semibold text-ink">{@title}</p>
+          <p class="text-ink">{msg}</p>
         </div>
-        <div class="flex-1" />
-        <button type="button" class="group self-start cursor-pointer" aria-label={gettext("close")}>
-          <.icon name="hero-x-mark" class="size-5 opacity-40 group-hover:opacity-70" />
+        <button type="button" class="shrink-0 cursor-pointer p-0.5" aria-label={gettext("close")}>
+          <.icon name="hero-x-mark" class="size-4 text-ink-muted hover:text-ink" />
         </button>
       </div>
     </div>
@@ -181,8 +195,8 @@ defmodule TrackMyJobExWeb.CoreComponents do
   attr :prompt, :string, default: nil, doc: "the prompt for select inputs"
   attr :options, :list, doc: "the options to pass to Phoenix.HTML.Form.options_for_select/2"
   attr :multiple, :boolean, default: false, doc: "the multiple flag for select inputs"
-  attr :class, :any, default: nil, doc: "the input class to use over defaults"
-  attr :error_class, :any, default: nil, doc: "the input error class to use over defaults"
+  attr :class, :any, default: nil, doc: "extra classes appended to the control"
+  attr :error_class, :any, default: nil, doc: "extra classes appended when the field is invalid"
 
   attr :rest, :global,
     include: ~w(accept autocomplete capture cols disabled form list max maxlength min minlength
@@ -208,12 +222,12 @@ defmodule TrackMyJobExWeb.CoreComponents do
   def input(%{type: "checkbox"} = assigns) do
     assigns =
       assign_new(assigns, :checked, fn ->
-        Phoenix.HTML.Form.normalize_value("checkbox", assigns[:value])
+        Form.normalize_value("checkbox", assigns[:value])
       end)
 
     ~H"""
-    <div class="fieldset mb-2">
-      <label for={@id}>
+    <div class="flex flex-col gap-1.5">
+      <label for={@id} class="flex items-center gap-2 text-sm text-ink">
         <input
           type="hidden"
           name={@name}
@@ -221,17 +235,15 @@ defmodule TrackMyJobExWeb.CoreComponents do
           disabled={@rest[:disabled]}
           form={@rest[:form]}
         />
-        <span class="label">
-          <input
-            type="checkbox"
-            id={@id}
-            name={@name}
-            value="true"
-            checked={@checked}
-            class={@class || "checkbox checkbox-sm"}
-            {@rest}
-          />{@label}
-        </span>
+        <input
+          type="checkbox"
+          id={@id}
+          name={@name}
+          value="true"
+          checked={@checked}
+          class={["size-4 rounded border-rule text-cobalt", @class]}
+          {@rest}
+        />{@label}
       </label>
       <.error :for={msg <- @errors}>{msg}</.error>
     </div>
@@ -239,41 +251,38 @@ defmodule TrackMyJobExWeb.CoreComponents do
   end
 
   def input(%{type: "select"} = assigns) do
+    assigns = assign(assigns, :control_class, control_class(assigns))
+
     ~H"""
-    <div class="fieldset mb-2">
-      <label for={@id}>
-        <span :if={@label} class="label mb-1">{@label}</span>
-        <select
-          id={@id}
-          name={@name}
-          class={[@class || "w-full select", @errors != [] && (@error_class || "select-error")]}
-          multiple={@multiple}
-          {@rest}
-        >
-          <option :if={@prompt} value="">{@prompt}</option>
-          {Phoenix.HTML.Form.options_for_select(@options, @value)}
-        </select>
-      </label>
+    <div class="flex flex-col gap-1.5">
+      <label :if={@label} for={@id} class="text-[13px] font-medium text-ink">{@label}</label>
+      <select
+        id={@id}
+        name={@name}
+        class={@control_class}
+        multiple={@multiple}
+        {@rest}
+      >
+        <option :if={@prompt} value="">{@prompt}</option>
+        {Phoenix.HTML.Form.options_for_select(@options, @value)}
+      </select>
       <.error :for={msg <- @errors}>{msg}</.error>
     </div>
     """
   end
 
   def input(%{type: "textarea"} = assigns) do
+    assigns = assign(assigns, :control_class, control_class(assigns))
+
     ~H"""
-    <div class="fieldset mb-2">
-      <label for={@id}>
-        <span :if={@label} class="label mb-1">{@label}</span>
-        <textarea
-          id={@id}
-          name={@name}
-          class={[
-            @class || "w-full textarea",
-            @errors != [] && (@error_class || "textarea-error")
-          ]}
-          {@rest}
-        >{Phoenix.HTML.Form.normalize_value("textarea", @value)}</textarea>
-      </label>
+    <div class="flex flex-col gap-1.5">
+      <label :if={@label} for={@id} class="text-[13px] font-medium text-ink">{@label}</label>
+      <textarea
+        id={@id}
+        name={@name}
+        class={@control_class}
+        {@rest}
+      >{Phoenix.HTML.Form.normalize_value("textarea", @value)}</textarea>
       <.error :for={msg <- @errors}>{msg}</.error>
     </div>
     """
@@ -281,32 +290,37 @@ defmodule TrackMyJobExWeb.CoreComponents do
 
   # All other inputs text, datetime-local, url, password, etc. are handled here...
   def input(assigns) do
+    assigns = assign(assigns, :control_class, control_class(assigns))
+
     ~H"""
-    <div class="fieldset mb-2">
-      <label for={@id}>
-        <span :if={@label} class="label mb-1">{@label}</span>
-        <input
-          type={@type}
-          name={@name}
-          id={@id}
-          value={Phoenix.HTML.Form.normalize_value(@type, @value)}
-          class={[
-            @class || "w-full input",
-            @errors != [] && (@error_class || "input-error")
-          ]}
-          {@rest}
-        />
-      </label>
+    <div class="flex flex-col gap-1.5">
+      <label :if={@label} for={@id} class="text-[13px] font-medium text-ink">{@label}</label>
+      <input
+        type={@type}
+        name={@name}
+        id={@id}
+        value={Phoenix.HTML.Form.normalize_value(@type, @value)}
+        class={@control_class}
+        {@rest}
+      />
       <.error :for={msg <- @errors}>{msg}</.error>
     </div>
     """
   end
 
+  defp control_class(assigns) do
+    [
+      @control_class,
+      assigns[:class],
+      assigns.errors != [] && (assigns[:error_class] || @control_error_class)
+    ]
+  end
+
   # Helper used by inputs to generate form errors
   defp error(assigns) do
     ~H"""
-    <p class="mt-1.5 flex gap-2 items-center text-sm text-error">
-      <.icon name="hero-exclamation-circle" class="size-5" />
+    <p class="flex items-center gap-1.5 text-[13px] text-red-700">
+      <.icon name="hero-exclamation-circle" class="size-4 shrink-0" />
       {render_slot(@inner_block)}
     </p>
     """
@@ -321,16 +335,18 @@ defmodule TrackMyJobExWeb.CoreComponents do
 
   def header(assigns) do
     ~H"""
-    <header class={[@actions != [] && "flex items-center justify-between gap-6", "pb-4"]}>
-      <div>
-        <h1 class="text-lg font-semibold leading-8">
+    <header class="flex flex-col gap-3 border-b border-rule pb-4 sm:flex-row sm:items-end sm:justify-between">
+      <div class="min-w-0">
+        <h1 class="text-xl font-semibold tracking-tight text-ink sm:text-2xl">
           {render_slot(@inner_block)}
         </h1>
-        <p :if={@subtitle != []} class="text-sm text-base-content/70">
+        <p :if={@subtitle != []} class="mt-1 text-sm text-ink-muted">
           {render_slot(@subtitle)}
         </p>
       </div>
-      <div class="flex-none">{render_slot(@actions)}</div>
+      <div :if={@actions != []} class="flex flex-wrap items-center gap-2">
+        {render_slot(@actions)}
+      </div>
     </header>
     """
   end

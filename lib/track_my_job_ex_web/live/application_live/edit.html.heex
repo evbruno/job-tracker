@@ -1,0 +1,23 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} active={:applications}>
+  <.header>
+    Edit application
+    <:subtitle>{@application.position} at {@application.company_name}</:subtitle>
+    <:actions>
+      <.link navigate={~p"/applications/#{@application.id}"} class="btn btn-ghost btn-sm">
+        Back to details
+      </.link>
+    </:actions>
+  </.header>
+
+  <ApplicationForm.application_form
+    form={@form}
+    submit_label="Save changes"
+    company_suggestions={@company_suggestions}
+    recruiter_suggestions={@recruiter_suggestions}
+    tags={@tags}
+    selected_tag_ids={@selected_tag_ids}
+    new_tags={@new_tags}
+    tag_errors={@tag_errors}
+    cancel_path={~p"/applications/#{@application.id}"}
+  />
+</Layouts.app>

@@ -1,0 +1,21 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} active={:resumes}>
+  <.header>
+    New resume
+    <:subtitle>Record a resume version. The email starts as your account email.</:subtitle>
+    <:actions>
+      <.link navigate={~p"/resumes"} class="btn btn-ghost btn-sm">
+        Back to resumes
+      </.link>
+    </:actions>
+  </.header>
+
+  <ResumeForm.resume_form
+    form={@form}
+    submit_label="Create resume"
+    tags={@tags}
+    selected_tag_ids={@selected_tag_ids}
+    new_tags={@new_tags}
+    tag_errors={@tag_errors}
+    cancel_path={~p"/resumes"}
+  />
+</Layouts.app>

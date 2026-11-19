@@ -1,0 +1,127 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} active={:mcp_tokens}>
+  <.header>
+    MCP tokens
+    <:subtitle>
+      Personal access tokens for the MCP endpoint at <code>/mcp</code>. The
+      plaintext is shown once, when the token is created.
+    </:subtitle>
+  </.header>
+
+  <div class="mt-6 rounded border border-rule bg-surface p-4">
+    <h2 class="text-sm font-semibold text-ink">Create a token</h2>
+
+    <.form
+      for={@create_form}
+      id="create-mcp-token-form"
+      phx-submit="create"
+      class="mt-3 flex flex-wrap items-end gap-3"
+    >
+      <div class="min-w-48 flex-1">
+        <.input
+          field={@create_form[:name]}
+          id="mcp-token-name"
+          type="text"
+          label="Name"
+          placeholder="Claude Desktop"
+          maxlength="100"
+          required
+        />
+      </div>
+      <div class="w-32">
+        <.input
+          field={@create_form[:expires_in]}
+          id="mcp-token-expires-in"
+          type="number"
+          label="Expires in (days)"
+          min="1"
+        />
+      </div>
+      <button type="submit" id="create-mcp-token" class="btn btn-primary btn-sm">
+        Create token
+      </button>
+    </.form>
+  </div>
+
+  <div
+    :if={@new_token}
+    id="new-mcp-token"
+    class="mt-4 rounded border border-amber-300 bg-amber-50 p-4"
+  >
+    <p class="text-sm font-semibold text-amber-900">
+      Copy this token now. It will not be shown again.
+    </p>
+    <input
+      id="new-mcp-token-value"
+      type="text"
+      readonly
+      value={@new_token}
+      class="mt-2 w-full rounded border border-amber-300 bg-white px-2 py-1 font-mono text-xs text-ink"
+    />
+    <button
+      type="button"
+      id="dismiss-new-mcp-token"
+      phx-click="dismiss_token"
+      class="btn btn-ghost btn-sm mt-2"
+    >
+      Dismiss
+    </button>
+  </div>
+
+  <div
+    id="mcp-tokens"
+    class="mt-6 divide-y divide-rule overflow-hidden rounded border border-rule bg-surface"
+  >
+    <div :for={token <- @tokens} id={"mcp-token-row-#{token.id}"} class="px-3 py-2.5">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="min-w-0">
+          <span id={"mcp-token-name-#{token.id}"} class="text-sm font-medium text-ink">
+            {token.name}
+          </span>
+          <p class="font-mono text-xs text-ink-muted">
+            {token.token_prefix}…
+          </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-3 text-xs text-ink-muted">
+          <span>Created {Calendar.strftime(token.inserted_at, "%Y-%m-%d")}</span>
+          <span>
+            Last used {if token.last_used_at,
+              do: Calendar.strftime(token.last_used_at, "%Y-%m-%d"),
+              else: "never"}
+          </span>
+          <span>
+            Expires {if token.expires_at,
+              do: Calendar.strftime(token.expires_at, "%Y-%m-%d"),
+              else: "never"}
+          </span>
+          <button
+            type="button"
+            id={"revoke-mcp-token-#{token.id}"}
+            phx-click="prompt_delete"
+            phx-value-id={token.id}
+            class="btn btn-ghost btn-sm text-red-700 hover:bg-red-50"
+          >
+            Revoke
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <.empty_state :if={@tokens_empty?} id="mcp-tokens-empty" icon="hero-key" title="No tokens yet">
+    Create a token above to connect an MCP client to your account.
+  </.empty_state>
+
+  <.confirm_modal
+    :if={@pending_delete}
+    id="revoke-mcp-token-modal"
+    title="Revoke token?"
+    confirm_label="Revoke token"
+    confirm_event="delete"
+    confirm_value={@pending_delete.id}
+  >
+    <p>
+      <span class="font-medium text-ink">{@pending_delete.name}</span>
+      will stop authenticating immediately. This cannot be undone.
+    </p>
+  </.confirm_modal>
+</Layouts.app>

@@ -23,6 +23,14 @@ end
 config :track_my_job_ex, TrackMyJobExWeb.Endpoint,
   http: [port: String.to_integer(System.get_env("PORT", "4000"))]
 
+# Browser Origins allowed to call the MCP endpoint (comma-separated). Native
+# MCP clients send no Origin header and are unaffected.
+if origins = System.get_env("MCP_ALLOWED_ORIGINS") do
+  config :track_my_job_ex,
+         :mcp_allowed_origins,
+         origins |> String.split(",", trim: true) |> Enum.map(&String.trim/1)
+end
+
 if config_env() == :dev do
   # Reload browser tabs when matching files change.
   config :track_my_job_ex, TrackMyJobExWeb.Endpoint,
@@ -41,16 +49,29 @@ if config_env() == :dev do
 end
 
 if config_env() == :prod do
+  # The SQLite file must live on a persistent volume. The parent directory is
+  # created on boot so a fresh volume can be mounted without a manual mkdir.
+  # SQLite creates the database file itself, but not its parent directory.
   database_path =
     System.get_env("DATABASE_PATH") ||
-      raise """
-      environment variable DATABASE_PATH is missing.
-      For example: /etc/track_my_job_ex/track_my_job_ex.db
-      """
+      Path.join([System.get_env("DATA_DIR") || "/data", "track_my_job_ex", "track_my_job_ex.db"])
 
+  unless database_path == ":memory:" do
+    File.mkdir_p!(Path.dirname(database_path))
+  end
+
+  # SQLite has a single-writer model. WAL allows concurrent readers, so a small
+  # pool (1-5) is appropriate; the writer is serialized by SQLite's busy
+  # handler. The busy timeout and queue settings make short write contention
+  # wait and retry instead of failing immediately.
   config :track_my_job_ex, TrackMyJobEx.Repo,
     database: database_path,
-    pool_size: String.to_integer(System.get_env("POOL_SIZE") || "5")
+    pool_size: String.to_integer(System.get_env("POOL_SIZE") || "5"),
+    journal_mode: :wal,
+    foreign_keys: :on,
+    busy_timeout: String.to_integer(System.get_env("SQLITE_BUSY_TIMEOUT") || "5000"),
+    queue_target: 50,
+    queue_interval: 1_000
 
   # The secret key base is used to sign/encrypt cookies and other secrets.
   # A default value is used in config/dev.exs and config/test.exs but you
@@ -65,6 +86,11 @@ if config_env() == :prod do
       """
 
   host = System.get_env("PHX_HOST") || "example.com"
+  issuer_url = "https://" <> host
+
+  config :track_my_job_ex,
+    mcp_oauth_issuer_url: issuer_url,
+    mcp_resource_url: System.get_env("MCP_RESOURCE_URL") || issuer_url <> "/mcp"
 
   config :track_my_job_ex, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
@@ -110,22 +136,4 @@ if config_env() == :prod do
   #       force_ssl: [hsts: true]
   #
   # Check `Plug.SSL` for all available options in `force_ssl`.
-
-  # ## Configuring the mailer
-  #
-  # In production you need to configure the mailer to use a different adapter.
-  # Here is an example configuration for Mailgun:
-  #
-  #     config :track_my_job_ex, TrackMyJobEx.Mailer,
-  #       adapter: Swoosh.Adapters.Mailgun,
-  #       api_key: System.get_env("MAILGUN_API_KEY"),
-  #       domain: System.get_env("MAILGUN_DOMAIN")
-  #
-  # Most non-SMTP adapters require an API client. Swoosh supports Req, Hackney,
-  # and Finch out-of-the-box. This configuration is typically done at
-  # compile-time in your config/prod.exs:
-  #
-  #     config :swoosh, :api_client, Swoosh.ApiClient.Req
-  #
-  # See https://swoosh.hexdocs.pm/Swoosh.html#module-installation for details.
 end

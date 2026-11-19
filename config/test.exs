@@ -1,5 +1,8 @@
 import Config
 
+# Only in tests, remove the complexity from the password hashing algorithm
+config :bcrypt_elixir, :log_rounds, 1
+
 # Configure your database
 #
 # The MIX_TEST_PARTITION environment variable can be used
@@ -8,7 +11,10 @@ import Config
 config :track_my_job_ex, TrackMyJobEx.Repo,
   database: Path.expand("../track_my_job_ex_test.db", __DIR__),
   pool_size: 5,
-  pool: Ecto.Adapters.SQL.Sandbox
+  pool: Ecto.Adapters.SQL.Sandbox,
+  journal_mode: :wal,
+  foreign_keys: :on,
+  busy_timeout: 5_000
 
 # We don't run a server during test. If one is required,
 # you can enable the server option below.
@@ -17,11 +23,9 @@ config :track_my_job_ex, TrackMyJobExWeb.Endpoint,
   secret_key_base: "2KPEJEY/7ttmkM+XMGwgCylc+KBSXllek2UGcwuDJW1zpZ2+DwTAnPCxepgMFidi",
   server: false
 
-# In test we don't send emails
-config :track_my_job_ex, TrackMyJobEx.Mailer, adapter: Swoosh.Adapters.Test
-
-# Disable swoosh api client as it is only required for production adapters
-config :swoosh, :api_client, false
+config :track_my_job_ex,
+  mcp_oauth_issuer_url: "http://localhost:4002",
+  mcp_resource_url: "http://localhost:4002/mcp"
 
 # Print only warnings and errors during test
 config :logger, level: :warning

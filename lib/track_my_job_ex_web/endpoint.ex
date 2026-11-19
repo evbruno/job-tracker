@@ -8,7 +8,12 @@ defmodule TrackMyJobExWeb.Endpoint do
     store: :cookie,
     key: "_track_my_job_ex_key",
     signing_salt: "437+dXfC",
-    same_site: "Lax"
+    same_site: "Lax",
+    http_only: true,
+    # Production terminates TLS at the endpoint or a trusted proxy, so the
+    # browser-facing cookies must never be sent over plain HTTP. Development
+    # and test run over HTTP and therefore keep the flag off.
+    secure: Mix.env() == :prod
   ]
 
   socket "/live", Phoenix.LiveView.Socket,

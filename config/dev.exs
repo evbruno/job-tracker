@@ -1,9 +1,16 @@
 import Config
 
 # Configure your database
+#
+# SQLite permits many concurrent readers in WAL mode but only one writer at a
+# time. A small pool (5 is the adapter default) keeps reader concurrency while
+# serializing writes through SQLite's own busy handler.
 config :track_my_job_ex, TrackMyJobEx.Repo,
   database: Path.expand("../track_my_job_ex_dev.db", __DIR__),
   pool_size: 5,
+  journal_mode: :wal,
+  foreign_keys: :on,
+  busy_timeout: 5_000,
   stacktrace: true,
   show_sensitive_data_on_connection_error: true
 
@@ -69,6 +76,3 @@ config :phoenix_live_view,
   debug_attributes: true,
   # Enable helpful, but potentially expensive runtime checks
   enable_expensive_runtime_checks: true
-
-# Disable swoosh api client as it is only required for production adapters.
-config :swoosh, :api_client, false

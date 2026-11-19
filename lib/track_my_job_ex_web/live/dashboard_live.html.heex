@@ -1,0 +1,94 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} active={:dashboard}>
+  <.header>
+    Dashboard
+    <:subtitle>Signed in as {@current_scope.user.email}.</:subtitle>
+  </.header>
+
+  <section id="dashboard-stats" aria-labelledby="dashboard-stats-heading" class="mt-4 space-y-3">
+    <h2 id="dashboard-stats-heading" class="text-sm font-semibold text-ink">
+      Your job search at a glance
+    </h2>
+    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <.link
+        navigate={~p"/applications"}
+        id="dashboard-applications-stat"
+        class="rounded border border-rule bg-surface p-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cobalt"
+      >
+        <span class="text-sm text-ink-muted">Applications</span>
+        <span class="mt-1 block text-2xl font-semibold text-ink">{@counts.applications}</span>
+      </.link>
+      <.link
+        navigate={~p"/tags"}
+        id="dashboard-tags-stat"
+        class="rounded border border-rule bg-surface p-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cobalt"
+      >
+        <span class="text-sm text-ink-muted">Tags</span>
+        <span class="mt-1 block text-2xl font-semibold text-ink">{@counts.tags}</span>
+      </.link>
+      <.link
+        navigate={~p"/resumes"}
+        id="dashboard-resumes-stat"
+        class="rounded border border-rule bg-surface p-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cobalt"
+      >
+        <span class="text-sm text-ink-muted">Resumes</span>
+        <span class="mt-1 block text-2xl font-semibold text-ink">{@counts.resumes}</span>
+      </.link>
+      <.link
+        navigate={~p"/applications"}
+        id="dashboard-in-progress-stat"
+        class="rounded border border-rule bg-surface p-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cobalt"
+      >
+        <span class="text-sm text-ink-muted">In-progress applications</span>
+        <span class="mt-1 block text-2xl font-semibold text-ink">{@counts.in_progress_applications}</span>
+      </.link>
+    </div>
+  </section>
+
+  <section id="dashboard" class="mt-4 rounded border border-rule bg-surface">
+    <div class="border-b border-rule px-4 py-3">
+      <h2 class="text-sm font-semibold text-ink">Start here</h2>
+    </div>
+    <div class="grid gap-4 px-4 py-4 sm:grid-cols-3">
+      <div>
+        <h3 class="text-sm font-medium text-ink">Applications</h3>
+        <p class="mt-1 text-sm text-ink-muted">
+          Every opportunity you are tracking, with search, filters, sorting, and
+          the full status history.
+        </p>
+        <.link
+          navigate={~p"/applications"}
+          class="mt-3 inline-flex text-sm font-medium text-cobalt hover:underline"
+        >
+          Open applications
+        </.link>
+      </div>
+      <div class="sm:border-l sm:border-rule sm:pl-4">
+        <h3 class="text-sm font-medium text-ink">Resumes</h3>
+        <p class="mt-1 text-sm text-ink-muted">
+          Keep multiple resume versions, each with its own contact details and
+          tags.
+        </p>
+        <.link
+          navigate={~p"/resumes"}
+          id="dashboard-resumes"
+          class="mt-3 inline-flex text-sm font-medium text-cobalt hover:underline"
+        >
+          Open resumes
+        </.link>
+      </div>
+      <div class="sm:border-l sm:border-rule sm:pl-4">
+        <h3 class="text-sm font-medium text-ink">Tags</h3>
+        <p class="mt-1 text-sm text-ink-muted">
+          Reuse tags across applications and resumes, then rename or delete them
+          in one place.
+        </p>
+        <.link
+          navigate={~p"/tags"}
+          class="mt-3 inline-flex text-sm font-medium text-cobalt hover:underline"
+        >
+          Open tags
+        </.link>
+      </div>
+    </div>
+  </section>
+</Layouts.app>

@@ -7,6 +7,19 @@
 # General application configuration
 import Config
 
+config :track_my_job_ex, :scopes,
+  user: [
+    default: true,
+    module: TrackMyJobEx.Accounts.Scope,
+    assign_key: :current_scope,
+    access_path: [:user, :id],
+    schema_key: :user_id,
+    schema_type: :id,
+    schema_table: :users,
+    test_data_fixture: TrackMyJobEx.AccountsFixtures,
+    test_setup_helper: :log_in_user_fixture
+  ]
+
 config :track_my_job_ex,
   ecto_repos: [TrackMyJobEx.Repo],
   generators: [timestamp_type: :utc_datetime]
@@ -26,15 +39,6 @@ config :track_my_job_ex, TrackMyJobExWeb.Endpoint,
 config :phoenix_live_view,
   # the attribute set on all root tags. Used for Phoenix.LiveView.ColocatedCSS.
   root_tag_attribute: "phx-r"
-
-# Configure the mailer
-#
-# By default it uses the "Local" adapter which stores the emails
-# locally. You can see the emails in your browser, at "/dev/mailbox".
-#
-# For production it's recommended to configure a different adapter
-# at the `config/runtime.exs`.
-config :track_my_job_ex, TrackMyJobEx.Mailer, adapter: Swoosh.Adapters.Local
 
 # Configure esbuild (the version is required)
 config :esbuild,
@@ -65,6 +69,20 @@ config :logger, :default_formatter,
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
+
+# MCP Streamable HTTP clients negotiate Server-Sent Events alongside JSON.
+config :mime, :types, %{
+  "text/event-stream" => ["sse"]
+}
+
+# Browser Origins allowed to call the MCP endpoint. Requests without an Origin
+# header (native MCP clients) are always allowed; this list only guards against
+# browser-based DNS-rebinding attacks.
+config :track_my_job_ex, :mcp_allowed_origins, ["http://localhost:4000"]
+
+config :track_my_job_ex,
+  mcp_oauth_issuer_url: "http://localhost:4000",
+  mcp_resource_url: "http://localhost:4000/mcp"
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

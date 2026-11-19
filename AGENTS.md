@@ -20,11 +20,30 @@ ownership section 4).
 
 ## Multi-tenancy (never skip)
 
-- Use `current_scope` to identify the user. Context functions take it as the first argument.
-- No unscoped queries on user-owned data. Never cast `user_id` from params.
-- Validate that submitted tag IDs belong to the current user.
-- Never trust client-provided IDs in `handle_event`; re-fetch through a scoped context function.
-- Every context function that touches user data needs a cross-user test.
+- Use `current_scope` to identify the user. Every context function that reads or
+  writes user-owned data (applications, tags, status history, and their join
+  rows) takes `%TrackMyJobEx.Accounts.Scope{}` as its first argument.
+- Derive the owner from `current_scope.user.id`. Never accept or cast a
+  client-provided `user_id`; never accept a bare user id as the ownership
+  argument.
+- No unscoped queries on user-owned data. Do not add an unscoped
+  `get_<resource>!/1` or `get_<resource>_by_id/1` for a user-owned record.
+  Scope every query by the owner, and return "not found" for another user's IDs.
+- The only global user lookups are authentication lookups in
+  `TrackMyJobEx.Accounts` (`get_user_by_email/1`,
+  `get_user_by_email_and_password/2`, and session-token lookup). They identify
+  the tenant; they must not be reused for domain-data ownership checks.
+- Validate that submitted association IDs (for example tag IDs) belong to the
+  current user before linking them.
+- Never trust client-provided IDs in `handle_event`; re-fetch through a scoped
+  context function.
+- Every context function that touches user data needs a cross-user test, and
+  every user-owned schema needs isolation tests for read, list, update, delete,
+  and association attempts.
+- Reuse the test helpers in `TrackMyJobExWeb.ConnCase` (`log_in_user/3`,
+  `log_in_user_fixture/1`) and `TrackMyJobEx.AccountsFixtures` so isolation
+  tests create two independently authenticated users. Tests that create two
+  users must use separate connections or sessions.
 
 ## Database (SQLite3)
 
@@ -33,6 +52,27 @@ ownership section 4).
 - SQLite allows one writer at a time. Keep transactions short.
 - SQLite has limited `ALTER TABLE` support. Get table definitions right before building on them.
 - If tests fail with "database is locked/busy" errors, run database tests with `async: false`.
+
+## Coding conventions
+
+- Follow Phoenix conventions: contexts own business logic, LiveViews stay thin, and
+  Ecto changesets perform validation. Do not put persistence logic in LiveViews.
+- Context functions that touch user-owned data take `current_scope` as their first
+  argument and scope every query by the user. Never expose an unscoped
+  `get_*_by_id` for user-owned records.
+- Keep SQLite constraints in mind: no `ILIKE`, `citext`, arrays, or `jsonb`; use
+  `COLLATE NOCASE` for case-insensitive uniqueness and `LIKE`/`lower()` for search.
+  Prefer database constraints (not-null, foreign keys, unique indexes) over
+  application-only checks.
+- Use `Ecto.Multi` or `Repo.transaction/1` when one operation must update multiple
+  tables atomically (status changes and history records). Keep transactions short.
+- Add tests for every context operation and a cross-user isolation test for every
+  user-owned resource. Run tests with `async: false` when SQLite write contention
+  causes lock errors.
+- Before committing, run `mix precommit` (compile with warnings as errors, unused
+  dependency check, formatting, `mix credo --strict`, and the test suite). Commit
+  one verified task group at a time using `Phase N.M: <description>`. Never push,
+  amend, or rewrite history; fix problems in a new commit.
 
 ---
 
@@ -81,6 +121,67 @@ custom classes must fully style the input
 - Add simple hover and loading states where they help usability
 - Do not add UI features that are not in `PRODUCT.md`
 
+
+<!-- phoenix-gen-auth-start -->
+## Authentication
+
+- **Always** handle authentication flow at the router level with proper redirects
+- **Always** be mindful of where to place routes. `phx.gen.auth` creates multiple router plugs and `live_session` scopes:
+  - A plug `:fetch_current_scope_for_user` that is included in the default browser pipeline
+  - A plug `:require_authenticated_user` that redirects to the log in page when the user is not authenticated
+  - A `live_session :current_user` scope - for routes that need the current user but don't require authentication, similar to `:fetch_current_scope_for_user`
+  - A `live_session :require_authenticated_user` scope - for routes that require authentication, similar to the plug with the same name
+  - In both cases, a `@current_scope` is assigned to the Plug connection and LiveView socket
+  - A plug `redirect_if_user_is_authenticated` that redirects to a default path in case the user is authenticated - useful for a registration page that should only be shown to unauthenticated users
+- **Always let the user know in which router scopes, `live_session`, and pipeline you are placing the route, AND SAY WHY**
+- `phx.gen.auth` assigns the `current_scope` assign - it **does not assign a `current_user` assign**
+- Always pass the assign `current_scope` to context modules as first argument. When performing queries, use `current_scope.user` to filter the query results
+- To derive/access `current_user` in templates, **always use the `@current_scope.user`**, never use **`@current_user`** in templates or LiveViews
+- **Never** duplicate `live_session` names. A `live_session :current_user` can only be defined __once__ in the router, so all routes for the `live_session :current_user`  must be grouped in a single block
+- Anytime you hit `current_scope` errors or the logged in session isn't displaying the right content, **always double check the router and ensure you are using the correct plug and `live_session` as described below**
+
+### Routes that require authentication
+
+LiveViews that require login should **always be placed inside the __existing__ `live_session :require_authenticated_user` block**:
+
+    scope "/", AppWeb do
+      pipe_through [:browser, :require_authenticated_user]
+
+      live_session :require_authenticated_user,
+        on_mount: [{TrackMyJobExWeb.UserAuth, :require_authenticated}] do
+        # phx.gen.auth generated routes
+        live "/users/settings", UserLive.Settings, :edit
+        live "/users/settings/confirm-email/:token", UserLive.Settings, :confirm_email
+        # our own routes that require logged in user
+        live "/", MyLiveThatRequiresAuth, :index
+      end
+    end
+
+Controller routes must be placed in a scope that sets the `:require_authenticated_user` plug:
+
+    scope "/", AppWeb do
+      pipe_through [:browser, :require_authenticated_user]
+
+      get "/", MyControllerThatRequiresAuth, :index
+    end
+
+### Routes that work with or without authentication
+
+LiveViews that can work with or without authentication, **always use the __existing__ `:current_user` scope**, ie:
+
+    scope "/", MyAppWeb do
+      pipe_through [:browser]
+
+      live_session :current_user,
+        on_mount: [{TrackMyJobExWeb.UserAuth, :mount_current_scope}] do
+        # our own routes that work with or without authentication
+        live "/", PublicLive
+      end
+    end
+
+Controllers automatically have the `current_scope` available if they use the `:browser` pipeline.
+
+<!-- phoenix-gen-auth-end -->
 
 <!-- usage-rules-start -->
 

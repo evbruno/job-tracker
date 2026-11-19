@@ -31,45 +31,136 @@ defmodule TrackMyJobExWeb.Layouts do
     default: nil,
     doc: "the current [scope](https://phoenix.hexdocs.pm/scopes.html)"
 
+  attr :active, :atom,
+    default: nil,
+    doc: "the navigation section to highlight: :dashboard, :applications, :resumes, :tags, or nil"
+
   slot :inner_block, required: true
 
   def app(assigns) do
     ~H"""
-    <header class="navbar px-4 sm:px-6 lg:px-8">
-      <div class="flex-1">
-        <a href="/" class="flex-1 flex w-fit items-center gap-2">
-          <img src={~p"/images/logo.svg"} width="36" />
-          <span class="text-sm font-semibold">v{Application.spec(:phoenix, :vsn)}</span>
-        </a>
-      </div>
-      <div class="flex-none">
-        <ul class="flex px-1 space-x-4 items-center">
-          <li>
-            <a href="https://phoenixframework.org/" class="btn btn-ghost">Website</a>
-          </li>
-          <li>
-            <a href="https://github.com/phoenixframework/phoenix" class="btn btn-ghost">GitHub</a>
-          </li>
-          <li>
-            <.theme_toggle />
-          </li>
-          <li>
-            <a href="https://phoenix.hexdocs.pm/overview.html" class="btn btn-primary">
-              Get Started <span aria-hidden="true">&rarr;</span>
-            </a>
-          </li>
-        </ul>
-      </div>
-    </header>
+    <div class="flex min-h-screen flex-col bg-canvas">
+      <header class="sticky top-0 z-40 border-b border-rule bg-surface">
+        <div class="mx-auto flex w-full max-w-5xl flex-wrap items-center gap-x-6 gap-y-1.5 px-4 py-2 sm:px-6 lg:px-8">
+          <.link
+            navigate={~p"/"}
+            class="flex shrink-0 items-center gap-2 text-[15px] font-semibold tracking-tight text-ink"
+          >
+            <.icon name="hero-briefcase" class="size-5" />
+            <span>Job Tracker</span>
+          </.link>
 
-    <main class="px-4 py-20 sm:px-6 lg:px-8">
-      <div class="mx-auto max-w-2xl space-y-4">
+          <nav
+            :if={@current_scope && @current_scope.user}
+            id="main-nav"
+            aria-label="Main navigation"
+            class="order-last w-full sm:order-none sm:w-auto"
+          >
+            <ul class="flex items-center gap-5 text-sm">
+              <li>
+                <.link
+                  navigate={~p"/"}
+                  class={["inline-flex items-center gap-1.5", nav_link(@active == :dashboard)]}
+                  aria-current={@active == :dashboard && "page"}
+                >
+                  <.icon name="hero-squares-2x2" class="size-4" /> Dashboard
+                </.link>
+              </li>
+              <li>
+                <.link
+                  navigate={~p"/applications"}
+                  id="nav-applications"
+                  class={["inline-flex items-center gap-1.5", nav_link(@active == :applications)]}
+                  aria-current={@active == :applications && "page"}
+                >
+                  <.icon name="hero-briefcase" class="size-4" /> Applications
+                </.link>
+              </li>
+              <li>
+                <.link
+                  navigate={~p"/resumes"}
+                  id="nav-resumes"
+                  class={["inline-flex items-center gap-1.5", nav_link(@active == :resumes)]}
+                  aria-current={@active == :resumes && "page"}
+                >
+                  <.icon name="hero-document-text" class="size-4" /> Resumes
+                </.link>
+              </li>
+              <li>
+                <.link
+                  navigate={~p"/tags"}
+                  id="nav-tags"
+                  class={["inline-flex items-center gap-1.5", nav_link(@active == :tags)]}
+                  aria-current={@active == :tags && "page"}
+                >
+                  <.icon name="hero-tag" class="size-4" /> Tags
+                </.link>
+              </li>
+              <li>
+                <.link
+                  navigate={~p"/mcp-tokens"}
+                  id="nav-mcp-tokens"
+                  class={["inline-flex items-center gap-1.5", nav_link(@active == :mcp_tokens)]}
+                  aria-current={@active == :mcp_tokens && "page"}
+                >
+                  <.icon name="hero-key" class="size-4" /> MCP tokens
+                </.link>
+              </li>
+              <li :if={@current_scope.user.is_admin}>
+                <.link
+                  navigate={~p"/admin"}
+                  id="nav-admin"
+                  class={["inline-flex items-center gap-1.5", nav_link(@active == :admin)]}
+                  aria-current={@active == :admin && "page"}
+                >
+                  <.icon name="hero-shield-check" class="size-4" /> Admin
+                </.link>
+              </li>
+            </ul>
+          </nav>
+
+          <div class="ml-auto flex items-center gap-3">
+            <span
+              :if={@current_scope && @current_scope.user}
+              id="current-user-email"
+              class="hidden max-w-56 truncate font-mono text-xs text-ink-muted md:block"
+            >
+              {@current_scope.user.email}
+            </span>
+            <.link
+              :if={@current_scope && @current_scope.user}
+              href={~p"/users/log-out"}
+              method="delete"
+              id="log-out"
+              class="text-sm text-ink-muted hover:text-ink"
+            >
+              Log out
+            </.link>
+          </div>
+        </div>
+      </header>
+
+      <main class="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
         {render_slot(@inner_block)}
-      </div>
-    </main>
+      </main>
 
-    <.flash_group flash={@flash} />
+      <footer class="border-t border-rule">
+        <div class="mx-auto w-full max-w-5xl px-4 py-4 text-xs text-ink-muted sm:px-6 lg:px-8">
+          Job Tracker — applications, resumes, tags, and status history.
+        </div>
+      </footer>
+
+      <.flash_group flash={@flash} />
+    </div>
     """
+  end
+
+  defp nav_link(true) do
+    "border-b-2 border-cobalt pb-0.5 font-medium text-ink"
+  end
+
+  defp nav_link(false) do
+    "border-b-2 border-transparent pb-0.5 text-ink-muted hover:border-rule hover:text-ink"
   end
 
   @doc """
@@ -117,43 +208,6 @@ defmodule TrackMyJobExWeb.Layouts do
         {gettext("Attempting to reconnect")}
         <.icon name="hero-arrow-path" class="ml-1 size-3 motion-safe:animate-spin" />
       </.flash>
-    </div>
-    """
-  end
-
-  @doc """
-  Provides dark vs light theme toggle based on themes defined in app.css.
-
-  See <head> in root.html.heex which applies the theme before page load.
-  """
-  def theme_toggle(assigns) do
-    ~H"""
-    <div class="card relative flex flex-row items-center border-2 border-base-300 bg-base-300 rounded-full">
-      <div class="absolute w-1/3 h-full rounded-full border-1 border-base-200 bg-base-100 brightness-200 left-0 [[data-theme=light]_&]:left-1/3 [[data-theme=dark]_&]:left-2/3 [[data-theme-source=system]_&]:!left-0 transition-[left]" />
-
-      <button
-        class="flex p-2 cursor-pointer w-1/3"
-        phx-click={JS.dispatch("phx:set-theme")}
-        data-phx-theme="system"
-      >
-        <.icon name="hero-computer-desktop-micro" class="size-4 opacity-75 hover:opacity-100" />
-      </button>
-
-      <button
-        class="flex p-2 cursor-pointer w-1/3"
-        phx-click={JS.dispatch("phx:set-theme")}
-        data-phx-theme="light"
-      >
-        <.icon name="hero-sun-micro" class="size-4 opacity-75 hover:opacity-100" />
-      </button>
-
-      <button
-        class="flex p-2 cursor-pointer w-1/3"
-        phx-click={JS.dispatch("phx:set-theme")}
-        data-phx-theme="dark"
-      >
-        <.icon name="hero-moon-micro" class="size-4 opacity-75 hover:opacity-100" />
-      </button>
     </div>
     """
   end

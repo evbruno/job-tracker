@@ -1,0 +1,23 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} active={:applications}>
+  <.header>
+    New application
+    <:subtitle>Record a new opportunity. New applications start as Interested.</:subtitle>
+    <:actions>
+      <.link navigate={~p"/applications"} class="btn btn-ghost btn-sm">
+        Back to applications
+      </.link>
+    </:actions>
+  </.header>
+
+  <ApplicationForm.application_form
+    form={@form}
+    submit_label="Create application"
+    company_suggestions={@company_suggestions}
+    recruiter_suggestions={@recruiter_suggestions}
+    tags={@tags}
+    selected_tag_ids={@selected_tag_ids}
+    new_tags={@new_tags}
+    tag_errors={@tag_errors}
+    cancel_path={~p"/applications"}
+  />
+</Layouts.app>

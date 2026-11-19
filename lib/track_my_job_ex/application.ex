@@ -14,6 +14,9 @@ defmodule TrackMyJobEx.Application do
        repos: Application.fetch_env!(:track_my_job_ex, :ecto_repos), skip: skip_migrations?()},
       {DNSCluster, query: Application.get_env(:track_my_job_ex, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: TrackMyJobEx.PubSub},
+      # Tracks open MCP streams so notifications and elicitation responses can
+      # reach the request that is waiting for them.
+      {Phantom.Tracker, [name: Phantom.Tracker, pubsub_server: TrackMyJobEx.PubSub]},
       # Start a worker by calling: TrackMyJobEx.Worker.start_link(arg)
       # {TrackMyJobEx.Worker, arg},
       # Start to serve requests, typically the last entry
@@ -34,7 +37,7 @@ defmodule TrackMyJobEx.Application do
     :ok
   end
 
-  defp skip_migrations?() do
+  defp skip_migrations? do
     # By default, sqlite migrations are run when using a release
     System.get_env("RELEASE_NAME") == nil
   end
