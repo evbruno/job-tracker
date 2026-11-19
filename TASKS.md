@@ -669,6 +669,59 @@ migrations, URL contracts, ownership rules, and flash strings are unchanged. See
   binding, code replay, refresh rotation/replay, revocation, and PAT
   compatibility. `mix precommit` passes with 354 tests.
 
+---
+
+## Phase 15 — Beta UI Refresh
+
+- [x] Crop the supplied logo into a wordmark and icon asset; update the favicon.
+- [x] Apply the beta brand, shared responsive shell, and visual tokens across app pages.
+- [x] Refresh the login and MCP OAuth consent surfaces.
+- [x] Save UI decisions and add the application-list screenshot to README.
+- [x] Run `mix precommit`.
+
+**Acceptance criteria:**
+- All application pages, login, and OAuth consent display the beta visual identity.
+- The screenshot and UI decisions are documented in the repository.
+- `mix precommit` passes.
+
+**Phase 15 completion notes:**
+- The supplied source artwork remains at the repository root. Cropped wordmark,
+  icon, and favicon assets are served from `priv/static`.
+- The existing application flows and one-light-theme product behavior are unchanged.
+- `design-system/job-tracker/MASTER.md` records the brand, layout, accessibility,
+  and scope decisions; README embeds the 1440×1000 application-list screenshot.
+- `mix precommit` passes with 354 tests; Credo strict reports no issues.
+
+---
+
+## Phase 16 — UI v2 Palette and Icon Theme
+
+- [x] Replace the cobalt UI palette with evergreen and amber tokens across app, login, and OAuth.
+- [x] Switch Heroicons to solid by default while retaining explicit outline/mini variants.
+- [x] Record v2 design decisions and update the README screenshot.
+- [x] Run `mix precommit` and verify the refreshed UI in a browser.
+
+**Acceptance criteria:**
+- Shared pages, login, and OAuth consent use the v2 palette.
+- All default Heroicons use the solid style; status colors and product behavior remain unchanged.
+- README shows the v2 screenshot and links the current design decisions.
+- `mix precommit` passes.
+
+**Phase 16 completion notes:**
+- Evergreen and amber tokens replace the cobalt palette. Solid 24px Heroicons are the default; explicit outline/mini variants remain available.
+- `design-system/job-tracker/MASTER.md` records v2 choices; README embeds a fresh 1365×768 capture of the current application list from port 4001.
+- Browser proof covered login and applications at desktop, and the application list at 375px with no page-level horizontal overflow.
+- `mix precommit` passes with 354 tests; Credo strict reports no issues.
+
+---
+
+## MCP lane
+
+The MCP work below was developed on `feat/mcp-oauth-connections` and merged into
+the UI branch afterwards. That lane numbered its own phases independently, so
+Phases 15 and 16 appear twice; each section keeps the numbering used in its
+commit messages.
+
 ## Phase 15 — Unified MCP Access Management
 
 - [x] Rename the navigation label from “MCP Tokens” to “MCP” while retaining

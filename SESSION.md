@@ -7,66 +7,30 @@ Update it before ending every session.
 
 ## Current State
 
-- **Current phase:** Phase 16 — PORT-aware Development OAuth Issuer (complete;
-  awaiting review).
-- **Current task group:** Phase 16.
+- **Current phase:** Phase 16 complete on both lanes — UI v2 Palette and Icon
+  Theme, and PORT-aware Development OAuth Issuer (MCP lane); awaiting review.
+- **Current task group:** Phase 16, complete (both lanes).
 - **Next task:** Await review of Phase 16.
 - **Overall status:** Phases 1–16 complete; `mix precommit` passes with 357
-  tests.
-- **Last commit:** `3eefd36` — Phase 14: Add OAuth authentication for MCP.
+  tests after merging the MCP lane into the UI lane.
+- **Last commit:** Phase 16: Refresh README Screenshot.
 
-## Last Session Summary
+Phase 16 shifts the interface palette to evergreen and amber, updates all
+default Heroicons to solid 24px, and keeps explicit outline/mini variants
+available. Shared pages, login, and standalone OAuth consent use matching
+tokens. Product behavior, status colors, and the official supplied logo remain
+unchanged.
 
-Phase 8 (Resume Management) adds many independent resumes per user. Each resume
-has a title, body, email, optional full name, headline, phone, and location, plus
-optional LinkedIn, GitHub, and portfolio URLs. New resumes prefill the email from
-the signed-in user's account; the field stays editable. Resumes reuse the
-existing per-user tags through a new `resume_tags` join table, and the tag page
-now notes that deletion removes the tag from applications and resumes.
+`design-system/job-tracker/MASTER.md` records the v2 decisions. `README.md`
+embeds a fresh capture from the current v2 app rendered on port 4001. Browser
+proof covered login and applications on desktop and the application list at
+375px with no page-level horizontal overflow. `mix precommit` passes with 354
+tests; Credo strict reports no issues.
 
-The `TrackMyJobEx.Resumes` context is scoped by `%Scope{}` throughout, uses
-transactions for create/update with tags, validates ownership of submitted tag
-ids, and returns "not found" for another user's resume. The UI adds a Resumes
-list, details page, create/edit form, safe link rendering, and a
-confirmation-gated delete, plus navigation and dashboard links. The
-`mix resumes.create EMAIL [--title TITLE]` task creates a simple starting resume
-for an existing user through the scoped context. Phase 8 added 47 tests (295
-total) and `mix precommit` passes. `docs/SECURITY.md` now includes the resume and
-`ResumeTag` isolation matrices.
-
-Phase 7 (Production Readiness) is complete in the repository. Security hardening
-sets `HttpOnly`, `Secure`, and `SameSite=Lax` on session and remember-me cookies
-in production, enforces HTTPS with `force_ssl` and one-year HSTS, excludes
-`/health` from redirects, and restricts job URL rendering to absolute
-`http`/`https` URLs. Database files, sidecars, `.env*`, backups, and release
-artifacts are gitignored, and the Docker image runs as `nobody` under `tini`.
-
-Tenant isolation was reviewed end to end. Every user-owned query takes a
-`%Scope{}` and filters by `current_scope.user.id`; there are no unscoped
-application/tag getters. Tag association ids are re-fetched through the scope and
-roll back atomically on failure. A resource × operation matrix with test
-locations is in `docs/SECURITY.md`.
-
-SQLite production settings are WAL, foreign keys, a 5-second busy timeout, pool
-size 5, and tuned queue settings. A new migration adds composite and NOCASE
-indexes, and `EXPLAIN QUERY PLAN` confirms index-backed listing, status/company/
-recruiter filters, history, tag links, suggestions, and the tag AND filter.
-Company/recruiter filters now use `COLLATE NOCASE` instead of `lower()`.
-
-The production database path defaults to `/data/track_my_job_ex/
-track_my_job_ex.db` (or `$DATA_DIR`), and its parent directory is created on
-boot. A production release was built and booted; `/health` returned `200 ok`,
-the root redirected to HTTPS, cookies included `Secure; HttpOnly; SameSite=Lax`,
-and HSTS was present. Online backup/restore scripts use `sqlite3 .backup`; a
-seeded backup was restored with matching counts, matching schema, and
-`integrity_check: ok`. CI runs formatting, warnings-as-errors compilation, Credo
-strict, and the full suite. A new end-to-end test covers login, create with tags,
-status/history, filters, pagination, sorting, cross-user isolation, and delete
-cascades through the real router and LiveViews.
-
-The suite is 241 tests (up from 231) and `mix precommit` passes. The remaining
-items are operator-only and are listed under Blockers and in
-`docs/DEPLOYMENT.md`.
+The MCP lane's Phase 16 derives the development OAuth issuer from `PORT`
+(default `4000`), overridable with `MCP_OAUTH_ISSUER_URL`; the resource URL
+defaults to that issuer's `/mcp`. OAuth metadata endpoint construction is
+slash-safe.
 
 ## Assumptions Made
 
@@ -271,7 +235,7 @@ None. If this file and PRODUCT.md conflict, PRODUCT.md wins; list the conflict h
 
 ## Next Actions
 
-1. Await Phase 8 review.
+1. Await review of Phase 16.
 2. Operator: provision DNS/TLS, the persistent volume, and production secrets.
 3. Operator: connect monitoring/log aggregation and schedule encrypted off-site
    backups; run a restore drill.
@@ -290,7 +254,29 @@ Add one entry per session, newest first, in this format:
 
 ### 2026-11-19
 
-- **Done:** Began Phase 16 in response to a local OAuth issuer mismatch. The
+- **Done:** Merged `main` (MCP lane) into this UI v2 branch. Both lanes
+  independently used Phase 15/16 numbering, so `TASKS.md` now lists the UI lane
+  and the MCP lane as separate sections and `SESSION.md` keeps one log entry per
+  lane. No functional changes were made in the merge.
+- **Verification:** Resolved documentation conflicts by hand; auto-merged code
+  (`layouts.ex`, `mcp_oauth_controller.ex`) reviewed and the full suite run after
+  the merge.
+- **Commit:** Merge commit on `new-ui-v2`.
+- **Blockers:** None.
+
+- **Done:** Phase 16 (UI v2): replaced the cobalt palette with evergreen and
+  amber, switched Heroicons to solid by default, and updated the design decisions
+  and README screenshot.
+- **Verification:** Browser proof covered login and applications on desktop;
+  the 375px application list had no page-level horizontal overflow. `mix
+  precommit` passes with 354 tests and Credo strict reports no issues.
+- **Commit:** `Phase 16: UI v2 Palette and Icon Theme`.
+- **Assumptions:** Status colors, product behavior, and the supplied wordmark
+  remain unchanged. The local screenshot uses an isolated v2 preview account.
+- **Blockers:** None.
+- **Next:** Await Phase 16 review; production blockers remain operator-owned.
+
+- **Done:** Phase 16 (MCP lane): began after a local OAuth issuer mismatch. The
   development issuer now derives from `PORT` (default `4000`) and can be
   overridden with `MCP_OAUTH_ISSUER_URL`; resource URL defaults to that issuer's
   `/mcp`. OAuth metadata endpoint construction is slash-safe. Added metadata
@@ -303,7 +289,7 @@ Add one entry per session, newest first, in this format:
 - **Blockers:** None identified.
 - **Next:** Await review of Phase 16.
 
-- **Done:** Phase 15 implementation: changed the navigation label to “MCP” while
+- **Done:** Phase 15 (MCP lane): changed the navigation label to “MCP” while
   retaining `/mcp-tokens`; added a scoped OAuth connection list and
   confirmation-gated family revocation alongside PAT management. Updated
   `PRODUCT.md`, `TASKS.md`, and added LiveView coverage for listing, revocation,
@@ -316,6 +302,29 @@ Add one entry per session, newest first, in this format:
   authorizations for that client.
 - **Blockers:** None identified.
 - **Next:** Await review of Phase 15.
+
+- **Done:** Re-captured the README screenshot from the current v2 application
+  list at 1365×768; the rendered layout matches the latest implementation.
+- **Verification:** Preview started on port 4001; application list rendered
+  with no page-level horizontal overflow at desktop width.
+- **Commit:** `Phase 16: Refresh README Screenshot`.
+- **Assumptions:** Screenshot data is isolated local preview data.
+- **Blockers:** None.
+- **Next:** Await Phase 16 review; production blockers remain operator-owned.
+
+- **Done:** Phase 15 (UI lane): cropped the supplied beta logo into wordmark and
+  icon assets, updated the shared shell, login, OAuth consent, and favicon, and
+  documented UI decisions and the application-list screenshot.
+- **Verification:** Browser proof covered login, dashboard, applications,
+  OAuth consent, and a 375px viewport with no page-level horizontal overflow.
+  `mix precommit` passes with 354 tests; Credo strict reports no issues.
+- **Commit:** `Phase 15: Beta UI Refresh`.
+- **Assumptions:** The existing light theme, product flows, and status colors
+  remain unchanged. The original `new-logo.png` is kept at the repository root.
+  The screenshot uses the local demo seed account.
+- **Blockers:** None.
+- **Next:** Await Phase 15 review; production blockers remain operator-owned.
+
 
 - **Done:** Phase 14: added DCR for public MCP clients, OAuth metadata and
   endpoints, Authorization Code + PKCE consent, hashed resource-bound access

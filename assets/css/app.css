@@ -25,18 +25,18 @@
   prefersdark: false;
   color-scheme: "light";
   --color-base-100: #ffffff;
-  --color-base-200: #f1f4f7;
-  --color-base-300: #cbd3dc;
-  --color-base-content: #101720;
-  --color-primary: #101720;
+  --color-base-200: #f3f8f6;
+  --color-base-300: #d6e5df;
+  --color-base-content: #14332f;
+  --color-primary: #0f766e;
   --color-primary-content: #ffffff;
-  --color-secondary: #1f4fd8;
+  --color-secondary: #b45309;
   --color-secondary-content: #ffffff;
-  --color-accent: #1f4fd8;
-  --color-accent-content: #ffffff;
-  --color-neutral: #101720;
+  --color-accent: #d97706;
+  --color-accent-content: #1c1917;
+  --color-neutral: #14332f;
   --color-neutral-content: #ffffff;
-  --color-info: #1f4fd8;
+  --color-info: #0f766e;
   --color-info-content: #ffffff;
   --color-success: #166534;
   --color-success-content: #ffffff;
@@ -44,9 +44,9 @@
   --color-warning-content: #ffffff;
   --color-error: #991b1b;
   --color-error-content: #ffffff;
-  --radius-selector: 0.1875rem;
-  --radius-field: 0.1875rem;
-  --radius-box: 0.25rem;
+  --radius-selector: 0.5rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.875rem;
   --size-selector: 0.21875rem;
   --size-field: 0.21875rem;
   --border: 1px;
@@ -55,17 +55,20 @@
 }
 
 @theme {
-  /* Palette: ink and rules carry structure, cobalt marks interactive things,
-     and the only other saturated colours are the five status families. */
-  --color-ink: #101720;
-  --color-ink-muted: #5a6675;
-  --color-canvas: #f1f4f7;
+  /* Evergreen anchors the workspace; amber is reserved for highlights. */
+  --color-ink: #14332f;
+  --color-ink-muted: #506660;
+  --color-canvas: #f3f8f6;
   --color-surface: #ffffff;
-  --color-rule: #cbd3dc;
-  --color-cobalt: #1f4fd8;
+  --color-rule: #d6e5df;
+  --color-brand: #0f766e;
+  --color-brand-soft: #def2ec;
 
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  --radius: 0.875rem;
+  --radius-md: 0.75rem;
+  --radius-sm: 0.5rem;
 }
 
 @layer base {
@@ -82,12 +85,12 @@
 
   /* Visible keyboard focus everywhere, including inside custom controls. */
   :focus-visible {
-    outline: 2px solid var(--color-cobalt);
+    outline: 2px solid var(--color-brand);
     outline-offset: 2px;
   }
 
   ::selection {
-    background-color: #d9e2ff;
+    background-color: var(--color-brand-soft);
     color: var(--color-ink);
   }
 }

@@ -35,7 +35,7 @@ defmodule TrackMyJobExWeb.CoreComponents do
   # Shared control styling. Screens add layout classes on top; the control look
   # stays consistent everywhere. Classes are assembled in Elixir because HEEx
   # `@` interpolation reads assigns, not module attributes.
-  @control_class "block w-full rounded border border-rule bg-surface px-2.5 py-1.5 text-sm text-ink placeholder:text-ink-muted/60 focus:border-cobalt focus:outline-none focus:ring-2 focus:ring-cobalt/15"
+  @control_class "block w-full rounded border border-rule bg-surface px-2.5 py-1.5 text-sm text-ink placeholder:text-ink-muted/60 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/15"
   @control_error_class "border-red-700 focus:border-red-700 focus:ring-red-700/15"
 
   @doc """
@@ -75,13 +75,13 @@ defmodule TrackMyJobExWeb.CoreComponents do
     >
       <div class={[
         "flex max-w-full items-start gap-2.5 rounded border border-rule border-l-4 bg-surface px-3 py-2.5 shadow-lg",
-        @kind == :info && "border-l-cobalt",
+        @kind == :info && "border-l-brand",
         @kind == :error && "border-l-red-700"
       ]}>
         <.icon
           :if={@kind == :info}
           name="hero-information-circle"
-          class="mt-0.5 size-4 shrink-0 text-cobalt"
+          class="mt-0.5 size-4 shrink-0 text-brand"
         />
         <.icon
           :if={@kind == :error}
@@ -241,7 +241,7 @@ defmodule TrackMyJobExWeb.CoreComponents do
           name={@name}
           value="true"
           checked={@checked}
-          class={["size-4 rounded border-rule text-cobalt", @class]}
+          class={["size-4 rounded border-rule text-brand", @class]}
           {@rest}
         />{@label}
       </label>
@@ -444,9 +444,8 @@ defmodule TrackMyJobExWeb.CoreComponents do
   @doc """
   Renders a [Heroicon](https://heroicons.com).
 
-  Heroicons come in three styles – outline, solid, and mini.
-  By default, the outline style is used, but solid and mini may
-  be applied by using the `-solid` and `-mini` suffix.
+  Heroicons come in outline, solid, mini, and micro styles. Solid 24px icons
+  are used by default; explicit suffixes are `-outline`, `-mini`, and `-micro`.
 
   You can customize the size and colors of the icons by setting
   width, height, and background color classes.

@@ -156,7 +156,7 @@ defmodule TrackMyJobExWeb.ResumeForm do
                   <span class={[
                     "inline-flex cursor-pointer items-center rounded border border-rule bg-surface px-2 py-1 text-xs text-ink-muted",
                     "peer-checked:border-ink peer-checked:bg-ink peer-checked:text-white",
-                    "peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-cobalt"
+                    "peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-brand"
                   ]}>
                     {tag.name}
                   </span>

@@ -192,18 +192,60 @@ defmodule TrackMyJobExWeb.MCPOAuthController do
 
     body = """
     <!doctype html>
-    <html lang="en"><meta charset="utf-8"><title>Authorize Job Tracker</title>
-    <body style="font:16px system-ui;max-width:36rem;margin:4rem auto;padding:0 1rem">
-    <h1>Authorize #{escape(client.client_name)}</h1>
-    <p>Allow this MCP client to access your Job Tracker applications, resumes, tags, and account details?</p>
-    <p>Requested permission: <strong>#{OAuth.scope()}</strong></p>
-    <p>Redirect destination: <code>#{escape(redirect_uri)}</code></p>
-    <form method="post" action="/oauth/authorize">
-    <input type="hidden" name="_csrf_token" value="#{escape(csrf)}">
-    #{hidden_inputs}
-    <button name="decision" value="approve">Approve</button>
-    <button name="decision" value="deny">Deny</button>
-    </form></body></html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="color-scheme" content="light">
+        <meta name="theme-color" content="#f3f8f6">
+        <title>Authorize Job Tracker</title>
+        <style>
+          * { box-sizing: border-box; }
+          body { margin: 0; min-height: 100vh; background: #f3f8f6; color: #14332f; font: 16px/1.6 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+          main { width: min(100% - 32px, 560px); margin: 0 auto; padding: 48px 0; }
+          .brand { display: block; width: 184px; height: auto; margin: 0 auto 28px; }
+          .card { padding: 28px; border: 1px solid #d6e5df; border-radius: 16px; background: white; box-shadow: 0 12px 32px rgb(20 51 47 / 6%); }
+          .eyebrow { margin: 0 0 8px; color: #0f766e; font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+          h1 { margin: 0; font-size: clamp(24px, 6vw, 30px); line-height: 1.2; letter-spacing: -.03em; }
+          p { margin: 16px 0 0; color: #506660; }
+          .permission { margin-top: 24px; padding: 16px; border: 1px solid #d6e5df; border-radius: 12px; background: #e8f3ef; }
+          .permission strong { display: block; color: #14332f; }
+          .permission code, .redirect code { overflow-wrap: anywhere; }
+          .permission code { color: #0f766e; font-weight: 600; }
+          .redirect { font-size: 13px; }
+          form { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+          button { min-height: 48px; padding: 0 20px; border: 1px solid transparent; border-radius: 10px; font: inherit; font-weight: 600; cursor: pointer; transition: background-color 150ms ease, border-color 150ms ease; }
+          button:focus-visible { outline: 3px solid #0f766e; outline-offset: 3px; }
+          .approve { flex: 1 1 180px; background: #0f766e; color: white; }
+          .approve:hover { background: #115e59; }
+          .deny { flex: 1 1 140px; border-color: #d6e5df; background: white; color: #14332f; }
+          .deny:hover { background: #f3f8f6; }
+          @media (max-width: 420px) { main { padding: 24px 0; } .card { padding: 22px; } form { display: grid; } }
+          @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
+        </style>
+      </head>
+      <body>
+        <main>
+          <img class="brand" src="/images/job-tracker-logo.png" alt="Job Tracker beta">
+          <section class="card" aria-labelledby="consent-title">
+            <p class="eyebrow">Secure authorization</p>
+            <h1 id="consent-title">Connect #{escape(client.client_name)}?</h1>
+            <p>Allow this MCP client to access your Job Tracker applications, resumes, tags, and account details?</p>
+            <div class="permission">
+              <strong>Requested permission</strong>
+              <code>#{OAuth.scope()}</code>
+            </div>
+            <p class="redirect">Redirect destination: <code>#{escape(redirect_uri)}</code></p>
+            <form id="oauth-consent-form" method="post" action="/oauth/authorize">
+              <input type="hidden" name="_csrf_token" value="#{escape(csrf)}">
+              #{hidden_inputs}
+              <button class="approve" name="decision" value="approve">Approve access</button>
+              <button class="deny" name="decision" value="deny">Deny</button>
+            </form>
+          </section>
+        </main>
+      </body>
+    </html>
     """
 
     html(conn, body)
