@@ -32,6 +32,7 @@ found`).
 | Company/recruiter filters used `lower(column) = ?`, preventing index use | Changed to `column = ? COLLATE NOCASE` and added NOCASE composite indexes | `EXPLAIN QUERY PLAN` uses the NOCASE indexes |
 | Database files and local secrets could be committed | Added `*.db*`, `*.db-wal`, `*.db-shm`, `.env*`, `/backups/`, and release artifacts to `.gitignore` | `git status` review |
 | Container ran with default root user and no init | Hardened Dockerfile to run as `nobody` and use `tini` as PID 1 | Dockerfile review |
+| MCP supported only static personal access tokens | Added OAuth 2.1 Authorization Code with PKCE, DCR for public clients, exact redirect matching, resource-bound opaque tokens, short access-token lifetime, refresh rotation, and revocation while preserving PAT support | OAuth discovery, registration, PKCE, resource binding, single-use code, rotation, revocation, and PAT regression tests |
 
 ### Verified as already correct
 
@@ -64,6 +65,10 @@ found`).
 - Health checks execute a constant `SELECT 1` and return no tenant data.
 - Production logs are `:info`; Ecto `:debug` SQL text and parameters are not
   emitted. Logs include a request id.
+- OAuth access and refresh tokens and authorization codes are stored only as
+  SHA-256 hashes. Authorization codes are short-lived and single-use. OAuth
+  tokens are bound to the configured MCP resource URL and client id. Public
+  clients must use PKCE S256, exact registered redirect URIs, and user consent.
 
 ### Accepted risks
 
@@ -71,6 +76,9 @@ These follow from `PRODUCT.md` and are recorded rather than silently fixed:
 
 - **No login rate limiting.** Listed as out of scope for the initial version.
   Mitigate at the reverse proxy or load balancer if needed.
+- **Unauthenticated OAuth client registration.** DCR is public by design for MCP
+  client compatibility. Apply request-rate and database-capacity limits at the
+  reverse proxy; this implementation does not provide per-IP rate limiting.
 - **No MFA.** Not in scope.
 - **No self-service password reset.** Out of scope; administrators provision
   accounts and can reset passwords operationally.

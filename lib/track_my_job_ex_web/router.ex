@@ -24,6 +24,10 @@ defmodule TrackMyJobExWeb.Router do
     plug :accepts, ["json", "sse"]
   end
 
+  pipeline :oauth_api do
+    plug :accepts, ["json", "urlencoded"]
+  end
+
   # Other scopes may use custom stacks.
   # scope "/api", TrackMyJobExWeb do
   #   pipe_through :api
@@ -51,6 +55,37 @@ defmodule TrackMyJobExWeb.Router do
   # pipeline so they do not create sessions or require CSRF tokens.
   scope "/", TrackMyJobExWeb do
     get "/health", HealthController, :index
+  end
+
+  scope "/" do
+    pipe_through :api
+
+    get "/.well-known/oauth-protected-resource",
+        TrackMyJobExWeb.MCPOAuthController,
+        :protected_resource
+
+    get "/.well-known/oauth-protected-resource/mcp",
+        TrackMyJobExWeb.MCPOAuthController,
+        :protected_resource
+
+    get "/.well-known/oauth-authorization-server",
+        TrackMyJobExWeb.MCPOAuthController,
+        :authorization_server
+  end
+
+  scope "/oauth" do
+    pipe_through :browser
+
+    get "/authorize", TrackMyJobExWeb.MCPOAuthController, :authorize
+    post "/authorize", TrackMyJobExWeb.MCPOAuthController, :authorize_decision
+  end
+
+  scope "/oauth" do
+    pipe_through :oauth_api
+
+    post "/register", TrackMyJobExWeb.MCPOAuthController, :register
+    post "/token", TrackMyJobExWeb.MCPOAuthController, :token
+    post "/revoke", TrackMyJobExWeb.MCPOAuthController, :revoke
   end
 
   # MCP clients authenticate with a per-user Bearer token inside the MCP router,

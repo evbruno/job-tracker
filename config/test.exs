@@ -23,6 +23,10 @@ config :track_my_job_ex, TrackMyJobExWeb.Endpoint,
   secret_key_base: "2KPEJEY/7ttmkM+XMGwgCylc+KBSXllek2UGcwuDJW1zpZ2+DwTAnPCxepgMFidi",
   server: false
 
+config :track_my_job_ex,
+  mcp_oauth_issuer_url: "http://localhost:4002",
+  mcp_resource_url: "http://localhost:4002/mcp"
+
 # Print only warnings and errors during test
 config :logger, level: :warning
 

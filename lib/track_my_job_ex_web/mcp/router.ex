@@ -6,13 +6,13 @@ defmodule TrackMyJobExWeb.MCP.Router do
   user's job applications and resumes, plus read-only access to tags and the
   predefined application statuses.
 
-  Authentication uses a personal access token:
+  Authentication supports personal access tokens and OAuth 2.1 access tokens
+  issued by this server using Authorization Code with PKCE.
 
       Authorization: Bearer tmj_<prefix>_<secret>
 
-  Create tokens with `mix mcp.tokens.create EMAIL --name NAME`. Every tool acts
-  only on the token owner's data. Another user's identifiers are reported as not
-  found.
+  Create personal access tokens with `mix mcp.tokens.create EMAIL --name NAME`.
+  Every tool acts only on the authenticated user's data.
 
   Applications start in the `interested` status; use `applications_change_status`
   with a status slug from `statuses_list` to move them. Tags are shared by
@@ -29,22 +29,44 @@ defmodule TrackMyJobExWeb.MCP.Router do
 
   alias TrackMyJobEx.Accounts
   alias TrackMyJobEx.Accounts.Scope
+  alias TrackMyJobEx.MCP.OAuth
   alias TrackMyJobExWeb.MCP.Tools
 
   @auth_realm "job-tracker-mcp"
-  @unauthorized %{method: "Bearer", realm: @auth_realm, error: "invalid_token"}
-
   @impl Phantom.Router
   def connect(session, %Plug.Conn{} = conn) do
     with ["Bearer " <> token] <- Plug.Conn.get_req_header(conn, "authorization"),
-         {:ok, user, _mcp_token} <- Accounts.get_user_by_mcp_token(token) do
+         {:ok, user, _scope} <- authenticate(token) do
       {:ok, Phantom.Session.assign(session, :scope, Scope.for_user(user))}
     else
-      _other -> {:unauthorized, @unauthorized}
+      _other -> {:unauthorized, unauthorized_challenge()}
     end
   end
 
-  def connect(_session, _adapter_info), do: {:unauthorized, @unauthorized}
+  def connect(_session, _adapter_info), do: {:unauthorized, unauthorized_challenge()}
+
+  defp unauthorized_challenge do
+    %{
+      method: "Bearer",
+      realm: @auth_realm,
+      error: "invalid_token",
+      scope: OAuth.scope(),
+      resource_metadata: OAuth.issuer_url() <> "/.well-known/oauth-protected-resource/mcp"
+    }
+  end
+
+  defp authenticate(token) do
+    case Accounts.get_user_by_mcp_token(token) do
+      {:ok, user, _pat} ->
+        {:ok, user, "job-tracker"}
+
+      _other ->
+        case OAuth.authenticate_access_token(token, OAuth.resource_url()) do
+          {:ok, user, scope} when scope == "job-tracker" -> {:ok, user, scope}
+          _other -> :error
+        end
+    end
+  end
 
   ## Applications
 

@@ -264,10 +264,24 @@ The application exposes its application and resume functionality as a Model
 Context Protocol (MCP) server so other agents can use it.
 
 - Endpoint: Streamable HTTP at `/mcp`, served by the same Phoenix endpoint.
-- Authentication: per-user personal access tokens sent as
-  `Authorization: Bearer tmj_<prefix>_<secret>`. Tokens are created, listed, and
-  revoked with `mix mcp.tokens.create|list|revoke`. Only a SHA-256 hash and a
-  public prefix are stored; the plaintext is shown once.
+- Authentication: supports both per-user personal access tokens (PATs) and
+  OAuth 2.1 bearer tokens. PATs use
+  `Authorization: Bearer tmj_<prefix>_<secret>` and are created, listed, and
+  revoked with `mix mcp.tokens.create|list|revoke`; only a SHA-256 hash and a
+  public prefix are stored, and plaintext is shown once. OAuth uses Authorization
+  Code with PKCE (`S256`), public-client Dynamic Client Registration, an
+  authenticated user consent step, the `job-tracker` scope, and opaque
+  resource-bound access tokens that expire after 10 minutes. Refresh tokens are
+  single-use, rotated on refresh, and expire after 30 days. OAuth tokens can be
+  revoked at the OAuth revocation endpoint. PAT authentication remains supported
+  for existing integrations.
+- OAuth discovery: the server publishes Protected Resource Metadata and OAuth
+  Authorization Server Metadata at the standard well-known URLs. OAuth tokens
+  are bound to the canonical MCP resource URL; production derives this from
+  `PHX_HOST` or accepts an explicit `MCP_RESOURCE_URL`.
+- OAuth client registration supports public clients with exact redirect URI
+  matching. Redirects must use HTTPS, except loopback HTTP callbacks. Client ID
+  Metadata Documents and confidential clients are not supported.
 - Transport: Streamable HTTP only (no stdio). Origin validation rejects
   browser-based DNS-rebinding attempts.
 - Tool surface: full CRUD for applications and resumes, plus read-only
@@ -303,7 +317,10 @@ Requirements:
 - All queries and mutations must enforce ownership server-side.
 - LiveView events must never trust client-provided record identifiers without authorization checks.
 - Context functions take the current user (or scope) as an explicit argument; there are no unscoped "get by id" functions for user-owned records.
-- MCP personal access tokens are user-owned: another user's token cannot be listed, revoked, or used to access that user's data. Token verification is an authentication lookup that derives a `%Scope{}`; it is never used as a domain ownership check.
+- MCP personal access and OAuth tokens identify the authenticated user and
+  derive a `%Scope{}`; they are never reused as domain ownership checks. OAuth
+  tokens are bound to the MCP audience and client, and client-supplied owner ids
+  are ignored.
 - Accessing another user's record behaves as "not found" (no information leak about existence).
 
 ## 5. Technical Stack
@@ -389,7 +406,9 @@ Use the latest stable versions of Elixir, Phoenix, and LiveView available at pro
 - Editing or deleting individual status history entries.
 - Resume file uploads, PDF generation, version comparison, and linking resumes to applications.
 - Password reset and email confirmation flows (users are provisioned by the Mix task; remove or disable these generator-provided flows).
-- OAuth 2.1 authorization, dynamic client registration, and stdio transport for the MCP endpoint (personal access tokens and Streamable HTTP only).
+- Client ID Metadata Documents, confidential OAuth clients, and stdio transport
+  for the MCP endpoint. The MCP server supports public clients through DCR and
+  retains PATs for existing integrations.
 
 ## 9. Success Criteria
 
@@ -404,7 +423,9 @@ The MVP is successful when a user can:
 7. Search, filter and sort applications.
 8. Create, edit, and delete multiple resume versions with tags.
 9. Be confident that other users cannot access their information.
-10. Manage applications and resumes through the MCP endpoint with a personal access token, without affecting other users' data.
+10. Manage applications and resumes through the MCP endpoint with either a
+    personal access token or OAuth authorization, without affecting other users'
+    data.
 
 ## 10. Confirmed Product Decisions
 
@@ -431,7 +452,7 @@ The MVP is successful when a user can:
 | Resume extras | Full name, headline, phone, and location are optional fields |
 | Resume scope | Text only; no file uploads, PDF generation, or application links |
 | MCP endpoint | Streamable HTTP at `/mcp` |
-| MCP authentication | Per-user personal access tokens, SHA-256 hashed, revocable and expirable |
+| MCP authentication | PATs remain supported; OAuth 2.1 Authorization Code + PKCE, DCR, user consent, resource-bound access tokens, rotating refresh tokens |
 | MCP transport library | Phantom MCP (`phantom_mcp`) |
 | MCP deletes | Hard delete, explicit single id, marked destructive |
 | `updated_at` changes on | Field edits, status changes, tag changes |

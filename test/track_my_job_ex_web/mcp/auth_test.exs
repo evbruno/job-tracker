@@ -20,6 +20,9 @@ defmodule TrackMyJobExWeb.MCP.AuthTest do
       assert www_authenticate =~ "Bearer"
       assert www_authenticate =~ "invalid_token"
       assert www_authenticate =~ ~s(realm="job-tracker-mcp")
+
+      assert www_authenticate =~
+               ~s(resource_metadata="http://localhost:4002/.well-known/oauth-protected-resource/mcp")
     end
 
     test "rejects a malformed Authorization header", %{conn: conn} do

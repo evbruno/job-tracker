@@ -7,13 +7,12 @@ Update it before ending every session.
 
 ## Current State
 
-- **Current phase:** Phase 13 — Admin Role and User Management (complete;
-  awaiting review).
-- **Current task group:** Phase 13, complete.
-- **Next task:** Await review of Phase 13.
-- **Overall status:** Phases 1–13 complete and verified locally. `mix precommit`
-  passes with 349 tests.
-- **Last commit:** Phase 13 commit pending.
+- **Current phase:** Phase 14 — OAuth for MCP (complete; awaiting review).
+- **Current task group:** Phase 14, complete.
+- **Next task:** Await review of Phase 14.
+- **Overall status:** Phases 1–14 complete and verified locally. `mix precommit`
+  passes with 354 tests.
+- **Last commit:** Phase 14 commit pending.
 
 ## Last Session Summary
 
@@ -287,6 +286,27 @@ None. If this file and PRODUCT.md conflict, PRODUCT.md wins; list the conflict h
 ## Session Log
 
 Add one entry per session, newest first, in this format:
+
+### 2026-11-19
+
+- **Done:** Phase 14: added DCR for public MCP clients, OAuth metadata and
+  endpoints, Authorization Code + PKCE consent, hashed resource-bound access
+  and rotating refresh tokens, revocation, and OAuth support alongside PAT
+  authentication. Added initial protocol tests and updated `PRODUCT.md`,
+  `TASKS.md`, `README.md`, `docs/SECURITY.md`, and `docs/DEPLOYMENT.md`.
+- **Verification:** OAuth and MCP auth tests pass; `mix precommit` passes with
+  354 tests and Credo strict reports no issues.
+- **Assumptions:** ChatGPT-facing OAuth uses one `job-tracker` scope. Access
+  tokens last 10 minutes; refresh tokens last 30 days. Public DCR is supported;
+  Client ID Metadata Documents and confidential clients are not. OAuth issuer
+  and MCP resource URLs are derived from `PHX_HOST`, with `MCP_RESOURCE_URL`
+  available when the external MCP URL differs.
+- **Existing work preserved:** The menu icon edit in `layouts.ex` and the
+  untracked demo seed files predate this OAuth task and are not included in its
+  commit.
+- **Blockers:** None identified. Production DCR should be rate-limited at the
+  reverse proxy.
+- **Next:** Await review of Phase 14.
 
 ### 2026-11-18
 

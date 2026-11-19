@@ -2,15 +2,14 @@
 
 ## Current Project Status
 
-**Current phase:** Phase 13 — Admin Role and User Management (complete; awaiting
-review)
+**Current phase:** Phase 14 — OAuth for MCP (in progress)
 
-**Overall status:** Phases 1–13 complete in the repository. Phase 13 adds an
-administrator role with user management and cross-user MCP token management.
+**Overall status:** Phases 1–13 complete. Phase 14 adds OAuth authorization to
+the MCP endpoint while retaining PAT authentication.
 
-**Current milestone:** Phase 13 verified — admin UI.
+**Current milestone:** Phase 14 — MCP OAuth server.
 
-**Current task group:** Phase 13, complete.
+**Current task group:** Phase 14, implementation and verification.
 
 ---
 
@@ -632,6 +631,43 @@ migrations, URL contracts, ownership rules, and flash strings are unchanged. See
 - Tests: 2 admin LiveView tests (349 total). `mix precommit` passes.
 
 ---
+
+## Phase 14 — OAuth for MCP
+
+- [x] Publish OAuth protected-resource and authorization-server metadata.
+- [x] Add public-client Dynamic Client Registration with safe redirect URI validation.
+- [x] Implement Authorization Code with PKCE (`S256`) and an authenticated consent screen.
+- [x] Issue resource-bound, short-lived access tokens and rotating refresh tokens.
+- [x] Add OAuth token revocation and accept OAuth tokens alongside existing PATs.
+- [x] Add OAuth flow, audience, PKCE, metadata, registration, refresh, and revocation tests.
+- [x] Update `PRODUCT.md`, deployment/security documentation, and this handoff.
+
+**Acceptance criteria:**
+- ChatGPT can discover the OAuth server from `/mcp` and register as a public client.
+- Authorization requires a signed-in user, explicit consent, and PKCE.
+- Authorization codes are single-use; redirect URIs are exact matches; tokens are bound to the MCP resource.
+- OAuth access tokens expire; refresh tokens rotate and can be revoked.
+- PATs continue to work unchanged.
+- `mix precommit` passes.
+
+**Phase 14 completion notes:**
+- OAuth metadata is served at `/.well-known/oauth-protected-resource/mcp` and
+  `/.well-known/oauth-authorization-server`. The MCP 401 challenge advertises
+  the resource metadata URL and `job-tracker` scope.
+- DCR creates public clients only (`token_endpoint_auth_method: none`), limits
+  redirect URI count and length, and allows HTTPS or loopback HTTP callbacks.
+  Authorization requires exact registered redirect matching.
+- The consent endpoint uses the existing authenticated browser session and CSRF
+  protection. Authorization codes expire after 5 minutes, are stored hashed,
+  and are single-use. PKCE S256 is required.
+- Opaque access tokens live 10 minutes; refresh tokens are rotated and expire
+  after 30 days. Both are hashed at rest and bound to the client and canonical
+  MCP resource. PATs remain accepted at `/mcp`.
+- `MCP_RESOURCE_URL` can override the production default `https://PHX_HOST/mcp`.
+  Public DCR has no app-level rate limiter; rate limiting belongs at the proxy.
+- Tests cover discovery, DCR constraints, authorization/consent, PKCE, resource
+  binding, code replay, refresh rotation/replay, revocation, and PAT
+  compatibility. `mix precommit` passes with 354 tests.
 
 ## Development Rules
 

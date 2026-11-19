@@ -52,6 +52,7 @@ These are called out again in [Operator checklist](#operator-checklist).
 | `DATABASE_PATH` | Recommended | `${DATA_DIR:-/data}/track_my_job_ex/track_my_job_ex.db` | Absolute path to the SQLite file. Must be on the persistent volume. |
 | `DATA_DIR` | No | `/data` | Base directory used when `DATABASE_PATH` is not set. |
 | `PHX_HOST` | Recommended | `example.com` | Public host used for URL generation and HSTS. |
+| `MCP_RESOURCE_URL` | No | `https://$PHX_HOST/mcp` | Canonical OAuth audience identifier for the publicly reachable MCP endpoint. Set this when the public URL differs from this default. |
 | `PORT` | No | `4000` | HTTP listen port inside the container/host. |
 | `POOL_SIZE` | No | `5` | Ecto/SQLite connection pool size. Keep small (1–5). |
 | `SQLITE_BUSY_TIMEOUT` | No | `5000` | Milliseconds a writer waits for the SQLite lock. |
@@ -164,6 +165,12 @@ directly to the internet. Alternatively, configure `https:` in
 
 The `/health` path is excluded from HTTPS redirects so private-network health
 checks can use plain HTTP. It returns no application data.
+
+OAuth discovery and callbacks require the public HTTPS host to be reachable.
+Configure `PHX_HOST` before deployment and set `MCP_RESOURCE_URL` to the exact
+URL clients use for `/mcp` if a proxy publishes a different path or host. Run
+`bin/migrate` before starting the release to create the OAuth client, code, and
+token tables.
 
 ## Health and monitoring
 

@@ -86,6 +86,11 @@ if config_env() == :prod do
       """
 
   host = System.get_env("PHX_HOST") || "example.com"
+  issuer_url = "https://" <> host
+
+  config :track_my_job_ex,
+    mcp_oauth_issuer_url: issuer_url,
+    mcp_resource_url: System.get_env("MCP_RESOURCE_URL") || issuer_url <> "/mcp"
 
   config :track_my_job_ex, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 

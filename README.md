@@ -105,7 +105,20 @@ environment.
 
 The application exposes its application and resume functionality as a Model
 Context Protocol (MCP) server over Streamable HTTP at `/mcp`. Authentication
-uses per-user personal access tokens.
+supports OAuth 2.1 for interactive MCP clients and per-user personal access
+tokens for existing integrations.
+
+ChatGPT custom MCP servers can use OAuth. The server publishes protected
+resource metadata at `/.well-known/oauth-protected-resource/mcp` and
+authorization-server metadata at `/.well-known/oauth-authorization-server`.
+It supports public-client Dynamic Client Registration and Authorization Code
+with PKCE (`S256`). Users authenticate and approve access in a browser. Access
+tokens are resource-bound and expire after 10 minutes; refresh tokens rotate
+and expire after 30 days. The OAuth scope is `job-tracker`.
+
+Set `PHX_HOST` to the public HTTPS hostname in production. If the canonical MCP
+URL differs from `https://$PHX_HOST/mcp`, set `MCP_RESOURCE_URL` to the exact
+public MCP URL.
 
 Create a token for an existing user:
 
