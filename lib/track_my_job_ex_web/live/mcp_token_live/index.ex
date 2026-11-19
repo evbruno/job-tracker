@@ -6,18 +6,22 @@ defmodule TrackMyJobExWeb.McpTokenLive.Index do
   use TrackMyJobExWeb, :live_view
 
   alias TrackMyJobEx.Accounts
+  alias TrackMyJobEx.MCP.OAuth
 
   @impl true
   def mount(_params, _session, socket) do
     scope = socket.assigns.current_scope
     tokens = Accounts.list_mcp_tokens(scope)
+    oauth_connections = OAuth.list_connections(scope)
 
     {:ok,
      socket
-     |> assign(:page_title, "MCP tokens")
+     |> assign(:page_title, "MCP")
      |> assign(:tokens, tokens)
-     |> assign(:tokens_empty?, tokens == [])
+     |> assign(:oauth_connections, oauth_connections)
+     |> assign(:tokens_empty?, tokens == [] and oauth_connections == [])
      |> assign(:pending_delete, nil)
+     |> assign(:pending_oauth_revoke, nil)
      |> assign(:new_token, nil)
      |> assign(:create_form, to_form(%{"name" => "", "expires_in" => ""}, as: :token))}
   end
@@ -30,11 +34,13 @@ defmodule TrackMyJobExWeb.McpTokenLive.Index do
     case Accounts.create_mcp_token(scope, attrs) do
       {:ok, _token, plaintext} ->
         tokens = Accounts.list_mcp_tokens(scope)
+        oauth_connections = OAuth.list_connections(scope)
 
         {:noreply,
          socket
          |> assign(:tokens, tokens)
-         |> assign(:tokens_empty?, tokens == [])
+         |> assign(:oauth_connections, oauth_connections)
+         |> assign(:tokens_empty?, tokens == [] and oauth_connections == [])
          |> assign(:new_token, plaintext)
          |> assign(:create_form, to_form(%{"name" => "", "expires_in" => ""}, as: :token))
          |> put_flash(:info, "Token created. Copy it now; it will not be shown again.")}
@@ -67,6 +73,43 @@ defmodule TrackMyJobExWeb.McpTokenLive.Index do
     {:noreply, assign(socket, :pending_delete, nil)}
   end
 
+  def handle_event("prompt_revoke_oauth", %{"id" => family_id}, socket) do
+    scope = socket.assigns.current_scope
+
+    case Enum.find(OAuth.list_connections(scope), &(&1.family_id == family_id)) do
+      nil -> {:noreply, put_flash(socket, :error, "OAuth connection not found.")}
+      connection -> {:noreply, assign(socket, :pending_oauth_revoke, connection)}
+    end
+  end
+
+  def handle_event("cancel_revoke_oauth", _params, socket) do
+    {:noreply, assign(socket, :pending_oauth_revoke, nil)}
+  end
+
+  def handle_event("revoke_oauth", %{"id" => family_id}, socket) do
+    scope = socket.assigns.current_scope
+
+    case OAuth.revoke_connection(scope, family_id) do
+      :ok ->
+        tokens = Accounts.list_mcp_tokens(scope)
+        oauth_connections = OAuth.list_connections(scope)
+
+        {:noreply,
+         socket
+         |> assign(:tokens, tokens)
+         |> assign(:oauth_connections, oauth_connections)
+         |> assign(:tokens_empty?, tokens == [] and oauth_connections == [])
+         |> assign(:pending_oauth_revoke, nil)
+         |> put_flash(:info, "OAuth connection revoked.")}
+
+      {:error, :not_found} ->
+        {:noreply,
+         socket
+         |> assign(:pending_oauth_revoke, nil)
+         |> put_flash(:error, "OAuth connection not found.")}
+    end
+  end
+
   def handle_event("delete", %{"id" => id}, socket) do
     scope = socket.assigns.current_scope
 
@@ -78,12 +121,14 @@ defmodule TrackMyJobExWeb.McpTokenLive.Index do
       token ->
         {:ok, _deleted} = Accounts.revoke_mcp_token(scope, token.id)
         tokens = Accounts.list_mcp_tokens(scope)
+        oauth_connections = OAuth.list_connections(scope)
 
         {:noreply,
          socket
          |> put_flash(:info, "Token revoked.")
          |> assign(:tokens, tokens)
-         |> assign(:tokens_empty?, tokens == [])
+         |> assign(:oauth_connections, oauth_connections)
+         |> assign(:tokens_empty?, tokens == [] and oauth_connections == [])
          |> assign(:pending_delete, nil)}
     end
   end

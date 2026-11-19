@@ -21,10 +21,10 @@ defmodule TrackMyJobExWeb.MCPOAuthController do
   def authorization_server(conn, _params) do
     json(conn, %{
       issuer: OAuth.issuer_url(),
-      authorization_endpoint: OAuth.issuer_url() <> @authorization_endpoint,
-      token_endpoint: OAuth.issuer_url() <> @token_endpoint,
-      registration_endpoint: OAuth.issuer_url() <> @registration_endpoint,
-      revocation_endpoint: OAuth.issuer_url() <> @revocation_endpoint,
+      authorization_endpoint: OAuth.issuer_endpoint(@authorization_endpoint),
+      token_endpoint: OAuth.issuer_endpoint(@token_endpoint),
+      registration_endpoint: OAuth.issuer_endpoint(@registration_endpoint),
+      revocation_endpoint: OAuth.issuer_endpoint(@revocation_endpoint),
       response_types_supported: ["code"],
       grant_types_supported: ["authorization_code", "refresh_token"],
       code_challenge_methods_supported: ["S256"],

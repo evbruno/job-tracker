@@ -7,11 +7,12 @@ Update it before ending every session.
 
 ## Current State
 
-- **Current phase:** Phase 16 — UI v2 Palette and Icon Theme (complete; awaiting review).
-- **Current task group:** Phase 16, complete.
+- **Current phase:** Phase 16 complete on both lanes — UI v2 Palette and Icon
+  Theme, and PORT-aware Development OAuth Issuer (MCP lane); awaiting review.
+- **Current task group:** Phase 16, complete (both lanes).
 - **Next task:** Await review of Phase 16.
-- **Overall status:** Phases 1–16 complete and verified locally. `mix precommit`
-  passes with 354 tests.
+- **Overall status:** Phases 1–16 complete; `mix precommit` passes with 357
+  tests after merging the MCP lane into the UI lane.
 - **Last commit:** Phase 16: Refresh README Screenshot.
 
 Phase 16 shifts the interface palette to evergreen and amber, updates all
@@ -25,6 +26,11 @@ embeds a fresh capture from the current v2 app rendered on port 4001. Browser
 proof covered login and applications on desktop and the application list at
 375px with no page-level horizontal overflow. `mix precommit` passes with 354
 tests; Credo strict reports no issues.
+
+The MCP lane's Phase 16 derives the development OAuth issuer from `PORT`
+(default `4000`), overridable with `MCP_OAUTH_ISSUER_URL`; the resource URL
+defaults to that issuer's `/mcp`. OAuth metadata endpoint construction is
+slash-safe.
 
 ## Assumptions Made
 
@@ -248,18 +254,19 @@ Add one entry per session, newest first, in this format:
 
 ### 2026-11-19
 
-- **Done:** Re-captured the README screenshot from the current v2 application
-  list at 1365×768; the rendered layout matches the latest implementation.
-- **Verification:** Preview started on port 4001; application list rendered
-  with no page-level horizontal overflow at desktop width.
-- **Commit:** `Phase 16: Refresh README Screenshot`.
-- **Assumptions:** Screenshot data is isolated local preview data.
+- **Done:** Merged `main` (MCP lane) into this UI v2 branch. Both lanes
+  independently used Phase 15/16 numbering, so `TASKS.md` now lists the UI lane
+  and the MCP lane as separate sections and `SESSION.md` keeps one log entry per
+  lane. No functional changes were made in the merge.
+- **Verification:** Resolved documentation conflicts by hand; auto-merged code
+  (`layouts.ex`, `mcp_oauth_controller.ex`) reviewed and the full suite run after
+  the merge.
+- **Commit:** Merge commit on `new-ui-v2`.
 - **Blockers:** None.
-- **Next:** Await Phase 16 review; production blockers remain operator-owned.
 
-- **Done:** Phase 16: replaced the cobalt palette with evergreen and amber,
-  switched Heroicons to solid by default, and updated the design decisions and
-  README screenshot.
+- **Done:** Phase 16 (UI v2): replaced the cobalt palette with evergreen and
+  amber, switched Heroicons to solid by default, and updated the design decisions
+  and README screenshot.
 - **Verification:** Browser proof covered login and applications on desktop;
   the 375px application list had no page-level horizontal overflow. `mix
   precommit` passes with 354 tests and Credo strict reports no issues.
@@ -269,8 +276,44 @@ Add one entry per session, newest first, in this format:
 - **Blockers:** None.
 - **Next:** Await Phase 16 review; production blockers remain operator-owned.
 
-- **Done:** Phase 15: cropped the supplied beta logo into wordmark and icon
-  assets, updated the shared shell, login, OAuth consent, and favicon, and
+- **Done:** Phase 16 (MCP lane): began after a local OAuth issuer mismatch. The
+  development issuer now derives from `PORT` (default `4000`) and can be
+  overridden with `MCP_OAUTH_ISSUER_URL`; resource URL defaults to that issuer's
+  `/mcp`. OAuth metadata endpoint construction is slash-safe. Added metadata
+  coverage and updated README/deployment configuration docs.
+- **Verification:** `PORT=4005 mix run` reports issuer
+  `http://localhost:4005/`, resource `http://localhost:4005/mcp`, and listener
+  port `4005`. OAuth metadata/auth tests pass (13 tests), and `mix precommit`
+  passes with 357 tests.
+- **Assumptions:** See Phase 16 in `TASKS.md`.
+- **Blockers:** None identified.
+- **Next:** Await review of Phase 16.
+
+- **Done:** Phase 15 (MCP lane): changed the navigation label to “MCP” while
+  retaining `/mcp-tokens`; added a scoped OAuth connection list and
+  confirmation-gated family revocation alongside PAT management. Updated
+  `PRODUCT.md`, `TASKS.md`, and added LiveView coverage for listing, revocation,
+  and cross-user isolation.
+- **Verification:** Targeted MCP token LiveView tests pass (7 tests).
+  `mix precommit` passes with 357 tests. `mix deps.get` was needed in the new
+  worktree; it reported an existing Plug advisory for the locked version.
+- **Assumptions:** An OAuth authorization is represented by a token family, so
+  revocation invalidates its access and refresh rows without affecting other
+  authorizations for that client.
+- **Blockers:** None identified.
+- **Next:** Await review of Phase 15.
+
+- **Done:** Re-captured the README screenshot from the current v2 application
+  list at 1365×768; the rendered layout matches the latest implementation.
+- **Verification:** Preview started on port 4001; application list rendered
+  with no page-level horizontal overflow at desktop width.
+- **Commit:** `Phase 16: Refresh README Screenshot`.
+- **Assumptions:** Screenshot data is isolated local preview data.
+- **Blockers:** None.
+- **Next:** Await Phase 16 review; production blockers remain operator-owned.
+
+- **Done:** Phase 15 (UI lane): cropped the supplied beta logo into wordmark and
+  icon assets, updated the shared shell, login, OAuth consent, and favicon, and
   documented UI decisions and the application-list screenshot.
 - **Verification:** Browser proof covered login, dashboard, applications,
   OAuth consent, and a 375px viewport with no page-level horizontal overflow.
@@ -282,7 +325,6 @@ Add one entry per session, newest first, in this format:
 - **Blockers:** None.
 - **Next:** Await Phase 15 review; production blockers remain operator-owned.
 
-### 2026-11-19
 
 - **Done:** Phase 14: added DCR for public MCP clients, OAuth metadata and
   endpoints, Authorization Code + PKCE consent, hashed resource-bound access

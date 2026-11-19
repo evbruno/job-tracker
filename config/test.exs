@@ -24,7 +24,7 @@ config :track_my_job_ex, TrackMyJobExWeb.Endpoint,
   server: false
 
 config :track_my_job_ex,
-  mcp_oauth_issuer_url: "http://localhost:4002",
+  mcp_oauth_issuer_url: "http://localhost:4002/",
   mcp_resource_url: "http://localhost:4002/mcp"
 
 # Print only warnings and errors during test

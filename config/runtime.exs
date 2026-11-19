@@ -32,6 +32,23 @@ if origins = System.get_env("MCP_ALLOWED_ORIGINS") do
 end
 
 if config_env() == :dev do
+  port = String.to_integer(System.get_env("PORT", "4000"))
+  issuer_url = System.get_env("MCP_OAUTH_ISSUER_URL") || "http://localhost:#{port}/"
+
+  resource_url =
+    System.get_env("MCP_RESOURCE_URL") || String.trim_trailing(issuer_url, "/") <> "/mcp"
+
+  allowed_origins =
+    case System.get_env("MCP_ALLOWED_ORIGINS") do
+      nil -> ["http://localhost:#{port}"]
+      origins -> origins |> String.split(",", trim: true) |> Enum.map(&String.trim/1)
+    end
+
+  config :track_my_job_ex,
+    mcp_oauth_issuer_url: issuer_url,
+    mcp_resource_url: resource_url,
+    mcp_allowed_origins: allowed_origins
+
   # Reload browser tabs when matching files change.
   config :track_my_job_ex, TrackMyJobExWeb.Endpoint,
     live_reload: [
@@ -86,11 +103,12 @@ if config_env() == :prod do
       """
 
   host = System.get_env("PHX_HOST") || "example.com"
-  issuer_url = "https://" <> host
+  issuer_url = System.get_env("MCP_OAUTH_ISSUER_URL") || "https://" <> host
 
   config :track_my_job_ex,
     mcp_oauth_issuer_url: issuer_url,
-    mcp_resource_url: System.get_env("MCP_RESOURCE_URL") || issuer_url <> "/mcp"
+    mcp_resource_url:
+      System.get_env("MCP_RESOURCE_URL") || String.trim_trailing(issuer_url, "/") <> "/mcp"
 
   config :track_my_job_ex, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
