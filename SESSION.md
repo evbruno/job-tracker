@@ -7,12 +7,12 @@ Update it before ending every session.
 
 ## Current State
 
-- **Current phase:** Phase 16 complete on both lanes — UI v2 Palette and Icon
-  Theme, and PORT-aware Development OAuth Issuer (MCP lane); awaiting review.
-- **Current task group:** Phase 16, complete (both lanes).
-- **Next task:** Await review of Phase 16.
-- **Overall status:** Phases 1–16 complete; `mix precommit` passes with 357
-  tests after merging the MCP lane into the UI lane.
+- **Current phase:** Phase 17 — Temporary Password Change.
+- **Current task group:** Phase 17 complete.
+- **Next task:** Await review of the temporary-password feature.
+- **Overall status:** Phases 1–16 complete; Phase 17 is underway on
+  `feat/temporary-password-change`.
+- **Verification:** `mix precommit` passes with 361 tests.
 - **Last commit:** Phase 16: Refresh README Screenshot.
 
 Phase 16 shifts the interface palette to evergreen and amber, updates all
@@ -33,6 +33,11 @@ defaults to that issuer's `/mcp`. OAuth metadata endpoint construction is
 slash-safe.
 
 ## Assumptions Made
+
+- 2026-11-27 — A temporary-password user first submits current credentials,
+  sees the reason on the same login page, then submits current credentials again
+  with a new password and confirmation. No authenticated session is issued until
+  the change succeeds.
 
 - 2026-11-18 — Phase 8: "many versions of a resume" means many independent
   resume records, each identified by its own title. There is no parent/version
@@ -251,6 +256,19 @@ None. If this file and PRODUCT.md conflict, PRODUCT.md wins; list the conflict h
 ## Session Log
 
 Add one entry per session, newest first, in this format:
+
+### 2026-11-27
+
+- **Done:** Phase 17 — added the temporary-password flag (default false), a
+  same-login-page forced change flow with matching new-password confirmation,
+  admin flag controls, and a refreshed admin users form/list.
+- **Verification:** `mix precommit` passes with 361 tests.
+- **Branch:** `feat/temporary-password-change`.
+- **Assumptions:** A temporary user submits their current password once to
+  reveal the forced-change prompt, then re-enters it with the new password and
+  confirmation. No authenticated session is granted before the change.
+- **Blockers:** None.
+- **Next:** Await review.
 
 ### 2026-11-19
 

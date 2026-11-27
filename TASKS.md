@@ -2,14 +2,14 @@
 
 ## Current Project Status
 
-**Current phase:** Phase 16 — PORT-aware Development OAuth Issuer (complete; awaiting review)
+**Current phase:** Phase 17 — Temporary Password Change (in progress)
 
-**Overall status:** Phases 1–15 complete; Phase 16 makes development OAuth
-issuer metadata follow the configured listen port.
+**Overall status:** Phases 1–16 complete; Phase 17 adds required password
+rotation for accounts provisioned with a temporary password.
 
-**Current milestone:** Phase 16 — PORT-aware development OAuth issuer.
+**Current milestone:** Phase 17 — Temporary password change.
 
-**Current task group:** Phase 16, complete.
+**Current task group:** Phase 17, implementation and verification.
 
 ---
 
@@ -712,6 +712,30 @@ migrations, URL contracts, ownership rules, and flash strings are unchanged. See
 - `design-system/job-tracker/MASTER.md` records v2 choices; README embeds a fresh 1365×768 capture of the current application list from port 4001.
 - Browser proof covered login and applications at desktop, and the application list at 375px with no page-level horizontal overflow.
 - `mix precommit` passes with 354 tests; Credo strict reports no issues.
+
+---
+
+## Phase 17 — Temporary Password Change
+
+- [x] Add a persisted temporary-password flag, default false.
+- [x] Require a password change before granting a session to flagged users.
+- [x] Require matching new-password and confirmation fields on the login page.
+- [x] Let administrators set/clear the flag and set it during user creation.
+- [x] Refresh the admin user-management form and list presentation.
+- [x] Run `mix precommit` and update the session handoff.
+
+**Acceptance criteria:**
+- Flagged users cannot receive an authenticated session until changing their
+  password.
+- The new password follows existing validation rules and confirmation matches.
+- Successful password change clears the flag and signs in the user.
+- Administrators can set and clear the flag; non-admin users cannot.
+- `mix precommit` passes.
+
+**Assumption:** A flagged user submits their current password, then the same
+login page displays the required change prompt. The user re-enters the current
+password with the new password and confirmation; no pre-authentication session
+is issued in between.
 
 ---
 

@@ -8,8 +8,19 @@ defmodule TrackMyJobEx.Accounts.User do
     field :hashed_password, :string, redact: true
     field :authenticated_at, :utc_datetime, virtual: true
     field :is_admin, :boolean, default: false
+    field :temporary_password, :boolean, default: false
 
     timestamps(type: :utc_datetime)
+  end
+
+  def password_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:password])
+    |> validate_required([:password])
+    |> validate_length(:password, min: 12, max: 72)
+    |> validate_length(:password, max: 72, count: :bytes)
+    |> maybe_hash_password(hash_password: true)
+    |> put_change(:temporary_password, false)
   end
 
   @doc """

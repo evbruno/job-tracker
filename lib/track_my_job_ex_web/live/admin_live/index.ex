@@ -22,7 +22,7 @@ defmodule TrackMyJobExWeb.AdminLive.Index do
        |> assign(:pending_delete, nil)
        |> assign(
          :create_form,
-         to_form(%{"email" => "", "password" => "", "is_admin" => "false"}, as: :user)
+         to_form(%{"email" => "", "password" => ""}, as: :user)
        )}
     else
       {:ok,
@@ -39,7 +39,8 @@ defmodule TrackMyJobExWeb.AdminLive.Index do
     attrs = %{
       "email" => params["email"],
       "password" => params["password"],
-      "is_admin" => params["is_admin"] == "true"
+      "is_admin" => params["is_admin"] == "true",
+      "temporary_password" => params["temporary_password"] == "true"
     }
 
     case Accounts.create_user(scope, attrs) do
@@ -52,7 +53,7 @@ defmodule TrackMyJobExWeb.AdminLive.Index do
          |> assign(:users_empty?, users == [])
          |> assign(
            :create_form,
-           to_form(%{"email" => "", "password" => "", "is_admin" => "false"}, as: :user)
+           to_form(%{"email" => "", "password" => ""}, as: :user)
          )
          |> put_flash(:info, "User created.")}
 
@@ -127,6 +128,23 @@ defmodule TrackMyJobExWeb.AdminLive.Index do
 
         {:error, :not_found} ->
           {:noreply, put_flash(socket, :error, "User not found.")}
+      end
+    else
+      {:noreply, put_flash(socket, :error, "User not found.")}
+    end
+  end
+
+  def handle_event("toggle_temporary_password", %{"id" => id}, socket) do
+    scope = socket.assigns.current_scope
+    user = find_user(scope, id)
+
+    if user do
+      case Accounts.set_user_temporary_password(scope, id, !user.temporary_password) do
+        {:ok, _user} ->
+          {:noreply, assign(socket, :users, unwrap(Accounts.list_users(scope)))}
+
+        _ ->
+          {:noreply, put_flash(socket, :error, "Could not update user.")}
       end
     else
       {:noreply, put_flash(socket, :error, "User not found.")}

@@ -83,6 +83,55 @@ defmodule TrackMyJobExWeb.UserSessionControllerTest do
       assert get_session(conn, :user_token)
       assert redirected_to(conn) == ~p"/"
     end
+
+    test "requires a temporary-password user to change password before login", %{conn: conn} do
+      user = user_fixture(%{temporary_password: true})
+
+      conn =
+        post(conn, ~p"/users/log-in", %{
+          "user" => %{"email" => user.email, "password" => valid_user_password()}
+        })
+
+      assert redirected_to(conn) == ~p"/users/log-in?change_password=true"
+      refute get_session(conn, :user_token)
+
+      conn =
+        post(conn, ~p"/users/log-in", %{
+          "user" => %{
+            "email" => user.email,
+            "password" => valid_user_password(),
+            "new_password" => "a completely new password",
+            "new_password_confirmation" => "a completely new password"
+          }
+        })
+
+      assert redirected_to(conn) == ~p"/"
+      assert get_session(conn, :user_token)
+      refute TrackMyJobEx.Accounts.get_user_by_email(user.email).temporary_password
+
+      assert TrackMyJobEx.Accounts.get_user_by_email_and_password(
+               user.email,
+               "a completely new password"
+             )
+    end
+
+    test "does not change a temporary password when confirmation differs", %{conn: conn} do
+      user = user_fixture(%{temporary_password: true})
+
+      conn =
+        post(conn, ~p"/users/log-in", %{
+          "user" => %{
+            "email" => user.email,
+            "password" => valid_user_password(),
+            "new_password" => "a completely new password",
+            "new_password_confirmation" => "a different new password"
+          }
+        })
+
+      assert redirected_to(conn) == ~p"/users/log-in?change_password=true"
+      refute get_session(conn, :user_token)
+      assert TrackMyJobEx.Accounts.get_user_by_email(user.email).temporary_password
+    end
   end
 
   describe "DELETE /users/log-out" do
