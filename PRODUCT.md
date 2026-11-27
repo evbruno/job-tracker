@@ -25,6 +25,11 @@ Requirements:
 - Users are created through a custom Mix task.
 - Users can log in and log out.
 - Passwords must be securely hashed.
+- User accounts may be flagged as having a temporary password (default false).
+  On sign-in, flagged users must replace it before receiving an authenticated
+  session; the login form requests the new password twice and validates a match.
+- Administrators can set or clear the temporary-password flag when creating or
+  managing a user.
 - Each user can only access their own data.
 - Ownership must be enforced server-side.
 - Email addresses are unique (case-insensitive).

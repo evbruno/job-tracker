@@ -36,6 +36,19 @@ defmodule TrackMyJobEx.Accounts do
     if User.valid_password?(user, password), do: user
   end
 
+  def change_temporary_password(email, current_password, new_password)
+      when is_binary(email) and is_binary(current_password) and is_binary(new_password) do
+    case get_user_by_email_and_password(email, current_password) do
+      %User{temporary_password: true} = user ->
+        user
+        |> User.password_changeset(%{"password" => new_password})
+        |> Repo.update()
+
+      _ ->
+        {:error, :invalid_current_password}
+    end
+  end
+
   ## User provisioning
 
   @doc """
@@ -45,10 +58,11 @@ defmodule TrackMyJobEx.Accounts do
   """
   def create_user(attrs) when is_map(attrs) do
     is_admin = truthy_attr?(attrs, :is_admin)
+    temporary_password = truthy_attr?(attrs, :temporary_password)
 
-    attrs = drop_attr(attrs, :is_admin)
+    attrs = attrs |> drop_attr(:is_admin) |> drop_attr(:temporary_password)
 
-    %User{is_admin: is_admin}
+    %User{is_admin: is_admin, temporary_password: temporary_password}
     |> User.creation_changeset(attrs)
     |> Repo.insert()
   end
@@ -249,6 +263,22 @@ defmodule TrackMyJobEx.Accounts do
   end
 
   def set_user_admin(%Scope{}, _user_id, _is_admin), do: {:error, :unauthorized}
+
+  def set_user_temporary_password(%Scope{user: %{is_admin: true}}, user_id, temporary?)
+      when is_boolean(temporary?) do
+    case Ecto.Type.cast(:id, user_id) do
+      {:ok, id} ->
+        case Repo.get(User, id) do
+          nil -> {:error, :not_found}
+          user -> user |> Ecto.Changeset.change(temporary_password: temporary?) |> Repo.update()
+        end
+
+      :error ->
+        {:error, :not_found}
+    end
+  end
+
+  def set_user_temporary_password(%Scope{}, _user_id, _temporary?), do: {:error, :unauthorized}
 
   ## MCP personal access tokens (admin)
 

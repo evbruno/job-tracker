@@ -14,6 +14,13 @@ defmodule TrackMyJobExWeb.UserLive.LoginTest do
       refute html =~ "magic"
     end
 
+    test "shows the password-change prompt when requested", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, ~p"/users/log-in?change_password=true")
+      assert has_element?(lv, "h1", "Choose a new password")
+      assert has_element?(lv, "input[name='user[new_password]']")
+      assert has_element?(lv, "input[name='user[new_password_confirmation]']")
+    end
+
     test "redirects authenticated users to the dashboard", %{conn: conn} do
       user = user_fixture()
 

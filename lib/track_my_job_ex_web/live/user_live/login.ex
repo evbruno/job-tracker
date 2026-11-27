@@ -10,9 +10,13 @@ defmodule TrackMyJobExWeb.UserLive.Login do
           <span class="mx-auto inline-flex items-center rounded-full bg-brand-soft px-3 py-1 text-xs font-bold tracking-[0.16em] text-brand">
             BETA ACCESS
           </span>
-          <h1 class="mt-4 text-3xl font-semibold tracking-tight text-ink">Welcome back</h1>
+          <h1 class="mt-4 text-3xl font-semibold tracking-tight text-ink">
+            {if @change_password?, do: "Choose a new password", else: "Welcome back"}
+          </h1>
           <p class="mt-2 text-sm leading-6 text-ink-muted">
-            Sign in to pick up where your job search left off.
+            {if @change_password?,
+              do: "Your administrator issued a temporary password. Change it before continuing.",
+              else: "Sign in to pick up where your job search left off."}
           </p>
         </div>
 
@@ -20,7 +24,11 @@ defmodule TrackMyJobExWeb.UserLive.Login do
           <.form
             for={@form}
             id="login_form"
-            action={~p"/users/log-in"}
+            action={
+              if @change_password?,
+                do: ~p"/users/log-in?change_password=true",
+                else: ~p"/users/log-in"
+            }
             phx-submit="submit"
             phx-trigger-action={@trigger_submit}
             class="flex flex-col gap-5 p-5 sm:p-7"
@@ -34,6 +42,22 @@ defmodule TrackMyJobExWeb.UserLive.Login do
               required
               phx-mounted={JS.focus()}
             />
+            <%= if @change_password? do %>
+              <.input
+                field={@form[:new_password]}
+                type="password"
+                label="New password"
+                autocomplete="new-password"
+                required
+              />
+              <.input
+                field={@form[:new_password_confirmation]}
+                type="password"
+                label="Confirm new password"
+                autocomplete="new-password"
+                required
+              />
+            <% end %>
             <.input
               field={@form[:password]}
               type="password"
@@ -68,12 +92,22 @@ defmodule TrackMyJobExWeb.UserLive.Login do
     {:ok, push_navigate(socket, to: ~p"/")}
   end
 
-  def mount(_params, _session, socket) do
+  def mount(params, _session, socket) do
     email = Phoenix.Flash.get(socket.assigns.flash, :email) || ""
+    change_password? = params["change_password"] == "true"
 
-    form = to_form(%{"email" => email}, as: "user")
+    form =
+      to_form(
+        %{
+          "email" => email,
+          "password" => "",
+          "new_password" => "",
+          "new_password_confirmation" => ""
+        },
+        as: "user"
+      )
 
-    {:ok, assign(socket, form: form, trigger_submit: false)}
+    {:ok, assign(socket, form: form, trigger_submit: false, change_password?: change_password?)}
   end
 
   @impl true
