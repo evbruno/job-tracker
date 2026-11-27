@@ -259,6 +259,23 @@ Add one entry per session, newest first, in this format:
 
 ### 2026-11-27
 
+- **Done:** Added Open Graph and Twitter large-card metadata to the shared page
+  head, plus a branded 1200×630 PNG share image at
+  `priv/static/images/job-tracker-share.png`. The card uses the existing
+  evergreen/amber identity and describes the app without exposing private
+  content.
+- **Verification:** Confirmed the PNG dimensions are 1200×630.
+  `mix precommit` passes with 361 tests.
+- **Assumptions:** Share metadata is site-wide and identifies the public login
+  landing page as “Job Tracker beta”; the production canonical URL uses the
+  configured endpoint host.
+- **Blockers:** None. WhatsApp preview cache may take time to refresh after
+  deployment.
+- **Next:** Deploy the change and validate/refresh the preview in WhatsApp's
+  sharing cache.
+
+### 2026-11-27
+
 - **Done:** Phase 17 — added the temporary-password flag (default false), a
   same-login-page forced change flow with matching new-password confirmation,
   admin flag controls, and a refreshed admin users form/list.
