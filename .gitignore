@@ -57,3 +57,7 @@ npm-debug.log
 /rel/overlays/*.tar.gz
 
 .kamal
+
+# Local OpenCode configuration and workspace files
+/.opencode/
+/opencode.json
