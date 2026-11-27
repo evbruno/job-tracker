@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#f3f8f6"/>
+  <circle cx="1080" cy="96" r="230" fill="#e4f0eb"/>
+  <circle cx="1090" cy="570" r="190" fill="#f8ead0"/>
+  <rect x="72" y="72" width="1056" height="486" rx="30" fill="#fff" stroke="#d8e4de" stroke-width="2"/>
+  <rect x="120" y="122" width="56" height="56" rx="15" fill="#176b52"/>
+  <path d="M137 149h22m-22 10h22m-22 10h15" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="168" cy="143" r="4" fill="#f6b94c"/>
+  <text x="194" y="162" fill="#176b52" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="700">JOB TRACKER</text>
+  <rect x="818" y="128" width="124" height="36" rx="18" fill="#fff4df"/>
+  <text x="880" y="152" text-anchor="middle" fill="#8b5b13" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700" letter-spacing="2">BETA</text>
+  <text x="120" y="292" fill="#172b24" font-family="Arial, Helvetica, sans-serif" font-size="66" font-weight="700">Keep your job search</text>
+  <text x="120" y="370" fill="#176b52" font-family="Arial, Helvetica, sans-serif" font-size="66" font-weight="700">moving.</text>
+  <text x="124" y="424" fill="#53685e" font-family="Arial, Helvetica, sans-serif" font-size="25">Applications, resumes, and every step in one place.</text>
+  <rect x="124" y="472" width="188" height="8" rx="4" fill="#176b52"/>
+  <rect x="324" y="472" width="90" height="8" rx="4" fill="#f6b94c"/>
+  <rect x="426" y="472" width="54" height="8" rx="4" fill="#d8e4de"/>
+  <g transform="translate(850 262)">
+    <rect width="210" height="150" rx="16" fill="#f8fbf9" stroke="#d8e4de" stroke-width="2"/>
+    <circle cx="28" cy="34" r="8" fill="#176b52"/>
+    <rect x="49" y="27" width="118" height="14" rx="7" fill="#d8e4de"/>
+    <circle cx="28" cy="76" r="8" fill="#f6b94c"/>
+    <rect x="49" y="69" width="92" height="14" rx="7" fill="#d8e4de"/>
+    <circle cx="28" cy="118" r="8" fill="#8eb9a5"/>
+    <rect x="49" y="111" width="132" height="14" rx="7" fill="#d8e4de"/>
+  </g>
+</svg>

@@ -6,6 +6,37 @@
     <meta name="color-scheme" content="light" />
     <meta name="theme-color" content="#f3f8f6" />
     <meta name="csrf-token" content={get_csrf_token()} />
+    <meta
+      name="description"
+      content="Keep your job search moving. Organize applications, resumes, tags, and interview history in one place."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Job Tracker beta" />
+    <meta property="og:title" content="Job Tracker beta" />
+    <meta
+      property="og:description"
+      content="Keep your job search moving. Organize applications, resumes, tags, and interview history in one place."
+    />
+    <meta
+      property="og:image"
+      content={TrackMyJobExWeb.Endpoint.url() <> "/images/job-tracker-share.png"}
+    />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:url"
+      content={TrackMyJobExWeb.Endpoint.url() <> "/"}
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Job Tracker beta" />
+    <meta
+      name="twitter:description"
+      content="Keep your job search moving. Organize applications, resumes, tags, and interview history in one place."
+    />
+    <meta
+      name="twitter:image"
+      content={TrackMyJobExWeb.Endpoint.url() <> "/images/job-tracker-share.png"}
+    />
     <.live_title default="Job Tracker beta" suffix=" · Job Tracker">
       {assigns[:page_title]}
     </.live_title>
